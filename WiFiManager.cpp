@@ -6,7 +6,22 @@ DNSServer dnsServer;
 
 const byte DNS_PORT = 53;
 
+// Function prototypes (declare functions before use)
+void initWebServer();
+void handleRoot();
+void handleSaveConfig();
+void handleNotFound();
+
+// Extern variables
+extern bool wifiEnabled;
+
+// Wi-Fi Control Functions
 void initWiFiManager() {
+  // Initialize Wi-Fi manager; Wi-Fi is off by default
+  WiFi.mode(WIFI_OFF);
+}
+
+void startWiFi() {
   // Start Wi-Fi in AP mode
   WiFi.mode(WIFI_AP);
   WiFi.softAP("ESP32_Config_AP");  // Set the SSID (add password if desired)
@@ -24,6 +39,14 @@ void initWiFiManager() {
   // Start the server
   server.begin();
   Serial.println("Web server started");
+}
+
+void stopWiFi() {
+  server.stop();
+  dnsServer.stop();
+  WiFi.softAPdisconnect(true);
+  WiFi.mode(WIFI_OFF);
+  Serial.println("Web server stopped");
 }
 
 void handleWiFi() {
@@ -74,26 +97,26 @@ void handleRoot() {
     <form action="/save" method="POST">
       <label for="londonMessage">London Message:</label>
       <input type="text" id="londonMessage" name="londonMessage" value="%londonMessage%">
-      
+
       <label for="hilversumMessage">Hilversum Message:</label>
       <input type="text" id="hilversumMessage" name="hilversumMessage" value="%hilversumMessage%">
-      
+
       <label for="barcelonaMessage">Barcelona Message:</label>
       <input type="text" id="barcelonaMessage" name="barcelonaMessage" value="%barcelonaMessage%">
-      
+
       <label for="volume">Speaker Volume:</label>
       <input type="range" min="0" max="255" class="slider" id="volume" name="volume" value="%volume%">
-      
+
       <label for="frequency">Speaker Frequency (Hz):</label>
       <input type="number" id="frequency" name="frequency" value="%frequency%">
-      
+
       <label for="morseSpeed">Morse Code Speed:</label>
       <select id="morseSpeed" name="morseSpeed">
         <option value="0"%lowSpeedSelected%>Low</option>
         <option value="1"%mediumSpeedSelected%>Medium</option>
         <option value="2"%highSpeedSelected%>High</option>
       </select>
-      
+
       <br><br>
       <input type="submit" value="Save">
     </form>

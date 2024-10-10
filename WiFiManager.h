@@ -6,19 +6,15 @@
 #include <WebServer.h>
 #include <DNSServer.h>
 #include <Preferences.h>
+#include "Config.h"  // Include the Config.h file for shared definitions
 
-// Extern declarations
-extern unsigned int speakerDutyCycle;
-extern unsigned int morseFrequency;
-extern String londonMessage;
-extern String hilversumMessage;
-extern String barcelonaMessage;
-extern void saveConfigurations();
-extern void setMorseSpeed(MorseSpeed speed);
-extern MorseSpeed morseSpeed;
+// Extern variables
+extern bool wifiEnabled;
 
 // Function prototypes
 void initWiFiManager();
 void handleWiFi();
+void startWiFi();
+void stopWiFi();
 
 #endif // WIFIMANAGER_H
