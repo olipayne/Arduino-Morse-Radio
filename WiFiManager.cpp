@@ -68,12 +68,12 @@ void handleRoot() {
   String html = R"rawliteral(
   <!DOCTYPE HTML><html>
   <head>
-    <title>ESP32 Configuration</title>
+    <title>Morse Radio Configuration</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
       body { font-family: Arial, sans-serif; text-align: center; background-color: #f0f0f0; }
       h1 { color: #333; }
-      form { display: inline-block; background-color: #fff; padding: 20px; border-radius: 10px; max-width: 400px; }
+      form { display: inline-block; background-color: #fff; padding: 20px; border-radius: 10px; }
       input[type="text"], input[type="number"], select {
         width: 100%; padding: 8px; margin: 5px 0; box-sizing: border-box;
       }
@@ -93,7 +93,7 @@ void handleRoot() {
     </style>
   </head>
   <body>
-    <h1>ESP32 Configuration</h1>
+    <h1>Morse Radio Configuration</h1>
     <form action="/save" method="POST">
       <label for="londonMessage">London Message:</label>
       <input type="text" id="londonMessage" name="londonMessage" value="%londonMessage%">
@@ -105,7 +105,7 @@ void handleRoot() {
       <input type="text" id="barcelonaMessage" name="barcelonaMessage" value="%barcelonaMessage%">
 
       <label for="volume">Speaker Volume:</label>
-      <input type="range" min="0" max="255" class="slider" id="volume" name="volume" value="%volume%">
+      <input type="range" min="1" max="255" class="slider" id="volume" name="volume" value="%volume%">
 
       <label for="frequency">Speaker Frequency (Hz):</label>
       <input type="number" id="frequency" name="frequency" value="%frequency%">
@@ -179,14 +179,20 @@ void handleSaveConfig() {
   // Save configurations to non-volatile storage
   saveConfigurations();
 
-  // Send confirmation page
-  server.send(200, "text/html", "<html><body><h1>Configuration Saved!</h1><p>The device will now restart.</p></body></html>");
+  // Send confirmation page with auto-redirect
+  String html = "<html><head>";
+  html += "<meta http-equiv='refresh' content='1; url=/' />";
+  html += "<title>Configuration Saved</title>";
+  html += "<style>";
+  html += "body { font-family: Arial, sans-serif; text-align: center; background-color: #f0f0f0; }";
+  html += "h1 { color: #333; }";
+  html += "</style>";
+  html += "</head><body>";
+  html += "<h1>Configuration Saved!</h1>";
+  html += "<p>You will be redirected back shortly.</p>";
+  html += "</body></html>";
 
-  // Small delay to allow the message to be sent
-  delay(1000);
-
-  // Restart the ESP32 to apply changes
-  ESP.restart();
+  server.send(200, "text/html", html);
 }
 
 void handleNotFound() {
