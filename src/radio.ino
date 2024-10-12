@@ -62,6 +62,9 @@ const int blueLEDPin = BLUE_LED_PIN;
 // Global variable to track Wi-Fi start time
 unsigned long wifiStartTime = 0;
 
+// Global variable to track when the station was locked
+unsigned long stationLockTime = 0;
+
 void setup()
 {
   // Initialize serial communication
@@ -122,9 +125,14 @@ void loop()
       ledFlashStartTime += ledFlashInterval; // Update start time for next flash
     }
 
-    // Check if 2 minutes have passed since Wi-Fi was started
-    if (currentTime - wifiStartTime >= 120000) // 120000 ms = 2 minutes
+    // Check if 2 minutes have passed since the last request
+    if (currentTime >= wifiStartTime && (currentTime - wifiStartTime >= 120000)) // 120000 ms = 2 minutes
     {
+      Serial.println("2 minutes passed, stopping Wi-Fi");
+      Serial.print("Current time: ");
+      Serial.println(currentTime);
+      Serial.print("WiFi start time: ");
+      Serial.println(wifiStartTime);
       stopWiFi();                     // Stop Wi-Fi after 2 minutes
       wifiEnabled = false;            // Update the state
       digitalWrite(blueLEDPin, HIGH); // Turn off the LED when Wi-Fi stops
@@ -164,10 +172,19 @@ void loop()
 
   if (stationLocked)
   {
-    // Adjust speaker volume based on signal strength
-    unsigned int adjustedVolume = map(signalStrength, 0, 255, 0, speakerDutyCycle);
+    if (stationLockTime == 0)
+    {
+      // Record the time when the station was locked
+      stationLockTime = currentTime;
+      Serial.print("Station lock acquired: ");
+      Serial.println(lockedStation->name);
 
-    if (!morsePlaying)
+      // Turn off the speaker output for 2 seconds
+      ledcWrite(SPEAKER_CHANNEL, 0);
+    }
+
+    // Check if the station has been locked for more than 2 seconds
+    if (!morsePlaying && (currentTime - stationLockTime >= 2000))
     {
       // Set the Morse message based on the locked station
       if (strcmp(lockedStation->name, "London") == 0)
@@ -194,78 +211,61 @@ void loop()
       morsePlaying = true;
       morseTimer = currentTime;
       morseToneOn = false;
+
+      Serial.println("Starting Morse code playback.");
     }
 
-    // Process Morse code playback
-    if (morsePlaying && currentTime >= morseTimer)
+    // Morse code playback logic
+    if (morsePlaying)
     {
-      if (morseToneOn)
+      if (currentMorseCodeIndex < currentMorseCode.length())
       {
-        // Turn off the tone
-        ledcWrite(SPEAKER_CHANNEL, 0);
-        morseToneOn = false;
+        if (currentTime - morseTimer >= (morseToneOn ? dashDuration : dotDuration))
+        {
+          morseToneOn = !morseToneOn;
+          morseTimer = currentTime;
 
-        // Determine the appropriate gap
-        if (currentMorseCodeIndex < currentMorseCode.length())
-        {
-          // Gap between parts of the same character
-          morseTimer = currentTime + partGap;
-        }
-        else
-        {
-          // Gap between characters
-          morseTimer = currentTime + characterGap - partGap;
+          if (morseToneOn)
+          {
+            // Turn on the speaker for the current Morse code element
+            ledcWriteTone(SPEAKER_CHANNEL, morseFrequency);
+            ledcWrite(SPEAKER_CHANNEL, speakerDutyCycle);
+          }
+          else
+          {
+            // Turn off the speaker
+            ledcWrite(SPEAKER_CHANNEL, 0);
+            currentMorseCodeIndex++;
+          }
         }
       }
       else
       {
-        if (currentMorseCodeIndex < currentMorseCode.length())
+        // Move to the next character in the message
+        currentMorseIndex++;
+        if (currentMorseIndex < currentMorseMessage.length())
         {
-          // Play the next dot or dash
-          char symbol = currentMorseCode[currentMorseCodeIndex];
-          if (symbol == '.' || symbol == '-')
-          {
-            // Play dot or dash
-            ledcWriteTone(SPEAKER_CHANNEL, morseFrequency);
-            // Adjust volume based on signal strength
-            ledcWrite(SPEAKER_CHANNEL, adjustedVolume);
-
-            morseToneOn = true;
-            if (symbol == '.')
-            {
-              morseTimer = currentTime + dotDuration;
-            }
-            else
-            {
-              morseTimer = currentTime + dashDuration;
-            }
-          }
-          currentMorseCodeIndex++;
+          currentMorseCode = getMorseCode(currentMorseMessage[currentMorseIndex]);
+          currentMorseCodeIndex = 0;
         }
         else
         {
-          // Move to the next character
-          currentMorseIndex++;
-          currentMorseCodeIndex = 0;
-
-          if (currentMorseIndex < currentMorseMessage.length())
-          {
-            currentMorseCode = getMorseCode(currentMorseMessage[currentMorseIndex]);
-            // No need to set morseTimer here
-          }
-          else
-          {
-            // Finished the message
-            morsePlaying = false;
-            ledcWrite(SPEAKER_CHANNEL, 0);
-          }
+          // End of message
+          morsePlaying = false;
+          Serial.println("Morse code playback finished.");
         }
       }
     }
   }
   else
   {
-    // No station locked; play static noise
+    if (stationLockTime != 0)
+    {
+      Serial.println("Station lock lost.");
+    }
+
+    // Reset the station lock time and morsePlaying if no station is locked
+    stationLockTime = 0;
     morsePlaying = false;
 
     // Calculate overall signal strength (proximity to any station)
@@ -285,8 +285,9 @@ void loop()
   // Handle Wi-Fi button press (debounced)
   if (digitalRead(WIFI_BUTTON_PIN) == LOW)
   {
-    if (currentTime - lastButtonPress > 500)
-    { // 500 ms debounce
+    unsigned long currentTime = millis();
+    if (currentTime - lastButtonPress > 500) // 500 ms debounce
+    {
       toggleWiFi();
       lastButtonPress = currentTime;
     }

@@ -87,6 +87,10 @@ void initWebServer()
 // Handles the root URL (configuration page)
 void handleRoot()
 {
+  // Reset the Wi-Fi timer
+  wifiStartTime = millis();
+  Serial.println("WiFi timer reset");
+
   String html = R"rawliteral(
 <!DOCTYPE html>
 <html lang="en">
@@ -233,6 +237,9 @@ void handleRoot()
 // Handles saving configurations
 void handleSaveConfig()
 {
+  // Reset the Wi-Fi timer
+  wifiStartTime = millis();
+  Serial.println("WiFi timer reset");
   // Retrieve form data
   if (server.hasArg("londonMessage"))
   {
@@ -293,6 +300,9 @@ void handleSaveConfig()
 // Handles resetting configurations to defaults
 void handleResetConfig()
 {
+  // Reset the Wi-Fi timer
+  wifiStartTime = millis();
+  Serial.println("WiFi timer reset");
   // Reset configurations to default values
   londonMessage = "L";
   hilversumMessage = "H";
@@ -340,18 +350,17 @@ void handleNotFound()
 // Toggle Wi-Fi function
 void toggleWiFi()
 {
-  wifiEnabled = !wifiEnabled;
-
   if (wifiEnabled)
   {
-    Serial.println("Turning Wi-Fi ON");
-    startWiFi();
-    digitalWrite(blueLEDPin, LOW); // Active-low: LOW turns LED ON
+    stopWiFi();
+    wifiEnabled = false;
+    Serial.println("Wi-Fi disabled");
   }
   else
   {
-    Serial.println("Turning Wi-Fi OFF");
-    stopWiFi();
-    digitalWrite(blueLEDPin, HIGH); // Active-low: HIGH turns LED OFF
+    startWiFi();
+    wifiEnabled = true;
+    wifiStartTime = millis(); // Initialize the timer when Wi-Fi is started
+    Serial.println("Wi-Fi enabled");
   }
 }
