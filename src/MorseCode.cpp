@@ -118,7 +118,7 @@ void loadConfigurations()
   hilversumMessage = preferences.getString("hilversumMsg", "H");
   barcelonaMessage = preferences.getString("barcelonaMsg", "B");
   speakerDutyCycle = preferences.getUInt("volume", 64);
-  morseFrequency = preferences.getUInt("frequency", 500);
+  morseFrequency = preferences.getUInt("frequency", 800);
   morseSpeed = static_cast<MorseSpeed>(preferences.getUInt("morseSpeed", MEDIUM_SPEED));
 
   preferences.end();

@@ -43,13 +43,14 @@ unsigned int dashDuration = 300;
 unsigned int partGap = 100;
 unsigned int characterGap = 500; // Default value for character gap
 
+Preferences preferences;
+
 // Configuration variables
-String londonMessage = "L";
-String hilversumMessage = "H";
-String barcelonaMessage = "B";
+String londonMessage = preferences.getString("londonMsg", "L");
+String hilversumMessage = preferences.getString("hilversumMsg", "H");
+String barcelonaMessage = preferences.getString("barcelonaMsg", "B");
 
 // Preferences for storing configurations
-Preferences preferences;
 
 // Wi-Fi control variables
 bool wifiEnabled = false;          // Wi-Fi is off by default
@@ -57,6 +58,9 @@ unsigned long lastButtonPress = 0; // For debouncing the Wi-Fi button
 
 // Externally declared hardware pins
 const int blueLEDPin = BLUE_LED_PIN;
+
+// Global variable to track Wi-Fi start time
+unsigned long wifiStartTime = 0;
 
 void setup()
 {
@@ -99,6 +103,39 @@ void loop()
   int potValue = analogRead(POTENTIOMETER_PIN);
 
   unsigned long currentTime = millis();
+
+  // Check if Wi-Fi is enabled and handle Wi-Fi tasks
+  if (wifiEnabled)
+  {
+    handleWiFi();
+
+    // Flash the blue LED while Wi-Fi is active
+    static unsigned long ledFlashStartTime = 0;  // Store the start time for LED flashing
+    static unsigned long ledFlashInterval = 500; // Flash every 500 ms
+    static bool ledState = LOW;                  // Current state of the LED
+
+    // Check if it's time to toggle the LED
+    if (currentTime - ledFlashStartTime >= ledFlashInterval)
+    {
+      ledState = !ledState;                  // Toggle LED state
+      digitalWrite(blueLEDPin, ledState);    // Set LED state
+      ledFlashStartTime += ledFlashInterval; // Update start time for next flash
+    }
+
+    // Check if 2 minutes have passed since Wi-Fi was started
+    if (currentTime - wifiStartTime >= 120000) // 120000 ms = 2 minutes
+    {
+      stopWiFi();                     // Stop Wi-Fi after 2 minutes
+      wifiEnabled = false;            // Update the state
+      digitalWrite(blueLEDPin, HIGH); // Turn off the LED when Wi-Fi stops
+    }
+  }
+  else
+  {
+    // If Wi-Fi is not enabled, turn off the LED
+    digitalWrite(blueLEDPin, HIGH); // Ensure the LED is off
+  }
+
   bool stationLocked = false;
   int lockBrightness = 0;
   Station *lockedStation = nullptr;
@@ -253,12 +290,6 @@ void loop()
       toggleWiFi();
       lastButtonPress = currentTime;
     }
-  }
-
-  // Handle Wi-Fi tasks if enabled
-  if (wifiEnabled)
-  {
-    handleWiFi();
   }
 
   // Small delay for stability

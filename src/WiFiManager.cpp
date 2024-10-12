@@ -15,7 +15,8 @@ void handleNotFound();
 
 // Extern variables
 extern bool wifiEnabled;
-extern const int blueLEDPin; // Access blue LED pin
+extern const int blueLEDPin;        // Access blue LED pin
+extern unsigned long wifiStartTime; // Track when Wi-Fi was started
 
 // Initializes Wi-Fi manager (Wi-Fi is off by default)
 void initWiFiManager()
@@ -28,11 +29,10 @@ void startWiFi()
 {
   // Get the MAC address
   String macAddress = WiFi.macAddress();
-  // Remove colons from MAC address for SSID
   macAddress.replace(":", "");
 
   // Create a unique SSID using the MAC address
-  String ssid = "Radio_" + macAddress.substring(6); // Use last 6 characters
+  String ssid = "Radio_" + macAddress.substring(6);
 
   // Start Wi-Fi in Access Point mode
   WiFi.mode(WIFI_AP);
@@ -53,6 +53,9 @@ void startWiFi()
   // Start web server
   server.begin();
   Serial.println("Web server started");
+
+  // Record the start time for Wi-Fi
+  wifiStartTime = millis();
 }
 
 // Stops Wi-Fi and web server
@@ -295,7 +298,7 @@ void handleResetConfig()
   hilversumMessage = "H";
   barcelonaMessage = "B";
   speakerDutyCycle = 64;
-  morseFrequency = 500;
+  morseFrequency = 800;
   morseSpeed = MEDIUM_SPEED;
 
   // Update Morse code timing
