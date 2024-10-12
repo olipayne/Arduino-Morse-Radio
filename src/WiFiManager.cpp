@@ -334,6 +334,7 @@ void handleNotFound()
   server.send(404, "text/plain", "404: Not found");
 }
 
+// Toggle Wi-Fi function
 void toggleWiFi()
 {
   wifiEnabled = !wifiEnabled;
