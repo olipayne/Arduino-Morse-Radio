@@ -341,25 +341,6 @@ void saveConfigurations()
   preferences.end();
 }
 
-// Wi-Fi control functions
-void toggleWiFi()
-{
-  wifiEnabled = !wifiEnabled;
-
-  if (wifiEnabled)
-  {
-    Serial.println("Turning Wi-Fi ON");
-    startWiFi();
-    digitalWrite(blueLEDPin, LOW); // Active-low: LOW turns LED ON
-  }
-  else
-  {
-    Serial.println("Turning Wi-Fi OFF");
-    stopWiFi();
-    digitalWrite(blueLEDPin, HIGH); // Active-low: HIGH turns LED OFF
-  }
-}
-
 void playStaticNoise(int overallSignalStrength)
 {
   // Adjust static noise volume based on overall signal strength

@@ -15,5 +15,6 @@ void initWiFiManager(); // Initializes Wi-Fi manager
 void handleWiFi();      // Handles Wi-Fi tasks
 void startWiFi();       // Starts Wi-Fi and web server
 void stopWiFi();        // Stops Wi-Fi and web server
+void toggleWiFi();
 
 #endif // WIFIMANAGER_H

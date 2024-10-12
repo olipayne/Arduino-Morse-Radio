@@ -333,3 +333,21 @@ void handleNotFound()
 {
   server.send(404, "text/plain", "404: Not found");
 }
+
+void toggleWiFi()
+{
+  wifiEnabled = !wifiEnabled;
+
+  if (wifiEnabled)
+  {
+    Serial.println("Turning Wi-Fi ON");
+    startWiFi();
+    digitalWrite(blueLEDPin, LOW); // Active-low: LOW turns LED ON
+  }
+  else
+  {
+    Serial.println("Turning Wi-Fi OFF");
+    stopWiFi();
+    digitalWrite(blueLEDPin, HIGH); // Active-low: HIGH turns LED OFF
+  }
+}
