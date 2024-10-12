@@ -285,27 +285,24 @@ void setMorseSpeed(MorseSpeed speed)
 {
   morseSpeed = speed;
 
+  int multiplier = 3; // Multiplier for dash and character gap
+
   switch (morseSpeed)
   {
   case LOW_SPEED:
     dotDuration = 500;
-    dashDuration = dotDuration * 3;
-    partGap = dotDuration;          // Gap between parts of the same character
-    characterGap = dotDuration * 3; // Gap between characters
     break;
   case MEDIUM_SPEED:
     dotDuration = 300;
-    dashDuration = dotDuration * 3;
-    partGap = dotDuration;
-    characterGap = dotDuration * 3;
     break;
   case HIGH_SPEED:
     dotDuration = 100;
-    dashDuration = dotDuration * 3;
-    partGap = dotDuration;
-    characterGap = dotDuration * 3;
     break;
   }
+
+  dashDuration = dotDuration * multiplier;
+  partGap = dotDuration;
+  characterGap = dotDuration * multiplier;
 }
 
 // Function to load configurations from non-volatile storage
