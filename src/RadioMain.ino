@@ -4,6 +4,7 @@
 #include "Stations.h"
 #include "MorseCode.h"
 #include "WiFiManager.h"
+#include <esp_sleep.h>
 
 // Hardware pin definitions
 #define POTENTIOMETER_PIN A0     // Potentiometer pin (ADC input)
@@ -11,6 +12,7 @@
 #define SPEAKER_PIN D7           // Speaker pin for Morse code output
 #define BLUE_LED_PIN LED_BLUE    // Blue LED pin for Wi-Fi status
 #define WIFI_BUTTON_PIN D2       // Wi-Fi toggle button pin
+#define WAKEUP_PIN D3            // Wake-up pin for deep sleep
 
 // PWM configurations
 const int PWM_FREQUENCY = 5000; // PWM frequency in Hz
@@ -65,6 +67,12 @@ unsigned long wifiStartTime = 0;
 // Global variable to track when the station was locked
 unsigned long stationLockTime = 0;
 
+// Define the deep sleep timeout (e.g., 5 minutes)
+const unsigned long DEEP_SLEEP_TIMEOUT = 30000; // 30000 ms = 0.5 minutes
+
+// Global variable to track the last activity time
+unsigned long lastActivityTime = 0;
+
 void setup()
 {
   // Initialize serial communication
@@ -76,6 +84,7 @@ void setup()
   pinMode(SPEAKER_PIN, OUTPUT);
   pinMode(blueLEDPin, OUTPUT);
   pinMode(WIFI_BUTTON_PIN, INPUT_PULLUP); // Enable internal pull-up resistor
+  pinMode(WAKEUP_PIN, INPUT_PULLUP);      // Configure the wake-up pin
 
   // Turn off the blue LED initially (Wi-Fi is off)
   digitalWrite(blueLEDPin, HIGH); // Active-low configuration
@@ -98,6 +107,9 @@ void setup()
 
   // Initialize Wi-Fi manager
   initWiFiManager();
+
+  // Record the initial activity time
+  lastActivityTime = millis();
 }
 
 void loop()
@@ -178,6 +190,9 @@ void loop()
       stationLockTime = currentTime;
       Serial.print("Station lock acquired: ");
       Serial.println(lockedStation->name);
+
+      // Update last activity time when a station lock is acquired
+      lastActivityTime = currentTime;
 
       // Turn off the speaker output for 2 seconds
       ledcWrite(SPEAKER_CHANNEL, 0);
@@ -291,6 +306,22 @@ void loop()
       toggleWiFi();
       lastButtonPress = currentTime;
     }
+  }
+
+  // Check if the deep sleep timeout has been reached
+  if (currentTime - lastActivityTime >= DEEP_SLEEP_TIMEOUT)
+  {
+    Serial.println("5 minutes of inactivity, entering deep sleep");
+
+    // Stop all activities
+    stopWiFi();
+    // Add any other cleanup code here if necessary
+
+    // Configure the wake-up source
+    esp_sleep_enable_ext0_wakeup(GPIO_NUM_6, 0); // Wake up when the pin is LOW
+
+    // Enter deep sleep
+    esp_deep_sleep_start();
   }
 
   // Small delay for stability
