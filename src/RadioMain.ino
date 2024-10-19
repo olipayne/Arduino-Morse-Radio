@@ -84,6 +84,7 @@ void setup()
   // Initialize serial communication
   Serial.begin(115200);
 
+  // Initialize UMS3
   ums3.begin();
   ums3.setPixelBrightness(5);
 
@@ -101,8 +102,7 @@ void setup()
   // Configure PWM channels
   ledcSetup(LOCK_LED_CHANNEL, PWM_FREQUENCY, PWM_RESOLUTION);
   ledcAttachPin(LOCK_LED_PIN, LOCK_LED_CHANNEL);
-
-  ledcSetup(SPEAKER_CHANNEL, PWM_FREQUENCY, PWM_RESOLUTION); // 16 kHz frequency, 8-bit resolution
+  ledcSetup(SPEAKER_CHANNEL, PWM_FREQUENCY, PWM_RESOLUTION);
   ledcAttachPin(SPEAKER_PIN, SPEAKER_CHANNEL);
 
   // Initially set the speaker to silent
