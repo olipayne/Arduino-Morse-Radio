@@ -15,8 +15,9 @@ void handleNotFound();
 
 // Extern variables
 extern bool wifiEnabled;
-extern const int blueLEDPin;        // Access blue LED pin
-extern unsigned long wifiStartTime; // Track when Wi-Fi was started
+extern const int blueLEDPin;           // Access blue LED pin
+extern unsigned long wifiStartTime;    // Track when Wi-Fi was started
+extern unsigned long lastActivityTime; // Track last activity time
 
 // Initializes Wi-Fi manager (Wi-Fi is off by default)
 void initWiFiManager()
@@ -56,6 +57,7 @@ void startWiFi()
 
   // Record the start time for Wi-Fi
   wifiStartTime = millis();
+  // lastActivityTime = millis();
 }
 
 // Stops Wi-Fi and web server

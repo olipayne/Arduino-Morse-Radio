@@ -5,6 +5,7 @@
 #include "MorseCode.h"
 #include "WiFiManager.h"
 #include <esp_sleep.h>
+#include <UMS3.h>
 
 // Hardware pin definitions
 #define POTENTIOMETER_PIN 17     // Potentiometer pin (ADC input)
@@ -72,11 +73,18 @@ const unsigned long DEEP_SLEEP_TIMEOUT = 30000; // 30000 ms = 0.5 minutes
 
 // Global variable to track the last activity time
 unsigned long lastActivityTime = 0;
+unsigned long lastBatteryCheck = 0;
+
+#define BATTERY_CHECK_INTERVAL 1000
+
+UMS3 ums3;
 
 void setup()
 {
   // Initialize serial communication
   Serial.begin(115200);
+
+  ums3.begin();
 
   // Initialize hardware pins
   pinMode(POTENTIOMETER_PIN, INPUT);
@@ -87,13 +95,13 @@ void setup()
   pinMode(WAKEUP_PIN, INPUT_PULLUP);      // Configure the wake-up pin
 
   // Turn off the blue LED initially (Wi-Fi is off)
-  digitalWrite(blueLEDPin, HIGH); // Active-low configuration
+  digitalWrite(blueLEDPin, LOW); // Active-low configuration
 
   // Configure PWM channels
   ledcSetup(LOCK_LED_CHANNEL, PWM_FREQUENCY, PWM_RESOLUTION);
   ledcAttachPin(LOCK_LED_PIN, LOCK_LED_CHANNEL);
 
-  ledcSetup(SPEAKER_CHANNEL, PWM_FREQUENCY, PWM_RESOLUTION);
+  ledcSetup(SPEAKER_CHANNEL, PWM_FREQUENCY, PWM_RESOLUTION); // 16 kHz frequency, 8-bit resolution
   ledcAttachPin(SPEAKER_PIN, SPEAKER_CHANNEL);
 
   // Initially set the speaker to silent
@@ -114,6 +122,12 @@ void setup()
 
 void loop()
 {
+  if (lastBatteryCheck == 0 || millis() - lastBatteryCheck > BATTERY_CHECK_INTERVAL)
+  {
+    checkBattery();
+    lastBatteryCheck = millis();
+  }
+
   // Read potentiometer value (0-4095 for ESP32 ADC)
   int potValue = analogRead(POTENTIOMETER_PIN);
 
@@ -145,15 +159,15 @@ void loop()
       Serial.println(currentTime);
       Serial.print("WiFi start time: ");
       Serial.println(wifiStartTime);
-      stopWiFi();                     // Stop Wi-Fi after 2 minutes
-      wifiEnabled = false;            // Update the state
-      digitalWrite(blueLEDPin, HIGH); // Turn off the LED when Wi-Fi stops
+      stopWiFi();                    // Stop Wi-Fi after 2 minutes
+      wifiEnabled = false;           // Update the state
+      digitalWrite(blueLEDPin, LOW); // Turn off the LED when Wi-Fi stops
     }
   }
   else
   {
     // If Wi-Fi is not enabled, turn off the LED
-    digitalWrite(blueLEDPin, HIGH); // Ensure the LED is off
+    digitalWrite(blueLEDPin, LOW); // Ensure the LED is off
   }
 
   bool stationLocked = false;
@@ -308,9 +322,18 @@ void loop()
     }
   }
 
+  // Check if the device is plugged in (GPIO pin 34 is high)
+  if (ums3.getVbusPresent()) // Assuming HIGH means plugged in
+  {
+    // Reset the inactivity timer
+    // Serial.println("Device is plugged in, resetting inactivity timer");
+    lastActivityTime = currentTime;
+  }
+
   // Check if the deep sleep timeout has been reached
   if (currentTime - lastActivityTime >= DEEP_SLEEP_TIMEOUT)
   {
+
     Serial.println("5 minutes of inactivity, entering deep sleep");
 
     // Stop all activities
@@ -326,4 +349,51 @@ void loop()
 
   // Small delay for stability
   delay(10);
+}
+
+void checkBattery()
+{
+  // Get the battery voltage, corrected for the on-board voltage divider
+  // Full should be around 4.2v and empty should be around 3v
+  float battery = ums3.getBatteryVoltage();
+  Serial.println(String("Battery: ") + battery);
+
+  if (ums3.getVbusPresent())
+  {
+    // If USB power is present
+    if (battery < 4.0)
+    {
+      // Charging - blue
+      ums3.setPixelColor(0x0000FF);
+    }
+    else
+    {
+      // Close to full - off
+      ums3.setPixelColor(0x000000);
+    }
+  }
+  else
+  {
+    // Else, USB power is not present (running from battery)
+    if (battery < 3.1)
+    {
+      // Uncomment the following line to sleep when the battery is critically low
+      // esp_deep_sleep_start();
+    }
+    else if (battery < 3.3)
+    {
+      // Below 3.3v - red
+      ums3.setPixelColor(0xFF0000);
+    }
+    else if (battery < 3.6)
+    {
+      // Below 3.6v (around 50%) - orange
+      ums3.setPixelColor(0xFF8800);
+    }
+    else
+    {
+      // Above 3.6v - green
+      ums3.setPixelColor(0x00FF00);
+    }
+  }
 }
