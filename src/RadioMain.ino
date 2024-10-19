@@ -334,16 +334,12 @@ void loop()
   // Check if the deep sleep timeout has been reached
   if (currentTime - lastActivityTime >= DEEP_SLEEP_TIMEOUT)
   {
-
     Serial.println("5 minutes of inactivity, entering deep sleep");
-
     // Stop all activities
     stopWiFi();
     // Add any other cleanup code here if necessary
-
     // Configure the wake-up source
     esp_sleep_enable_ext0_wakeup(GPIO_NUM_6, 0); // Wake up when the pin is LOW
-
     // Enter deep sleep
     esp_deep_sleep_start();
   }

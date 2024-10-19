@@ -145,10 +145,9 @@ void saveConfigurations()
 // Function to play static noise
 void playStaticNoise(int overallSignalStrength)
 {
-  // Adjust static noise volume based on overall signal strength
-  int maxNoiseVolume = map(overallSignalStrength, 0, 255, speakerDutyCycle / 2, 10);
-  int noiseFrequency = random(100, 300); // Random frequency between 100Hz and 2000Hz
-  int noiseVolume = random(10, maxNoiseVolume);
+  // Use speakerDutyCycle directly for static noise volume
+  int noiseFrequency = random(100, 300); // Random frequency between 100Hz and 300Hz
+  int noiseVolume = speakerDutyCycle;    // Use the same volume as the buzzer
 
   // Play static noise
   ledcWriteTone(SPEAKER_CHANNEL, noiseFrequency);
