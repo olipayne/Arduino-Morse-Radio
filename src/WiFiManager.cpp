@@ -1,10 +1,7 @@
 #include "WiFiManager.h"
 
-// Web server and DNS server objects
+// Web server object
 WebServer server(80);
-DNSServer dnsServer;
-
-const byte DNS_PORT = 53;
 
 // Function prototypes
 void initWebServer();
@@ -45,9 +42,6 @@ void startWiFi()
   Serial.print("AP IP address: ");
   Serial.println(IP);
 
-  // Setup DNS server for captive portal
-  dnsServer.start(DNS_PORT, "*", IP);
-
   // Initialize web server routes
   initWebServer();
 
@@ -57,14 +51,12 @@ void startWiFi()
 
   // Record the start time for Wi-Fi
   wifiStartTime = millis();
-  // lastActivityTime = millis();
 }
 
 // Stops Wi-Fi and web server
 void stopWiFi()
 {
   server.stop();
-  dnsServer.stop();
   WiFi.softAPdisconnect(true);
   WiFi.mode(WIFI_OFF);
   Serial.println("Web server stopped");
@@ -73,7 +65,6 @@ void stopWiFi()
 // Handles Wi-Fi tasks
 void handleWiFi()
 {
-  dnsServer.processNextRequest();
   server.handleClient();
 }
 

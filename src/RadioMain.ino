@@ -85,6 +85,7 @@ void setup()
   Serial.begin(115200);
 
   ums3.begin();
+  ums3.setPixelBrightness(5);
 
   // Initialize hardware pins
   pinMode(POTENTIOMETER_PIN, INPUT);

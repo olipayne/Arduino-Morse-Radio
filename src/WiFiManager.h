@@ -4,7 +4,6 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WebServer.h>
-#include <DNSServer.h>
 #include "Config.h"
 
 // External variables
