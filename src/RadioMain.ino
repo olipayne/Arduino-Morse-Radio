@@ -7,12 +7,12 @@
 #include <esp_sleep.h>
 
 // Hardware pin definitions
-#define POTENTIOMETER_PIN A0     // Potentiometer pin (ADC input)
-#define LOCK_LED_PIN LED_BUILTIN // Lock LED pin
-#define SPEAKER_PIN D7           // Speaker pin for Morse code output
-#define BLUE_LED_PIN LED_BLUE    // Blue LED pin for Wi-Fi status
-#define WIFI_BUTTON_PIN D2       // Wi-Fi toggle button pin
-#define WAKEUP_PIN D3            // Wake-up pin for deep sleep
+#define POTENTIOMETER_PIN 17     // Potentiometer pin (ADC input)
+#define LOCK_LED_PIN 7           // Lock LED pin
+#define SPEAKER_PIN 1            // Speaker pin for Morse code output
+#define BLUE_LED_PIN LED_BUILTIN // Blue LED pin for Wi-Fi status
+#define WIFI_BUTTON_PIN 33       // Wi-Fi toggle button pin
+#define WAKEUP_PIN 9             // Wake-up pin for deep sleep
 
 // PWM configurations
 const int PWM_FREQUENCY = 5000; // PWM frequency in Hz
