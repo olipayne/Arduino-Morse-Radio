@@ -12,6 +12,8 @@ enum MorseSpeed
   HIGH_SPEED
 };
 
+// Hello boyo
+
 // Shared variables
 extern unsigned int speakerDutyCycle; // Speaker volume (duty cycle)
 extern unsigned int morseFrequency;   // Speaker frequency (Hz)
