@@ -37,4 +37,4 @@ void setMorseSpeed(MorseSpeed speed); // Sets Morse code speed
 void saveConfigurations();            // Saves configurations to NVS
 void loadConfigurations();            // Loads configurations from NVS
 
-#endif // CONFIG_H
+#endif
