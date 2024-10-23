@@ -36,7 +36,7 @@ jobs:
           BOOTLOADER_BIN=$(find $BIN_DIR -name 'bootloader.bin' -print -quit)
           PARTITIONS_BIN=$(find $BIN_DIR -name 'partitions.bin' -print -quit)
           FIRMWARE_BIN=$(find $BIN_DIR -name 'firmware.bin' -print -quit)
-          ~/.platformio/packages/tool-esptoolpy/esptool.py --chip esp32 merge_bin -o $BIN_DIR/merged-flash.bin --flash_mode dio --flash_size 4MB 0x1000 $BOOTLOADER_BIN 0x8000 $PARTITIONS_BIN 0x10000 $FIRMWARE_BIN
+          ~/.platformio/packages/tool-esptoolpy/esptool.py --chip esp32 merge_bin --output $BIN_DIR/merged-flash.bin --flash_mode dio --flash_size 4MB 0x1000 $BOOTLOADER_BIN 0x8000 $PARTITIONS_BIN 0x10000 $FIRMWARE_BIN
 
       - name: Upload Merged Binary
         uses: actions/upload-artifact@v4
