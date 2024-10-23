@@ -142,7 +142,7 @@ void saveConfigurations()
   preferences.end();
 }
 
-// Function to play static noise
+// Function to play static
 void playStaticNoise(int overallSignalStrength)
 {
   // Use speakerDutyCycle directly for static noise volume
