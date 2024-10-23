@@ -1,3 +1,12 @@
+## [0.3.6](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.3.5...v0.3.6) (2024-10-23)
+
+
+### Bug Fixes
+
+* ok it turns out that the filenames are fine to have with version numbers ([d5deb0c](https://github.com/olipayne/Arduino-Morse-Radio/commit/d5deb0c8777dd2567fc63ca21c49e2908a9bdb5c))
+
+
+
 ## [0.3.5](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.3.4...v0.3.5) (2024-10-23)
 
 
@@ -31,15 +40,6 @@
 ### Bug Fixes
 
 * this right? ([0622e64](https://github.com/olipayne/Arduino-Morse-Radio/commit/0622e64392dcce7a5e4f41c3d5fe3654b045d030))
-
-
-
-## [0.3.1](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.3.0...v0.3.1) (2024-10-23)
-
-
-### Bug Fixes
-
-* mmmmm ([6de2540](https://github.com/olipayne/Arduino-Morse-Radio/commit/6de25402f01f9041bb6b94ecbcd00e97339f1457))
 
 
 
