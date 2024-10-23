@@ -1,3 +1,12 @@
+## [0.4.1](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.4.0...v0.4.1) (2024-10-23)
+
+
+### Bug Fixes
+
+* weird wifi issues solved ([291c4b7](https://github.com/olipayne/Arduino-Morse-Radio/commit/291c4b7ede0708c4caf9e878b52d5d0e91c8d6e7))
+
+
+
 # [0.4.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.3.8...v0.4.0) (2024-10-23)
 
 
@@ -36,15 +45,6 @@
 ### Bug Fixes
 
 * ok it turns out that the filenames are fine to have with version numbers ([d5deb0c](https://github.com/olipayne/Arduino-Morse-Radio/commit/d5deb0c8777dd2567fc63ca21c49e2908a9bdb5c))
-
-
-
-## [0.3.5](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.3.4...v0.3.5) (2024-10-23)
-
-
-### Bug Fixes
-
-* fixed version file names so we can always grab latest automagically ([7fe946a](https://github.com/olipayne/Arduino-Morse-Radio/commit/7fe946afc6fe953f2e9ac05ac6278935b4282a8e))
 
 
 
