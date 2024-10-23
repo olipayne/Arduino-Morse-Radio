@@ -19,6 +19,16 @@ void MorseCodePlayer::setMessage(const String &message)
   playing = true;
   timer = millis();
   toneOn = false;
+
+  // Serial logging for starting a new message
+  Serial.print("Starting Morse code message: ");
+  Serial.println(message);
+
+  // Serial logging for the first character
+  Serial.print("Starting character: ");
+  Serial.print(message[messageIndex]);
+  Serial.print(" Morse Code: ");
+  Serial.println(currentMorseCode);
 }
 
 void MorseCodePlayer::setSpeed(unsigned int dotDuration)
@@ -71,11 +81,20 @@ void MorseCodePlayer::update()
         {
           currentMorseCode = getMorseCode(message[messageIndex]);
           morseCodeIndex = 0;
+
+          // Serial logging for starting a new character
+          Serial.print("Starting character: ");
+          Serial.print(message[messageIndex]);
+          Serial.print(" Morse Code: ");
+          Serial.println(currentMorseCode);
         }
         else
         {
           // Finished
           playing = false;
+
+          // Serial logging for message completion
+          Serial.println("Morse code message playback finished.");
         }
         timer = currentTime;
       }
