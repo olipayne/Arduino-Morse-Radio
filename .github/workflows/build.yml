@@ -32,7 +32,7 @@ jobs:
 
       - name: Merge Binaries
         run: |
-          ~/.platformio/packages/tool-esptoolpy/esptool.py --chip esp32s3 merge_bin --output .pio/build/fs3_radio/merged-flash.bin --flash_mode dio --flash_size=keep 0x1000 .pio/build/fs3_radio/bootloader.bin 0x8000 .pio/build/fs3_radio/partitions.bin 0x10000 .pio/build/fs3_radio/firmware.bin
+          ~/.platformio/packages/tool-esptoolpy/esptool.py --chip esp32s3 merge_bin --output .pio/build/fs3_radio/merged-flash.bin --flash_mode dio --flash_size=keep 0x0 .pio/build/fs3_radio/bootloader.bin 0x8000 .pio/build/fs3_radio/partitions.bin 0x10000 .pio/build/fs3_radio/firmware.bin
 
       - name: Create changelog
         id: changelog
