@@ -1,3 +1,12 @@
+## [0.3.5](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.3.4...v0.3.5) (2024-10-23)
+
+
+### Bug Fixes
+
+* fixed version file names so we can always grab latest automagically ([7fe946a](https://github.com/olipayne/Arduino-Morse-Radio/commit/7fe946afc6fe953f2e9ac05ac6278935b4282a8e))
+
+
+
 ## [0.3.4](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.3.3...v0.3.4) (2024-10-23)
 
 
@@ -31,15 +40,6 @@
 ### Bug Fixes
 
 * mmmmm ([6de2540](https://github.com/olipayne/Arduino-Morse-Radio/commit/6de25402f01f9041bb6b94ecbcd00e97339f1457))
-
-
-
-# [0.3.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.2.0...v0.3.0) (2024-10-23)
-
-
-### Features
-
-* remove deploy workflow, all in one place ([d571f82](https://github.com/olipayne/Arduino-Morse-Radio/commit/d571f82a71f60dcb6eb4694028f79026a799469b))
 
 
 
