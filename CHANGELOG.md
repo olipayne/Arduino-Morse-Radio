@@ -1,3 +1,12 @@
+# [0.3.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.2.0...v0.3.0) (2024-10-23)
+
+
+### Features
+
+* remove deploy workflow, all in one place ([d571f82](https://github.com/olipayne/Arduino-Morse-Radio/commit/d571f82a71f60dcb6eb4694028f79026a799469b))
+
+
+
 # [0.2.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.1.0...v0.2.0) (2024-10-23)
 
 
