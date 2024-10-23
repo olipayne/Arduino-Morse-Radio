@@ -75,8 +75,6 @@ const unsigned long DEEP_SLEEP_TIMEOUT = 30000; // 30000 ms = 0.5 minutes
 unsigned long lastActivityTime = 0;
 unsigned long lastBatteryCheck = 0;
 
-#define BATTERY_CHECK_INTERVAL 10000
-
 UMS3 ums3;
 
 void setup()
@@ -123,10 +121,9 @@ void setup()
 
 void loop()
 {
-  if (lastBatteryCheck == 0 || millis() - lastBatteryCheck > BATTERY_CHECK_INTERVAL)
+  if (millis() - lastBatteryCheck >= 200)
   {
     checkBattery();
-    lastBatteryCheck = millis();
   }
 
   // Read potentiometer value (0-4095 for ESP32 ADC)
@@ -350,48 +347,36 @@ void loop()
 
 void checkBattery()
 {
+  static float batterySum = 0;
+  static int batteryCount = 0;
+
   // Get the battery voltage, corrected for the on-board voltage divider
-  // Full should be around 4.2v and empty should be around 3v
   float battery = ums3.getBatteryVoltage();
   bool charging = ums3.getVbusPresent();
-  Serial.println(String("Battery: ") + battery + " Charging: " + charging);
 
-  if (charging)
+  // Update running sum and count
+  batterySum += battery;
+  batteryCount++;
+
+  // Calculate battery percentage
+  float batteryPercentage = ((battery - 3.1) / (4.2 - 3.1)) * 100;
+  batteryPercentage = constrain(batteryPercentage, 0, 100);
+
+  // Print battery status every 5 seconds
+  if (millis() - lastBatteryCheck >= 5000)
   {
-    // If USB power is present
-    if (battery < 4.0)
-    {
-      // Charging - blue
-      ums3.setPixelColor(0x0000FF);
-    }
-    else
-    {
-      // Close to full - off
-      ums3.setPixelColor(0x000000);
-    }
-  }
-  else
-  {
-    // Else, USB power is not present (running from battery)
-    if (battery < 3.1)
-    {
-      // Uncomment the following line to sleep when the battery is critically low
-      // esp_deep_sleep_start();
-    }
-    else if (battery < 3.3)
-    {
-      // Below 3.3v - red
-      ums3.setPixelColor(0xFF0000);
-    }
-    else if (battery < 3.6)
-    {
-      // Below 3.6v (around 50%) - orange
-      ums3.setPixelColor(0xFF8800);
-    }
-    else
-    {
-      // Above 3.6v - green
-      ums3.setPixelColor(0x00FF00);
-    }
+    float averageBattery = batterySum / batteryCount;
+    float averagePercentage = ((averageBattery - 3.1) / (4.2 - 3.1)) * 100;
+    averagePercentage = constrain(averagePercentage, 0, 100);
+
+    // Print battery status with charging information
+    String chargingStatus = charging ? "Yes" : "No";
+    Serial.println(String("Battery: ") + averagePercentage + "% (" + averageBattery + "V) Charging: " + chargingStatus);
+
+    // Reset running sum and count
+    batterySum = 0;
+    batteryCount = 0;
+
+    lastBatteryCheck = millis();
   }
 }
