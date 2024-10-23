@@ -7,7 +7,7 @@
 #include <esp_sleep.h>
 #include <UMS3.h>
 
-// Hardware pin definitions
+// Hardware pins
 #define POTENTIOMETER_PIN 17     // Potentiometer pin (ADC input)
 #define LOCK_LED_PIN 7           // Lock LED pin
 #define SPEAKER_PIN 1            // Speaker pin for Morse code output
