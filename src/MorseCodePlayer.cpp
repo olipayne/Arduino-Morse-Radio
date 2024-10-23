@@ -12,6 +12,13 @@ MorseCodePlayer::MorseCodePlayer()
 
 void MorseCodePlayer::setMessage(const String &message)
 {
+  if (message.length() == 0)
+  {
+    // If the message is empty, stop playing
+    stop();
+    return;
+  }
+
   this->message = message;
   messageIndex = 0;
   currentMorseCode = getMorseCode(message[messageIndex]);
@@ -130,6 +137,12 @@ void MorseCodePlayer::setVolume(unsigned int volume)
 unsigned int MorseCodePlayer::getVolume() const
 {
   return volume;
+}
+
+void MorseCodePlayer::stop()
+{
+  playing = false;
+  toneOn = false;
 }
 
 String MorseCodePlayer::getMorseCode(char c)

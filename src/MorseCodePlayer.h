@@ -18,6 +18,7 @@ public:
     void setFrequency(unsigned int frequency);
     void setVolume(unsigned int volume);
     unsigned int getVolume() const;
+    void stop(); // Added stop method
 
 private:
     String getMorseCode(char c);

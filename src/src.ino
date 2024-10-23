@@ -216,7 +216,7 @@ void loop()
     // No station locked
     if (morseCodePlayer.isPlaying())
     {
-      morseCodePlayer.setMessage(""); // Stop playback
+      morseCodePlayer.stop(); // Stop playback
       audioManager.stopTone();
     }
 
