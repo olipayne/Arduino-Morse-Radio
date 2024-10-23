@@ -1,3 +1,12 @@
+## [0.3.1](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.3.0...v0.3.1) (2024-10-23)
+
+
+### Bug Fixes
+
+* mmmmm ([6de2540](https://github.com/olipayne/Arduino-Morse-Radio/commit/6de25402f01f9041bb6b94ecbcd00e97339f1457))
+
+
+
 # [0.3.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.2.0...v0.3.0) (2024-10-23)
 
 
