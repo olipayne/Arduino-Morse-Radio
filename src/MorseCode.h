@@ -8,4 +8,4 @@ String getMorseCode(char c);
 void playStaticNoise(int overallSignalStrength);
 int calculateSignalStrength(int potValue, int targetValue);
 
-#endif // MORSECODE_H
+#endif
