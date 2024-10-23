@@ -1,3 +1,17 @@
+# [0.4.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.3.8...v0.4.0) (2024-10-23)
+
+
+### Bug Fixes
+
+* logging when printing morse code ([79f9d88](https://github.com/olipayne/Arduino-Morse-Radio/commit/79f9d88567df73c7b28ed126b97f45a495c1f1cd))
+
+
+### Features
+
+* logging in morse code ([3423eda](https://github.com/olipayne/Arduino-Morse-Radio/commit/3423eda0721810e4c8965f5746c633ab40e9fcd0))
+
+
+
 ## [0.3.8](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.3.7...v0.3.8) (2024-10-23)
 
 
@@ -31,15 +45,6 @@
 ### Bug Fixes
 
 * fixed version file names so we can always grab latest automagically ([7fe946a](https://github.com/olipayne/Arduino-Morse-Radio/commit/7fe946afc6fe953f2e9ac05ac6278935b4282a8e))
-
-
-
-## [0.3.4](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.3.3...v0.3.4) (2024-10-23)
-
-
-### Bug Fixes
-
-* versioned .bins ([578da6a](https://github.com/olipayne/Arduino-Morse-Radio/commit/578da6a2f4568b4e8704813ea39a0c14e3e1d833))
 
 
 
