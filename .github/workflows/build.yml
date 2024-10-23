@@ -27,16 +27,16 @@ jobs:
       - name: Install PlatformIO Core
         run: pip install --upgrade platformio
 
-      - name: Install pyserial
-        run: pip install pyserial
-
       - name: Build PlatformIO Project
         run: pio run
 
       - name: Merge Binaries
         run: |
           BIN_DIR=$(find .pio/build -type d -name '*')
-          ~/.platformio/packages/tool-esptoolpy/esptool.py --chip esp32 merge_bin -o $BIN_DIR/merged-flash.bin --flash_mode dio --flash_size 4MB 0x1000 $BIN_DIR/bootloader.bin 0x8000 $BIN_DIR/partitions.bin 0x10000 $BIN_DIR/firmware.bin
+          BOOTLOADER_BIN=$(find $BIN_DIR -name 'bootloader.bin')
+          PARTITIONS_BIN=$(find $BIN_DIR -name 'partitions.bin')
+          FIRMWARE_BIN=$(find $BIN_DIR -name 'firmware.bin')
+          ~/.platformio/packages/tool-esptoolpy/esptool.py --chip esp32 merge_bin -o $BIN_DIR/merged-flash.bin --flash_mode dio --flash_size 4MB 0x1000 $BOOTLOADER_BIN 0x8000 $PARTITIONS_BIN 0x10000 $FIRMWARE_BIN
 
       - name: Upload Merged Binary
         uses: actions/upload-artifact@v4
