@@ -44,10 +44,10 @@ jobs:
       - name: Rename Merged Binary
         run: |
           VERSION=${{ steps.changelog.outputs.tag }}
-          mv .pio/build/fs3_radio/merged-flash.bin .pio/build/fs3_radio/firmware.bin
+          mv .pio/build/fs3_radio/merged-flash.bin .pio/build/fs3_radio/firmware-${VERSION}.bin
 
       - name: Create release
-        run: gh release create "$TAG_NAME" --notes "$BODY" .pio/build/fs3_radio/firmware.bin
+        run: gh release create "$TAG_NAME" --notes "$BODY" .pio/build/fs3_radio/firmware-${{ steps.changelog.outputs.tag }}.bin
         if: ${{ steps.changelog.outputs.skipped == 'false' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
