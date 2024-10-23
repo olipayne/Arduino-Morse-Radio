@@ -75,7 +75,7 @@ const unsigned long DEEP_SLEEP_TIMEOUT = 30000; // 30000 ms = 0.5 minutes
 unsigned long lastActivityTime = 0;
 unsigned long lastBatteryCheck = 0;
 
-#define BATTERY_CHECK_INTERVAL 1000
+#define BATTERY_CHECK_INTERVAL 10000
 
 UMS3 ums3;
 
@@ -353,9 +353,10 @@ void checkBattery()
   // Get the battery voltage, corrected for the on-board voltage divider
   // Full should be around 4.2v and empty should be around 3v
   float battery = ums3.getBatteryVoltage();
-  Serial.println(String("Battery: ") + battery);
+  bool charging = ums3.getVbusPresent();
+  Serial.println(String("Battery: ") + battery + " Charging: " + charging);
 
-  if (ums3.getVbusPresent())
+  if (charging)
   {
     // If USB power is present
     if (battery < 4.0)
