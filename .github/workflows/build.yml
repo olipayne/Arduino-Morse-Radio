@@ -27,6 +27,9 @@ jobs:
       - name: Install PlatformIO Core
         run: pip install --upgrade platformio
 
+      - name: Install pyserial
+        run: pip install pyserial
+
       - name: Build PlatformIO Project
         run: pio run
 
@@ -34,6 +37,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: firmware
-          path: |
-            .pio/build/**/firmware.bin
-            .pio/build/**/firmware.elf
+          path: firmware.bin
