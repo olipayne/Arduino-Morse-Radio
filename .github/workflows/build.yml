@@ -32,15 +32,11 @@ jobs:
 
       - name: Merge Binaries
         run: |
-          BIN_DIR=$(find .pio/build -type d -name '*')
-          BOOTLOADER_BIN=$(find $BIN_DIR -name 'bootloader.bin' -print -quit)
-          PARTITIONS_BIN=$(find $BIN_DIR -name 'partitions.bin' -print -quit)
-          FIRMWARE_BIN=$(find $BIN_DIR -name 'firmware.bin' -print -quit)
-          ~/.platformio/packages/tool-esptoolpy/esptool.py --chip esp32 merge_bin --output $BIN_DIR/merged-flash.bin --flash_mode dio --flash_size 4MB 0x1000 $BOOTLOADER_BIN 0x8000 $PARTITIONS_BIN 0x10000 $FIRMWARE_BIN
+          ~/.platformio/packages/tool-esptoolpy/esptool.py --chip esp32s3 merge_bin --output .pio/build/fs3_radio/merged-flash.bin --flash_mode dio --flash_size 4MB 0x1000 .pio/build/fs3_radio/bootloader.bin 0x8000 .pio/build/fs3_radio/partitions.bin 0x10000 .pio/build/fs3_radio/firmware.bin
 
       - name: Upload Merged Binary
         uses: actions/upload-artifact@v4
         with:
           name: merged-flash
           path: |
-            .pio/build/**/merged-flash.bin
+            .pio/build/fs3_radio/merged-flash.bin
