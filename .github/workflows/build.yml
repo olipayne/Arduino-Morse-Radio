@@ -34,17 +34,17 @@ jobs:
         run: |
           ~/.platformio/packages/tool-esptoolpy/esptool.py --chip esp32s3 merge_bin --output .pio/build/fs3_radio/merged-flash.bin --flash_mode dio --flash_size=keep 0x0 .pio/build/fs3_radio/bootloader.bin 0x8000 .pio/build/fs3_radio/partitions.bin 0x10000 .pio/build/fs3_radio/firmware.bin
 
-      - name: Rename Merged Binary
-        run: |
-          VERSION=${{ steps.changelog.outputs.tag }}
-          mv .pio/build/fs3_radio/merged-flash.bin .pio/build/fs3_radio/firmware-${VERSION}.bin
-
       - name: Create changelog
         id: changelog
         uses: TriPSs/conventional-changelog-action@v5
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           skip-version-file: "true"
+
+      - name: Rename Merged Binary
+        run: |
+          VERSION=${{ steps.changelog.outputs.tag }}
+          mv .pio/build/fs3_radio/merged-flash.bin .pio/build/fs3_radio/firmware-${VERSION}.bin
 
       - name: Create release
         run: gh release create "$TAG_NAME" --notes "$BODY" .pio/build/fs3_radio/firmware-${{ steps.changelog.outputs.tag }}.bin
