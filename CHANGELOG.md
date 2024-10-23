@@ -1,3 +1,12 @@
+## [0.3.4](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.3.3...v0.3.4) (2024-10-23)
+
+
+### Bug Fixes
+
+* versioned .bins ([578da6a](https://github.com/olipayne/Arduino-Morse-Radio/commit/578da6a2f4568b4e8704813ea39a0c14e3e1d833))
+
+
+
 ## [0.3.3](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.3.2...v0.3.3) (2024-10-23)
 
 
@@ -31,20 +40,6 @@
 ### Features
 
 * remove deploy workflow, all in one place ([d571f82](https://github.com/olipayne/Arduino-Morse-Radio/commit/d571f82a71f60dcb6eb4694028f79026a799469b))
-
-
-
-# [0.2.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.1.0...v0.2.0) (2024-10-23)
-
-
-### Bug Fixes
-
-* oops ([ee85951](https://github.com/olipayne/Arduino-Morse-Radio/commit/ee85951b64d74c6eab887bae1d81a2edd825672c))
-
-
-### Features
-
-* workflow ([69be210](https://github.com/olipayne/Arduino-Morse-Radio/commit/69be2109f2e8e241a116aee698a4936a62032635))
 
 
 
