@@ -107,7 +107,7 @@ void setup()
   pinMode(WAKEUP_PIN, INPUT_PULLUP);      // Configure the wake-up pin
 
   // Turn off the blue LED initially (Wi-Fi is off)
-  digitalWrite(BLUE_LED_PIN, LOW); // Active-low configuration
+  digitalWrite(BLUE_LED_PIN, HIGH); // Active-low configuration
 
   // Initialize audio manager
   audioManager.init();
