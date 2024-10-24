@@ -99,6 +99,8 @@ void setup()
   ums3.begin();
   ums3.setPixelBrightness(5);
 
+  ums3.setPixelColor(0xFF8800);
+
   // Initialize hardware pins
   pinMode(POTENTIOMETER_PIN, INPUT);
   pinMode(LOCK_LED_PIN, OUTPUT);
@@ -107,7 +109,7 @@ void setup()
   pinMode(WAKEUP_PIN, INPUT_PULLUP);      // Configure the wake-up pin
 
   // Turn off the blue LED initially (Wi-Fi is off)
-  digitalWrite(BLUE_LED_PIN, HIGH); // Active-low configuration
+  digitalWrite(BLUE_LED_PIN, LOW); // Active-low configuration
 
   // Initialize audio manager
   audioManager.init();
