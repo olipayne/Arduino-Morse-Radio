@@ -137,11 +137,14 @@ void setup()
 
 void loop()
 {
-  unsigned long currentTime = millis();
-
   // Check battery status
-  powerManager.checkBattery();
-
+  static unsigned long lastCheckTime = 0;
+  unsigned long currentTime = millis();
+  if (currentTime - lastCheckTime >= 100)
+  {
+    powerManager.checkBattery();
+    lastCheckTime = currentTime;
+  }
   // Update inactivity timer
   powerManager.updateInactivity(wifiManager.isWiFiEnabled());
 

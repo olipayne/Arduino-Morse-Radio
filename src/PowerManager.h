@@ -20,6 +20,7 @@ private:
     unsigned long sleepTimeout;
     unsigned long lastActivityTime;
     unsigned long lastBatteryCheck;
+    unsigned long lastBatteryPrint;
 };
 
 #endif
