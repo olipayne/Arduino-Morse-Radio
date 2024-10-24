@@ -1,3 +1,12 @@
+## [0.4.4](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.4.3...v0.4.4) (2024-10-24)
+
+
+### Bug Fixes
+
+* let's make that pixel orange ([49d58d4](https://github.com/olipayne/Arduino-Morse-Radio/commit/49d58d487670f4071fc06e23077c8f09c106dab7))
+
+
+
 ## [0.4.3](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.4.2...v0.4.3) (2024-10-24)
 
 
@@ -36,15 +45,6 @@
 ### Features
 
 * logging in morse code ([3423eda](https://github.com/olipayne/Arduino-Morse-Radio/commit/3423eda0721810e4c8965f5746c633ab40e9fcd0))
-
-
-
-## [0.3.8](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.3.7...v0.3.8) (2024-10-23)
-
-
-### Bug Fixes
-
-* better battery checks ([e097559](https://github.com/olipayne/Arduino-Morse-Radio/commit/e09755991a2347e5a5fba0790a1dde18a0f6c2c7))
 
 
 
