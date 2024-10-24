@@ -1,3 +1,12 @@
+## [0.4.3](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.4.2...v0.4.3) (2024-10-24)
+
+
+### Bug Fixes
+
+* turn on blue ([8598c29](https://github.com/olipayne/Arduino-Morse-Radio/commit/8598c29cdf3369eff78c5a9151cc0bdc8f640f9c))
+
+
+
 ## [0.4.2](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.4.1...v0.4.2) (2024-10-24)
 
 
@@ -36,15 +45,6 @@
 ### Bug Fixes
 
 * better battery checks ([e097559](https://github.com/olipayne/Arduino-Morse-Radio/commit/e09755991a2347e5a5fba0790a1dde18a0f6c2c7))
-
-
-
-## [0.3.7](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.3.6...v0.3.7) (2024-10-23)
-
-
-### Bug Fixes
-
-* check batto less often and print if on charge ([d236d90](https://github.com/olipayne/Arduino-Morse-Radio/commit/d236d90ee29029b1841d8cbdb388f8e2855896f1))
 
 
 
