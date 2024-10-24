@@ -1,3 +1,12 @@
+## [0.4.2](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.4.1...v0.4.2) (2024-10-24)
+
+
+### Bug Fixes
+
+* get better battery average before printing ([d76da18](https://github.com/olipayne/Arduino-Morse-Radio/commit/d76da182d5d3b00e252cc73c23bc468da70b90cb))
+
+
+
 ## [0.4.1](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.4.0...v0.4.1) (2024-10-23)
 
 
@@ -36,15 +45,6 @@
 ### Bug Fixes
 
 * check batto less often and print if on charge ([d236d90](https://github.com/olipayne/Arduino-Morse-Radio/commit/d236d90ee29029b1841d8cbdb388f8e2855896f1))
-
-
-
-## [0.3.6](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.3.5...v0.3.6) (2024-10-23)
-
-
-### Bug Fixes
-
-* ok it turns out that the filenames are fine to have with version numbers ([d5deb0c](https://github.com/olipayne/Arduino-Morse-Radio/commit/d5deb0c8777dd2567fc63ca21c49e2908a9bdb5c))
 
 
 
