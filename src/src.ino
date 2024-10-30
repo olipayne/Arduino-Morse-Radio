@@ -1,247 +1,131 @@
-// src.ino
-#include <Arduino.h>
-#include <Preferences.h>
-#include <esp_sleep.h>
-#include <UMS3.h>
-#include "MorseCodePlayer.h"
-#include "AudioManager.h"
-#include "StationManager.h"
-#include "WiFiManager.h"
-#include "PowerManager.h"
+// Test code for ESP32-S3 Inputs and Outputs
 
-// Hardware pin definitions
-#define POTENTIOMETER_PIN 17     // Potentiometer pin (ADC input)
-#define LOCK_LED_PIN 7           // Lock LED pin
-#define SPEAKER_PIN 1            // Speaker pin for Morse code output
-#define BLUE_LED_PIN LED_BUILTIN // Blue LED pin for Wi-Fi status
-#define WIFI_BUTTON_PIN 33       // Wi-Fi toggle button pin
-#define WAKEUP_PIN 9             // Wake-up pin for deep sleep
+// Digital Inputs (with pull-ups)
+const int PWR_SW_PIN = 14;
+const int LW_BAND_SW_PIN = 12;
+const int MW_BAND_SW_PIN = 6;
+const int SLOW_DECODE_PIN = 5;
+const int MED_DECODE_PIN = 11;
+const int AUDIO_ON_OFF_PIN = 10;
 
-// Global objects
-UMS3 ums3;
-Preferences preferences;
+// ADC Inputs
+const int TUNING_PIN = 17; // ADC1 channel 0
+const int VOLUME_PIN = 18; // ADC1 channel 1
 
-AudioManager audioManager(SPEAKER_PIN, 1);
-StationManager stationManager(100); // Leeway of 100
-MorseCodePlayer morseCodePlayer;
-PowerManager powerManager(ums3, 300000); // 5 minutes timeout
+// Digital Outputs
+const int BACKLIGHT_PIN = 33;
+const int POWER_LED_PIN = 35;
+const int LW_LED_PIN = 36;
+const int MW_LED_PIN = 37;
+const int SW_LED_PIN = 38;
+const int LOCK_LED_PIN = 43;
+const int MORSE_LEDS_PIN = 44;
 
-WiFiManager wifiManager(BLUE_LED_PIN, WIFI_BUTTON_PIN);
+// PWM Outputs
+const int CARRIER_PWM_PIN = 7;
+const int DECODE_PWM_PIN = 3;
 
-// Configuration variables
-String londonMessage;
-String hilversumMessage;
-String barcelonaMessage;
-unsigned int speakerDutyCycle;
-unsigned int morseFrequency;
-unsigned int morseSpeed;
+// PWM channels
+const int CARRIER_PWM_CHANNEL = 0;
+const int DECODE_PWM_CHANNEL = 1;
 
-void loadConfigurations()
-{
-  preferences.begin("config", false);
-
-  londonMessage = preferences.getString("londonMsg", "L");
-  hilversumMessage = preferences.getString("hilversumMsg", "H");
-  barcelonaMessage = preferences.getString("barcelonaMsg", "B");
-  speakerDutyCycle = preferences.getUInt("volume", 64);
-  morseFrequency = preferences.getUInt("frequency", 800);
-  morseSpeed = preferences.getUInt("morseSpeed", 1);
-
-  preferences.end();
-
-  // Update Morse code timing
-  unsigned int dotDuration;
-  switch (morseSpeed)
-  {
-  case 0:
-    dotDuration = 500;
-    break;
-  case 1:
-    dotDuration = 300;
-    break;
-  case 2:
-    dotDuration = 100;
-    break;
-  default:
-    dotDuration = 300;
-    break;
-  }
-  morseCodePlayer.setSpeed(dotDuration);
-  morseCodePlayer.setFrequency(morseFrequency);
-  morseCodePlayer.setVolume(speakerDutyCycle);
-}
-
-void saveConfigurations()
-{
-  preferences.begin("config", false);
-
-  preferences.putString("londonMsg", londonMessage);
-  preferences.putString("hilversumMsg", hilversumMessage);
-  preferences.putString("barcelonaMsg", barcelonaMessage);
-  preferences.putUInt("volume", speakerDutyCycle);
-  preferences.putUInt("frequency", morseFrequency);
-  preferences.putUInt("morseSpeed", morseSpeed);
-
-  preferences.end();
-}
-
-void setMorseSpeed(unsigned int dotDuration)
-{
-  morseCodePlayer.setSpeed(dotDuration);
-}
+// PWM frequency and resolution
+const int PWM_FREQUENCY = 5000; // 5 kHz
+const int PWM_RESOLUTION = 8;   // 8-bit resolution
 
 void setup()
 {
-  // Initialize serial communication
   Serial.begin(115200);
 
-  // Initialize UMS3
-  ums3.begin();
-  ums3.setPixelBrightness(5);
+  // Configure digital inputs with pull-ups
+  pinMode(PWR_SW_PIN, INPUT_PULLUP);
+  pinMode(LW_BAND_SW_PIN, INPUT_PULLUP);
+  pinMode(MW_BAND_SW_PIN, INPUT_PULLUP);
+  pinMode(SLOW_DECODE_PIN, INPUT_PULLUP);
+  pinMode(MED_DECODE_PIN, INPUT_PULLUP);
+  pinMode(AUDIO_ON_OFF_PIN, INPUT_PULLUP);
 
-  ums3.setPixelColor(0xFF8800);
-
-  // Initialize hardware pins
-  pinMode(POTENTIOMETER_PIN, INPUT);
+  // Configure digital outputs
+  pinMode(BACKLIGHT_PIN, OUTPUT);
+  pinMode(POWER_LED_PIN, OUTPUT);
+  pinMode(LW_LED_PIN, OUTPUT);
+  pinMode(MW_LED_PIN, OUTPUT);
+  pinMode(SW_LED_PIN, OUTPUT);
   pinMode(LOCK_LED_PIN, OUTPUT);
-  pinMode(BLUE_LED_PIN, OUTPUT);
-  pinMode(WIFI_BUTTON_PIN, INPUT_PULLUP); // Enable internal pull-up resistor
-  pinMode(WAKEUP_PIN, INPUT_PULLUP);      // Configure the wake-up pin
+  pinMode(MORSE_LEDS_PIN, OUTPUT);
 
-  // Turn off the blue LED initially (Wi-Fi is off)
-  digitalWrite(BLUE_LED_PIN, LOW); // Active-low configuration
+  // Configure PWM outputs
+  ledcSetup(CARRIER_PWM_CHANNEL, PWM_FREQUENCY, PWM_RESOLUTION);
+  ledcAttachPin(CARRIER_PWM_PIN, CARRIER_PWM_CHANNEL);
 
-  // Initialize audio manager
-  audioManager.init();
-
-  // Initialize lock LED PWM
-  const int LOCK_LED_CHANNEL = 0;
-  const int PWM_FREQUENCY = 5000; // PWM frequency in Hz
-  const int PWM_RESOLUTION = 8;   // PWM resolution (8-bit)
-
-  ledcSetup(LOCK_LED_CHANNEL, PWM_FREQUENCY, PWM_RESOLUTION);
-  ledcAttachPin(LOCK_LED_PIN, LOCK_LED_CHANNEL);
-
-  // Load saved configurations
-  loadConfigurations();
-
-  // Initialize Wi-Fi manager
-  wifiManager.init();
-
-  // Initialize station manager
-  stationManager.addStation("London", 1000);
-  stationManager.addStation("Hilversum", 2000);
-  stationManager.addStation("Barcelona", 3000);
-
-  // Reset inactivity timer
-  powerManager.resetInactivityTimer();
+  ledcSetup(DECODE_PWM_CHANNEL, PWM_FREQUENCY, PWM_RESOLUTION);
+  ledcAttachPin(DECODE_PWM_PIN, DECODE_PWM_CHANNEL);
 }
 
 void loop()
 {
-  // Check battery status
-  static unsigned long lastCheckTime = 0;
-  unsigned long currentTime = millis();
-  if (currentTime - lastCheckTime >= 100)
+  // Read digital inputs
+  int pwr_sw_state = digitalRead(PWR_SW_PIN);
+  int lw_band_sw_state = digitalRead(LW_BAND_SW_PIN);
+  int mw_band_sw_state = digitalRead(MW_BAND_SW_PIN);
+  int slow_decode_state = digitalRead(SLOW_DECODE_PIN);
+  int med_decode_state = digitalRead(MED_DECODE_PIN);
+  int audio_on_off_state = digitalRead(AUDIO_ON_OFF_PIN);
+
+  // Print digital input states
+  Serial.print("PWR_SW: ");
+  Serial.print(pwr_sw_state);
+  Serial.print(" | LW_BAND_SW: ");
+  Serial.print(lw_band_sw_state);
+  Serial.print(" | MW_BAND_SW: ");
+  Serial.print(mw_band_sw_state);
+  Serial.print(" | SLOW_DECODE: ");
+  Serial.print(slow_decode_state);
+  Serial.print(" | MED_DECODE: ");
+  Serial.print(med_decode_state);
+  Serial.print(" | AUDIO_ON_OFF: ");
+  Serial.println(audio_on_off_state);
+
+  // Read ADC inputs
+  int tuning_value = analogRead(TUNING_PIN);
+  int volume_value = analogRead(VOLUME_PIN);
+
+  // Print ADC values
+  Serial.print("TUNING: ");
+  Serial.print(tuning_value);
+  Serial.print(" | VOLUME: ");
+  Serial.println(volume_value);
+
+  // Toggle digital outputs
+  digitalWrite(BACKLIGHT_PIN, HIGH);
+  digitalWrite(POWER_LED_PIN, HIGH);
+  digitalWrite(LW_LED_PIN, HIGH);
+  digitalWrite(MW_LED_PIN, HIGH);
+  digitalWrite(SW_LED_PIN, HIGH);
+  digitalWrite(LOCK_LED_PIN, HIGH);
+  digitalWrite(MORSE_LEDS_PIN, HIGH);
+  delay(500);
+
+  digitalWrite(BACKLIGHT_PIN, LOW);
+  digitalWrite(POWER_LED_PIN, LOW);
+  digitalWrite(LW_LED_PIN, LOW);
+  digitalWrite(MW_LED_PIN, LOW);
+  digitalWrite(SW_LED_PIN, LOW);
+  digitalWrite(LOCK_LED_PIN, LOW);
+  digitalWrite(MORSE_LEDS_PIN, LOW);
+  delay(500);
+
+  // Generate PWM signals
+  for (int dutyCycle = 0; dutyCycle <= 255; dutyCycle += 5)
   {
-    powerManager.checkBattery();
-    lastCheckTime = currentTime;
+    ledcWrite(CARRIER_PWM_CHANNEL, dutyCycle); // CARRIER_PWM_PIN
+    ledcWrite(DECODE_PWM_CHANNEL, dutyCycle);  // DECODE_PWM_PIN
+    delay(10);
   }
-  // Update inactivity timer
-  powerManager.updateInactivity(wifiManager.isWiFiEnabled());
-
-  // Handle Wi-Fi tasks
-  wifiManager.handle();
-
-  // Read potentiometer value (0-4095 for ESP32 ADC)
-  int potValue = analogRead(POTENTIOMETER_PIN);
-
-  // Determine the strongest station
-  int signalStrength = 0;
-  const Station *lockedStation = stationManager.getStrongestStation(potValue, signalStrength);
-
-  // Set lock LED brightness
-  ledcWrite(0, signalStrength); // Assuming lock LED is on PWM channel 0
-
-  if (lockedStation && signalStrength > 0)
+  for (int dutyCycle = 255; dutyCycle >= 0; dutyCycle -= 5)
   {
-    // Station is locked
-    // Start Morse code playback if not already playing
-    if (!morseCodePlayer.isPlaying())
-    {
-      // Set the Morse message based on the locked station
-      if (lockedStation->name == "London")
-      {
-        morseCodePlayer.setMessage(londonMessage);
-      }
-      else if (lockedStation->name == "Hilversum")
-      {
-        morseCodePlayer.setMessage(hilversumMessage);
-      }
-      else if (lockedStation->name == "Barcelona")
-      {
-        morseCodePlayer.setMessage(barcelonaMessage);
-      }
-      else
-      {
-        morseCodePlayer.setMessage("S"); // Default message
-      }
-
-      Serial.print("Station locked: ");
-      Serial.println(lockedStation->name);
-
-      // Reset inactivity timer
-      powerManager.resetInactivityTimer();
-    }
-
-    // Update Morse code playback
-    morseCodePlayer.update();
-
-    if (morseCodePlayer.isPlaying())
-    {
-      if (morseCodePlayer.isToneOn())
-      {
-        // Play tone
-        audioManager.playTone(morseCodePlayer.getFrequency(), morseCodePlayer.getVolume());
-      }
-      else
-      {
-        // Stop tone
-        audioManager.stopTone();
-      }
-    }
-    else
-    {
-      // Morse code playback finished
-      audioManager.stopTone();
-    }
+    ledcWrite(CARRIER_PWM_CHANNEL, dutyCycle);
+    ledcWrite(DECODE_PWM_CHANNEL, dutyCycle);
+    delay(10);
   }
-  else
-  {
-    // No station locked
-    if (morseCodePlayer.isPlaying())
-    {
-      morseCodePlayer.stop(); // Stop playback
-      audioManager.stopTone();
-    }
-
-    // Play static noise at configured volume
-    audioManager.playStaticNoise(speakerDutyCycle);
-  }
-
-  // Handle Wi-Fi button press
-  wifiManager.updateButton();
-
-  // Check if should enter deep sleep
-  if (powerManager.shouldSleep())
-  {
-    Serial.println("Inactivity timeout reached, entering deep sleep");
-    // Clean up and enter deep sleep
-    wifiManager.stop();
-    esp_sleep_enable_ext0_wakeup(GPIO_NUM_6, 0); // Wake up when the pin is LOW
-    esp_deep_sleep_start();
-  }
-
-  // Small delay
-  delay(10);
 }
