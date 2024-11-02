@@ -1,3 +1,18 @@
+# [0.6.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.5.0...v0.6.0) (2024-11-02)
+
+
+### Bug Fixes
+
+* small things, now it works ([0ff73ec](https://github.com/olipayne/Arduino-Morse-Radio/commit/0ff73ec9d60c43a2b08acb7816a5be48725f1330))
+* wifi working ([14884d0](https://github.com/olipayne/Arduino-Morse-Radio/commit/14884d0ba9e17044c943dbfaccf4e0ce2cba7527))
+
+
+### Features
+
+* rebuild, missing some bits but meh ([5b4f735](https://github.com/olipayne/Arduino-Morse-Radio/commit/5b4f73595340c32a001d3dd4f206e269e03704a0))
+
+
+
 # [0.5.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.4.7...v0.5.0) (2024-11-02)
 
 
@@ -36,15 +51,6 @@
 ### Bug Fixes
 
 * one-off commit to have a debug bin ([29daeb2](https://github.com/olipayne/Arduino-Morse-Radio/commit/29daeb27cc49b65dd831c7f5754ff8f0cfe6f51c))
-
-
-
-## [0.4.4](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.4.3...v0.4.4) (2024-10-24)
-
-
-### Bug Fixes
-
-* let's make that pixel orange ([49d58d4](https://github.com/olipayne/Arduino-Morse-Radio/commit/49d58d487670f4071fc06e23077c8f09c106dab7))
 
 
 
