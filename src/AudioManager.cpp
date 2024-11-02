@@ -29,19 +29,26 @@ void AudioManager::playTone(unsigned int frequency, unsigned int dutyCycle)
 void AudioManager::stopTone()
 {
     ledcWrite(pwmChannel, 0);
+    ledcWriteTone(pwmChannel, 0);
 }
 
 void AudioManager::playStaticNoise(unsigned int volume)
 {
-    int noiseFrequency = random(100, 300); // Random frequency between 100Hz and 300Hz
+    static unsigned long lastChangeTime = 0;
+    unsigned long currentTime = millis();
 
-    if (volume > 0)
-    {
-        ledcWriteTone(pwmChannel, noiseFrequency);
-        ledcWrite(pwmChannel, volume);
-    }
-    else
-    {
-        stopTone();
+    if (currentTime - lastChangeTime > 50)
+    { // Change frequency every 50ms
+        int noiseFrequency = random(100, 300);
+        if (volume > 0)
+        {
+            ledcWriteTone(pwmChannel, noiseFrequency);
+            ledcWrite(pwmChannel, volume);
+        }
+        else
+        {
+            stopTone();
+        }
+        lastChangeTime = currentTime;
     }
 }
