@@ -33,9 +33,8 @@ namespace Config
 
   // Hardware pins
   constexpr int BLUE_LED_PIN = LED_BUILTIN; // Blue LED pin for Wi-Fi status
-  constexpr int SPEAKER_CHANNEL = 1;        // PWM channel for speaker
   constexpr int LEEWAY = 100;               // Range around station frequency for locking
-
+  constexpr int SPEAKER_CHANNEL = 1;        // Speaker pin
   // Function prototypes
   void setMorseSpeed(MorseSpeed speed); // Sets Morse code speed
   void saveConfigurations();            // Saves configurations to NVS

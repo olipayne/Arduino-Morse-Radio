@@ -13,7 +13,7 @@ using namespace WiFiManager;
 
 // Hardware pin definitions
 constexpr int POTENTIOMETER_PIN = 17;
-constexpr int LOCK_LED_PIN = 7;
+constexpr int LOCK_LED_PIN = 5;
 constexpr int SPEAKER_PIN = 1;
 constexpr int WIFI_BUTTON_PIN = 33;
 constexpr int WAKEUP_PIN = 9;
@@ -70,6 +70,7 @@ void setup()
   // Configure PWM channels
   ledcSetup(LOCK_LED_CHANNEL, PWM_FREQUENCY, PWM_RESOLUTION);
   ledcAttachPin(LOCK_LED_PIN, LOCK_LED_CHANNEL);
+
   ledcSetup(SPEAKER_CHANNEL, PWM_FREQUENCY, PWM_RESOLUTION);
   ledcAttachPin(SPEAKER_PIN, SPEAKER_CHANNEL);
 
