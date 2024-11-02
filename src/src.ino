@@ -1,13 +1,11 @@
-// src.ino
 #include <Arduino.h>
 #include <Preferences.h>
+#include "Config.h"
+#include "Stations.h"
+#include "MorseCode.h"
+#include "WiFiManager.h"
 #include <esp_sleep.h>
 #include <UMS3.h>
-#include "MorseCodePlayer.h"
-#include "AudioManager.h"
-#include "StationManager.h"
-#include "WiFiManager.h"
-#include "PowerManager.h"
 
 // Hardware pin definitions
 #define POTENTIOMETER_PIN 17     // Potentiometer pin (ADC input)
@@ -17,78 +15,67 @@
 #define WIFI_BUTTON_PIN 33       // Wi-Fi toggle button pin
 #define WAKEUP_PIN 9             // Wake-up pin for deep sleep
 
-// Global objects
-UMS3 ums3;
+// PWM configurations
+const int PWM_FREQUENCY = 5000; // PWM frequency in Hz
+const int PWM_RESOLUTION = 8;   // PWM resolution (8-bit)
+const int LOCK_LED_CHANNEL = 0; // PWM channel for lock LED
+const int SPEAKER_CHANNEL = 1;  // PWM channel for speaker
+
+// Leeway for station locking
+const int LEEWAY = 100; // Range around each station frequency
+
+// Variables for speaker settings
+unsigned int speakerDutyCycle = 64; // Speaker volume (duty cycle)
+unsigned int morseFrequency = 800;  // Speaker frequency (Hz)
+
+// Morse code playback variables
+String currentMorseMessage = "";
+int currentMorseIndex = 0;
+String currentMorseCode = "";
+int currentMorseCodeIndex = 0;
+unsigned long morseTimer = 0;
+bool morsePlaying = false;
+bool morseToneOn = false;
+
+// Morse code speed settings
+MorseSpeed morseSpeed = MEDIUM_SPEED; // Default Morse code speed
+
+// Timing variables (milliseconds)
+unsigned int dotDuration = 100;
+unsigned int dashDuration = 300;
+unsigned int partGap = 100;
+unsigned int characterGap = 500; // Default value for character gap
+
 Preferences preferences;
 
-AudioManager audioManager(SPEAKER_PIN, 1);
-StationManager stationManager(100); // Leeway of 100
-MorseCodePlayer morseCodePlayer;
-PowerManager powerManager(ums3, 300000); // 5 minutes timeout
-
-WiFiManager wifiManager(BLUE_LED_PIN, WIFI_BUTTON_PIN);
-
 // Configuration variables
-String londonMessage;
-String hilversumMessage;
-String barcelonaMessage;
-unsigned int speakerDutyCycle;
-unsigned int morseFrequency;
-unsigned int morseSpeed;
+String londonMessage = preferences.getString("londonMsg", "L");
+String hilversumMessage = preferences.getString("hilversumMsg", "H");
+String barcelonaMessage = preferences.getString("barcelonaMsg", "B");
 
-void loadConfigurations()
-{
-  preferences.begin("config", false);
+// Preferences for storing configurations
 
-  londonMessage = preferences.getString("londonMsg", "L");
-  hilversumMessage = preferences.getString("hilversumMsg", "H");
-  barcelonaMessage = preferences.getString("barcelonaMsg", "B");
-  speakerDutyCycle = preferences.getUInt("volume", 64);
-  morseFrequency = preferences.getUInt("frequency", 800);
-  morseSpeed = preferences.getUInt("morseSpeed", 1);
+// Wi-Fi control variables
+bool wifiEnabled = false;          // Wi-Fi is off by default
+unsigned long lastButtonPress = 0; // For debouncing the Wi-Fi button
 
-  preferences.end();
+// Externally declared hardware pins
+const int blueLEDPin = BLUE_LED_PIN;
 
-  // Update Morse code timing
-  unsigned int dotDuration;
-  switch (morseSpeed)
-  {
-  case 0:
-    dotDuration = 500;
-    break;
-  case 1:
-    dotDuration = 300;
-    break;
-  case 2:
-    dotDuration = 100;
-    break;
-  default:
-    dotDuration = 300;
-    break;
-  }
-  morseCodePlayer.setSpeed(dotDuration);
-  morseCodePlayer.setFrequency(morseFrequency);
-  morseCodePlayer.setVolume(speakerDutyCycle);
-}
+// Global variable to track Wi-Fi start time
+unsigned long wifiStartTime = 0;
 
-void saveConfigurations()
-{
-  preferences.begin("config", false);
+// Global variable to track when the station was locked
+unsigned long stationLockTime = 0;
 
-  preferences.putString("londonMsg", londonMessage);
-  preferences.putString("hilversumMsg", hilversumMessage);
-  preferences.putString("barcelonaMsg", barcelonaMessage);
-  preferences.putUInt("volume", speakerDutyCycle);
-  preferences.putUInt("frequency", morseFrequency);
-  preferences.putUInt("morseSpeed", morseSpeed);
+// Define the deep sleep timeout (e.g., 5 minutes)
+const unsigned long DEEP_SLEEP_TIMEOUT = 30000; // 30000 ms = 0.5 minutes
 
-  preferences.end();
-}
+// Global variable to track the last activity time
+unsigned long lastActivityTime = 0;
+unsigned long lastBatteryCheck = 0;
 
-void setMorseSpeed(unsigned int dotDuration)
-{
-  morseCodePlayer.setSpeed(dotDuration);
-}
+UMS3 ums3;
 
 void setup()
 {
@@ -99,149 +86,297 @@ void setup()
   ums3.begin();
   ums3.setPixelBrightness(5);
 
-  ums3.setPixelColor(0xFF8800);
-
   // Initialize hardware pins
   pinMode(POTENTIOMETER_PIN, INPUT);
   pinMode(LOCK_LED_PIN, OUTPUT);
-  pinMode(BLUE_LED_PIN, OUTPUT);
+  pinMode(SPEAKER_PIN, OUTPUT);
+  pinMode(blueLEDPin, OUTPUT);
   pinMode(WIFI_BUTTON_PIN, INPUT_PULLUP); // Enable internal pull-up resistor
   pinMode(WAKEUP_PIN, INPUT_PULLUP);      // Configure the wake-up pin
 
   // Turn off the blue LED initially (Wi-Fi is off)
-  digitalWrite(BLUE_LED_PIN, LOW); // Active-low configuration
+  digitalWrite(blueLEDPin, LOW); // Active-low configuration
 
-  // Initialize audio manager
-  audioManager.init();
-
-  // Initialize lock LED PWM
-  const int LOCK_LED_CHANNEL = 0;
-  const int PWM_FREQUENCY = 5000; // PWM frequency in Hz
-  const int PWM_RESOLUTION = 8;   // PWM resolution (8-bit)
-
+  // Configure PWM channels
   ledcSetup(LOCK_LED_CHANNEL, PWM_FREQUENCY, PWM_RESOLUTION);
   ledcAttachPin(LOCK_LED_PIN, LOCK_LED_CHANNEL);
+  ledcSetup(SPEAKER_CHANNEL, PWM_FREQUENCY, PWM_RESOLUTION);
+  ledcAttachPin(SPEAKER_PIN, SPEAKER_CHANNEL);
+
+  // Initially set the speaker to silent
+  ledcWrite(SPEAKER_CHANNEL, 0);
 
   // Load saved configurations
   loadConfigurations();
 
+  // Set initial Morse code speed
+  setMorseSpeed(morseSpeed);
+
   // Initialize Wi-Fi manager
-  wifiManager.init();
+  initWiFiManager();
 
-  // Initialize station manager
-  stationManager.addStation("London", 1000);
-  stationManager.addStation("Hilversum", 2000);
-  stationManager.addStation("Barcelona", 3000);
-
-  // Reset inactivity timer
-  powerManager.resetInactivityTimer();
+  // Record the initial activity time
+  lastActivityTime = millis();
 }
 
 void loop()
 {
-  // Check battery status
-  static unsigned long lastCheckTime = 0;
-  unsigned long currentTime = millis();
-  if (currentTime - lastCheckTime >= 100)
+  if (millis() - lastBatteryCheck >= 200)
   {
-    powerManager.checkBattery();
-    lastCheckTime = currentTime;
+    checkBattery();
   }
-  // Update inactivity timer
-  powerManager.updateInactivity(wifiManager.isWiFiEnabled());
-
-  // Handle Wi-Fi tasks
-  wifiManager.handle();
 
   // Read potentiometer value (0-4095 for ESP32 ADC)
   int potValue = analogRead(POTENTIOMETER_PIN);
 
-  // Determine the strongest station
-  int signalStrength = 0;
-  const Station *lockedStation = stationManager.getStrongestStation(potValue, signalStrength);
+  unsigned long currentTime = millis();
 
-  // Set lock LED brightness
-  ledcWrite(0, signalStrength); // Assuming lock LED is on PWM channel 0
-
-  if (lockedStation && signalStrength > 0)
+  // Check if Wi-Fi is enabled and handle Wi-Fi tasks
+  if (wifiEnabled)
   {
-    // Station is locked
-    // Start Morse code playback if not already playing
-    if (!morseCodePlayer.isPlaying())
+    handleWiFi();
+
+    // Flash the blue LED while Wi-Fi is active
+    static unsigned long ledFlashStartTime = 0;  // Store the start time for LED flashing
+    static unsigned long ledFlashInterval = 500; // Flash every 500 ms
+    static bool ledState = LOW;                  // Current state of the LED
+
+    // Check if it's time to toggle the LED
+    if (currentTime - ledFlashStartTime >= ledFlashInterval)
     {
-      // Set the Morse message based on the locked station
-      if (lockedStation->name == "London")
-      {
-        morseCodePlayer.setMessage(londonMessage);
-      }
-      else if (lockedStation->name == "Hilversum")
-      {
-        morseCodePlayer.setMessage(hilversumMessage);
-      }
-      else if (lockedStation->name == "Barcelona")
-      {
-        morseCodePlayer.setMessage(barcelonaMessage);
-      }
-      else
-      {
-        morseCodePlayer.setMessage("S"); // Default message
-      }
-
-      Serial.print("Station locked: ");
-      Serial.println(lockedStation->name);
-
-      // Reset inactivity timer
-      powerManager.resetInactivityTimer();
+      ledState = !ledState;                  // Toggle LED state
+      digitalWrite(blueLEDPin, ledState);    // Set LED state
+      ledFlashStartTime += ledFlashInterval; // Update start time for next flash
     }
 
-    // Update Morse code playback
-    morseCodePlayer.update();
-
-    if (morseCodePlayer.isPlaying())
+    // Check if 2 minutes have passed since the last request
+    if (currentTime >= wifiStartTime && (currentTime - wifiStartTime >= 120000)) // 120000 ms = 2 minutes
     {
-      if (morseCodePlayer.isToneOn())
-      {
-        // Play tone
-        audioManager.playTone(morseCodePlayer.getFrequency(), morseCodePlayer.getVolume());
-      }
-      else
-      {
-        // Stop tone
-        audioManager.stopTone();
-      }
-    }
-    else
-    {
-      // Morse code playback finished
-      audioManager.stopTone();
+      Serial.println("2 minutes passed, stopping Wi-Fi");
+      Serial.print("Current time: ");
+      Serial.println(currentTime);
+      Serial.print("WiFi start time: ");
+      Serial.println(wifiStartTime);
+      stopWiFi();                    // Stop Wi-Fi after 2 minutes
+      wifiEnabled = false;           // Update the state
+      digitalWrite(blueLEDPin, LOW); // Turn off the LED when Wi-Fi stops
     }
   }
   else
   {
-    // No station locked
-    if (morseCodePlayer.isPlaying())
-    {
-      morseCodePlayer.stop(); // Stop playback
-      audioManager.stopTone();
-    }
-
-    // Play static noise at configured volume
-    audioManager.playStaticNoise(speakerDutyCycle);
+    // If Wi-Fi is not enabled, turn off the LED
+    digitalWrite(blueLEDPin, LOW); // Ensure the LED is off
   }
 
-  // Handle Wi-Fi button press
-  wifiManager.updateButton();
+  bool stationLocked = false;
+  int lockBrightness = 0;
+  Station *lockedStation = nullptr;
+  int signalStrength = 0;
 
-  // Check if should enter deep sleep
-  if (powerManager.shouldSleep())
+  // Determine the closest station
+  for (int i = 0; i < numStations; i++)
   {
-    Serial.println("Inactivity timeout reached, entering deep sleep");
-    // Clean up and enter deep sleep
-    wifiManager.stop();
+    int strength = calculateSignalStrength(potValue, stations[i].frequency);
+
+    if (strength > 0)
+    {
+      // Signal detected for this station
+      if (strength > signalStrength)
+      {
+        signalStrength = strength;
+        lockBrightness = strength;
+        stationLocked = true;
+        lockedStation = &stations[i];
+      }
+    }
+  }
+
+  // Set the lock LED brightness
+  ledcWrite(LOCK_LED_CHANNEL, lockBrightness);
+
+  if (stationLocked)
+  {
+    if (stationLockTime == 0)
+    {
+      // Record the time when the station was locked
+      stationLockTime = currentTime;
+      Serial.print("Station lock acquired: ");
+      Serial.println(lockedStation->name);
+
+      // Update last activity time when a station lock is acquired
+      lastActivityTime = currentTime;
+
+      // Turn off the speaker output for 2 seconds
+      ledcWrite(SPEAKER_CHANNEL, 0);
+    }
+
+    // Check if the station has been locked for more than 2 seconds
+    if (!morsePlaying && (currentTime - stationLockTime >= 2000))
+    {
+      // Set the Morse message based on the locked station
+      if (strcmp(lockedStation->name, "London") == 0)
+      {
+        currentMorseMessage = londonMessage;
+      }
+      else if (strcmp(lockedStation->name, "Hilversum") == 0)
+      {
+        currentMorseMessage = hilversumMessage;
+      }
+      else if (strcmp(lockedStation->name, "Barcelona") == 0)
+      {
+        currentMorseMessage = barcelonaMessage;
+      }
+      else
+      {
+        currentMorseMessage = "S"; // Default message
+      }
+
+      // Initialize Morse code playback variables
+      currentMorseIndex = 0;
+      currentMorseCodeIndex = 0;
+      currentMorseCode = getMorseCode(currentMorseMessage[currentMorseIndex]);
+      morsePlaying = true;
+      morseTimer = currentTime;
+      morseToneOn = false;
+
+      Serial.println("Starting Morse code playback.");
+    }
+
+    // Morse code playback logic
+    if (morsePlaying)
+    {
+      if (currentMorseCodeIndex < currentMorseCode.length())
+      {
+        if (currentTime - morseTimer >= (morseToneOn ? dashDuration : dotDuration))
+        {
+          morseToneOn = !morseToneOn;
+          morseTimer = currentTime;
+
+          if (morseToneOn)
+          {
+            // Turn on the speaker for the current Morse code element
+            ledcWriteTone(SPEAKER_CHANNEL, morseFrequency);
+            ledcWrite(SPEAKER_CHANNEL, speakerDutyCycle);
+          }
+          else
+          {
+            // Turn off the speaker
+            ledcWrite(SPEAKER_CHANNEL, 0);
+            currentMorseCodeIndex++;
+          }
+        }
+      }
+      else
+      {
+        // Move to the next character in the message
+        currentMorseIndex++;
+        if (currentMorseIndex < currentMorseMessage.length())
+        {
+          currentMorseCode = getMorseCode(currentMorseMessage[currentMorseIndex]);
+          currentMorseCodeIndex = 0;
+        }
+        else
+        {
+          // End of message
+          morsePlaying = false;
+          Serial.println("Morse code playback finished.");
+        }
+      }
+    }
+  }
+  else
+  {
+    if (stationLockTime != 0)
+    {
+      Serial.println("Station lock lost.");
+    }
+
+    // Reset the station lock time and morsePlaying if no station is locked
+    stationLockTime = 0;
+    morsePlaying = false;
+
+    // Calculate overall signal strength (proximity to any station)
+    int overallSignalStrength = 0;
+    for (int i = 0; i < numStations; i++)
+    {
+      int strength = calculateSignalStrength(potValue, stations[i].frequency);
+      if (strength > overallSignalStrength)
+      {
+        overallSignalStrength = strength;
+      }
+    }
+
+    playStaticNoise(overallSignalStrength);
+  }
+
+  // Handle Wi-Fi button press (debounced)
+  if (digitalRead(WIFI_BUTTON_PIN) == LOW)
+  {
+    unsigned long currentTime = millis();
+    if (currentTime - lastButtonPress > 500) // 500 ms debounce
+    {
+      toggleWiFi();
+      lastButtonPress = currentTime;
+    }
+  }
+
+  // Check if the device is plugged in (GPIO pin 34 is high)
+  if (ums3.getVbusPresent()) // Assuming HIGH means plugged in
+  {
+    // Reset the inactivity timer
+    // Serial.println("Device is plugged in, resetting inactivity timer");
+    lastActivityTime = currentTime;
+  }
+
+  // Check if the deep sleep timeout has been reached
+  if (currentTime - lastActivityTime >= DEEP_SLEEP_TIMEOUT)
+  {
+    Serial.println("5 minutes of inactivity, entering deep sleep");
+    // Stop all activities
+    stopWiFi();
+    // Add any other cleanup code here if necessary
+    // Configure the wake-up source
     esp_sleep_enable_ext0_wakeup(GPIO_NUM_6, 0); // Wake up when the pin is LOW
+    // Enter deep sleep
     esp_deep_sleep_start();
   }
 
-  // Small delay
+  // Small delay for stability
   delay(10);
+}
+
+void checkBattery()
+{
+  static float batterySum = 0;
+  static int batteryCount = 0;
+
+  // Get the battery voltage, corrected for the on-board voltage divider
+  float battery = ums3.getBatteryVoltage();
+  bool charging = ums3.getVbusPresent();
+
+  // Update running sum and count
+  batterySum += battery;
+  batteryCount++;
+
+  // Calculate battery percentage
+  float batteryPercentage = ((battery - 3.1) / (4.2 - 3.1)) * 100;
+  batteryPercentage = constrain(batteryPercentage, 0, 100);
+
+  // Print battery status every 5 seconds
+  if (millis() - lastBatteryCheck >= 5000)
+  {
+    float averageBattery = batterySum / batteryCount;
+    float averagePercentage = ((averageBattery - 3.1) / (4.2 - 3.1)) * 100;
+    averagePercentage = constrain(averagePercentage, 0, 100);
+
+    // Print battery status with charging information
+    String chargingStatus = charging ? "Yes" : "No";
+    Serial.println(String("Battery: ") + averagePercentage + "% (" + averageBattery + "V) Charging: " + chargingStatus);
+
+    // Reset running sum and count
+    batterySum = 0;
+    batteryCount = 0;
+
+    lastBatteryCheck = millis();
+  }
 }

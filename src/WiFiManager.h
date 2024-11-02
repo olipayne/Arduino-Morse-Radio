@@ -1,36 +1,19 @@
-// WiFiManager.h
 #ifndef WIFIMANAGER_H
 #define WIFIMANAGER_H
 
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WebServer.h>
+#include "Config.h"
 
-class WiFiManager
-{
-public:
-    WiFiManager(int ledPin, int buttonPin);
+// External variables
+extern bool wifiEnabled;
 
-    void init();
-    void handle();
-    void updateButton();
-    void stop();
-    bool isWiFiEnabled() const;
+// Function prototypes
+void initWiFiManager(); // Initializes Wi-Fi manager
+void handleWiFi();      // Handles Wi-Fi tasks
+void startWiFi();       // Starts Wi-Fi and web server
+void stopWiFi();        // Stops Wi-Fi and web server
+void toggleWiFi();
 
-private:
-    void startWiFi();
-    void initWebServer();
-    void handleRoot();
-    void handleSaveConfig();
-    void handleResetConfig();
-    void handleNotFound();
-
-    WebServer server;
-    bool wifiEnabled;
-    unsigned long wifiStartTime;
-    unsigned long lastButtonPress;
-    int ledPin;
-    int buttonPin;
-};
-
-#endif
+#endif // WIFIMANAGER_H

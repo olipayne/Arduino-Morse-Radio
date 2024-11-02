@@ -1,88 +1,29 @@
-// WiFiManager.cpp
 #include "WiFiManager.h"
 
-// Include your configuration variables and functions
-extern String londonMessage;
-extern String hilversumMessage;
-extern String barcelonaMessage;
-extern unsigned int speakerDutyCycle;
-extern unsigned int morseFrequency;
-extern unsigned int morseSpeed;
-extern void saveConfigurations();
-extern void loadConfigurations();
-extern void setMorseSpeed(unsigned int dotDuration);
+// Web server object
+WebServer server(80);
 
-WiFiManager::WiFiManager(int ledPin, int buttonPin)
-    : server(80)
-{
-  wifiEnabled = false;
-  wifiStartTime = 0;
-  lastButtonPress = 0;
-  this->ledPin = ledPin;
-  this->buttonPin = buttonPin;
-}
+// Function prototypes
+void initWebServer();
+void handleRoot();
+void handleSaveConfig();
+void handleResetConfig();
+void handleNotFound();
 
-void WiFiManager::init()
+// Extern variables
+extern bool wifiEnabled;
+extern const int blueLEDPin;           // Access blue LED pin
+extern unsigned long wifiStartTime;    // Track when Wi-Fi was started
+extern unsigned long lastActivityTime; // Track last activity time
+
+// Initializes Wi-Fi manager (Wi-Fi is off by default)
+void initWiFiManager()
 {
   WiFi.mode(WIFI_OFF);
-  pinMode(ledPin, OUTPUT);
-  digitalWrite(ledPin, LOW); // Turn off LED
-  pinMode(buttonPin, INPUT_PULLUP);
 }
 
-void WiFiManager::handle()
-{
-  if (wifiEnabled)
-  {
-    server.handleClient();
-
-    // Flash LED while Wi-Fi is active
-    static unsigned long ledFlashStartTime = 0;
-    static unsigned long ledFlashInterval = 500;
-    static bool ledState = LOW;
-
-    unsigned long currentTime = millis();
-
-    if (currentTime - ledFlashStartTime >= ledFlashInterval)
-    {
-      ledState = !ledState;
-      digitalWrite(ledPin, ledState);
-      ledFlashStartTime = currentTime;
-    }
-
-    // Turn off Wi-Fi after 2 minutes
-    if (currentTime - wifiStartTime >= 120000)
-    {
-      stop();
-    }
-  }
-  else
-  {
-    digitalWrite(ledPin, LOW); // Ensure LED is off
-  }
-}
-
-void WiFiManager::updateButton()
-{
-  if (digitalRead(buttonPin) == LOW)
-  {
-    unsigned long currentTime = millis();
-    if (currentTime - lastButtonPress > 500) // Debounce
-    {
-      if (wifiEnabled)
-      {
-        stop();
-      }
-      else
-      {
-        startWiFi();
-      }
-      lastButtonPress = currentTime;
-    }
-  }
-}
-
-void WiFiManager::startWiFi()
+// Starts Wi-Fi and web server
+void startWiFi()
 {
   // Get the MAC address
   String macAddress = WiFi.macAddress();
@@ -110,47 +51,38 @@ void WiFiManager::startWiFi()
 
   // Record the start time for Wi-Fi
   wifiStartTime = millis();
-  wifiEnabled = true;
 }
 
-void WiFiManager::stop()
+// Stops Wi-Fi and web server
+void stopWiFi()
 {
-  // Stop the web server first
-  server.close(); // Use close() instead of stop() for better resource cleanup
   server.stop();
-  Serial.println("Web server stopped");
-
-  // Disconnect clients
-  WiFi.softAPdisconnect(true); // Disconnect all connected clients and shut down the AP
-  Serial.println("Wi-Fi Soft AP disconnected");
-
-  // Wait for the Wi-Fi stack to process the disconnection
-  delay(100);
-
-  // Disable Wi-Fi and release resources
+  WiFi.softAPdisconnect(true);
   WiFi.mode(WIFI_OFF);
-  WiFi.disconnect(true, true); // Disconnect and reset the Wi-Fi driver
-  Serial.println("Wi-Fi mode set to WIFI_OFF and Wi-Fi disconnected");
-
-  // Update Wi-Fi state
-  wifiEnabled = false;
-
-  // Turn off the Wi-Fi status LED
-  digitalWrite(ledPin, LOW);
+  Serial.println("Web server stopped");
 }
 
-void WiFiManager::initWebServer()
+// Handles Wi-Fi tasks
+void handleWiFi()
 {
-  server.on("/", HTTP_GET, std::bind(&WiFiManager::handleRoot, this));
-  server.on("/save", HTTP_POST, std::bind(&WiFiManager::handleSaveConfig, this));
-  server.on("/reset", HTTP_POST, std::bind(&WiFiManager::handleResetConfig, this));
-  server.onNotFound(std::bind(&WiFiManager::handleNotFound, this));
+  server.handleClient();
 }
 
-void WiFiManager::handleRoot()
+// Initializes web server routes
+void initWebServer()
+{
+  server.on("/", HTTP_GET, handleRoot);
+  server.on("/save", HTTP_POST, handleSaveConfig);
+  server.on("/reset", HTTP_POST, handleResetConfig);
+  server.onNotFound(handleNotFound);
+}
+
+// Handles the root URL (configuration page)
+void handleRoot()
 {
   // Reset the Wi-Fi timer
   wifiStartTime = millis();
+  Serial.println("WiFi timer reset");
 
   String html = R"rawliteral(
 <!DOCTYPE html>
@@ -274,15 +206,15 @@ void WiFiManager::handleRoot()
   String mediumSpeedSelected = "";
   String highSpeedSelected = "";
 
-  if (morseSpeed == 0)
+  if (morseSpeed == LOW_SPEED)
   {
     lowSpeedSelected = " selected";
   }
-  else if (morseSpeed == 1)
+  else if (morseSpeed == MEDIUM_SPEED)
   {
     mediumSpeedSelected = " selected";
   }
-  else if (morseSpeed == 2)
+  else if (morseSpeed == HIGH_SPEED)
   {
     highSpeedSelected = " selected";
   }
@@ -295,11 +227,12 @@ void WiFiManager::handleRoot()
   server.send(200, "text/html", html);
 }
 
-void WiFiManager::handleSaveConfig()
+// Handles saving configurations
+void handleSaveConfig()
 {
   // Reset the Wi-Fi timer
   wifiStartTime = millis();
-
+  Serial.println("WiFi timer reset");
   // Retrieve form data
   if (server.hasArg("londonMessage"))
   {
@@ -326,21 +259,8 @@ void WiFiManager::handleSaveConfig()
     int speedValue = server.arg("morseSpeed").toInt();
     if (speedValue >= 0 && speedValue <= 2)
     {
-      morseSpeed = speedValue;
-      unsigned int dotDuration;
-      switch (morseSpeed)
-      {
-      case 0:
-        dotDuration = 500;
-        break;
-      case 1:
-        dotDuration = 300;
-        break;
-      case 2:
-        dotDuration = 100;
-        break;
-      }
-      setMorseSpeed(dotDuration);
+      morseSpeed = static_cast<MorseSpeed>(speedValue);
+      setMorseSpeed(morseSpeed);
     }
   }
 
@@ -370,21 +290,22 @@ void WiFiManager::handleSaveConfig()
   server.send(200, "text/html", html);
 }
 
-void WiFiManager::handleResetConfig()
+// Handles resetting configurations to defaults
+void handleResetConfig()
 {
   // Reset the Wi-Fi timer
   wifiStartTime = millis();
-
+  Serial.println("WiFi timer reset");
   // Reset configurations to default values
   londonMessage = "L";
   hilversumMessage = "H";
   barcelonaMessage = "B";
   speakerDutyCycle = 64;
   morseFrequency = 800;
-  morseSpeed = 1; // Medium speed
+  morseSpeed = MEDIUM_SPEED;
 
   // Update Morse code timing
-  setMorseSpeed(300);
+  setMorseSpeed(morseSpeed);
 
   // Save configurations
   saveConfigurations();
@@ -413,12 +334,26 @@ void WiFiManager::handleResetConfig()
   server.send(200, "text/html", html);
 }
 
-void WiFiManager::handleNotFound()
+// Handles not found pages (404)
+void handleNotFound()
 {
   server.send(404, "text/plain", "404: Not found");
 }
 
-bool WiFiManager::isWiFiEnabled() const
+// Toggle Wi-Fi function
+void toggleWiFi()
 {
-  return wifiEnabled;
+  if (wifiEnabled)
+  {
+    stopWiFi();
+    wifiEnabled = false;
+    Serial.println("Wi-Fi disabled");
+  }
+  else
+  {
+    startWiFi();
+    wifiEnabled = true;
+    wifiStartTime = millis(); // Initialize the timer when Wi-Fi is started
+    Serial.println("Wi-Fi enabled");
+  }
 }
