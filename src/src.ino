@@ -13,7 +13,7 @@ using namespace WiFiManager;
 
 // Hardware pin definitions
 constexpr int POTENTIOMETER_PIN = 17;
-constexpr int LOCK_LED_PIN = 5;
+constexpr int LOCK_LED_PIN = 5; // Use a safe GPIO pin for the lock LED
 constexpr int SPEAKER_PIN = 1;
 constexpr int WIFI_BUTTON_PIN = 33;
 constexpr int WAKEUP_PIN = 9;
@@ -21,7 +21,12 @@ constexpr int WAKEUP_PIN = 9;
 // PWM configurations
 constexpr int PWM_FREQUENCY = 5000;
 constexpr int PWM_RESOLUTION = 8;
+
+// Define separate timers and channels for PWM
 constexpr int LOCK_LED_CHANNEL = 0;
+constexpr int LOCK_LED_TIMER = 0; // Timer 0
+
+constexpr int SPEAKER_TIMER = 1; // Timer 1
 
 // Morse code playback variables
 String currentMorseMessage = "";
@@ -47,6 +52,11 @@ unsigned long lastBatteryCheck = 0;
 
 UMS3 ums3;
 
+// Variables for LED flashing
+bool ledState = LOW;                // Current state of the blue LED
+unsigned long previousMillis = 0;   // Stores the last time the LED was updated
+const unsigned long interval = 500; // Interval at which to blink (milliseconds)
+
 void setup()
 {
   // Initialize serial communication
@@ -67,7 +77,7 @@ void setup()
   // Turn off the blue LED initially (Wi-Fi is off)
   digitalWrite(BLUE_LED_PIN, LOW);
 
-  // Configure PWM channels
+  // Configure PWM channels with specified timers
   ledcSetup(LOCK_LED_CHANNEL, PWM_FREQUENCY, PWM_RESOLUTION);
   ledcAttachPin(LOCK_LED_PIN, LOCK_LED_CHANNEL);
 
@@ -107,29 +117,25 @@ void loop()
     handleWiFi();
 
     // Flash the blue LED while Wi-Fi is active
-    static unsigned long ledFlashStartTime = 0;
-    constexpr unsigned long ledFlashInterval = 500;
-    static bool ledState = LOW;
-
-    if (currentTime - ledFlashStartTime >= ledFlashInterval)
+    if (currentTime - previousMillis >= interval)
     {
-      ledState = !ledState;
+      previousMillis = currentTime;
+      ledState = !ledState; // Toggle the LED state
       digitalWrite(BLUE_LED_PIN, ledState);
-      ledFlashStartTime += ledFlashInterval;
     }
 
-    // Check if 2 minutes have passed since the last request
-    if (currentTime - wifiStartTime >= 120000)
+    // Check if 2 minutes have passed since the last activity
+    if ((long)(currentTime - wifiStartTime) >= 120000)
     {
       Serial.println("2 minutes passed, stopping Wi-Fi");
       stopWiFi();
       wifiEnabled = false;
-      digitalWrite(BLUE_LED_PIN, LOW);
+      digitalWrite(BLUE_LED_PIN, LOW); // Ensure the LED is off
     }
   }
   else
   {
-    // Ensure the LED is off
+    // Ensure the LED is off when Wi-Fi is not enabled
     digitalWrite(BLUE_LED_PIN, LOW);
   }
 
@@ -225,6 +231,9 @@ void loop()
         {
           currentMorseCode = getMorseCode(currentMorseMessage[currentMorseIndex]);
           currentMorseCodeIndex = 0;
+
+          // Add a gap between characters
+          morseTimer = currentTime + characterGap;
         }
         else
         {

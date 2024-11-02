@@ -59,6 +59,7 @@ namespace WiFiManager
   void handleWiFi()
   {
     server.handleClient();
+    // No need to reset wifiStartTime here
   }
 
   void initWebServer()
@@ -72,7 +73,7 @@ namespace WiFiManager
   void handleRoot()
   {
     wifiStartTime = millis();
-    Serial.println("Wi-Fi timer reset");
+    Serial.println("Wi-Fi timer reset in handleRoot");
 
     String html = R"rawliteral(
 <!DOCTYPE html>
@@ -204,7 +205,7 @@ function updateSliderValue(val) {
   void handleSaveConfig()
   {
     wifiStartTime = millis();
-    Serial.println("Wi-Fi timer reset");
+    Serial.println("Wi-Fi timer reset in handleSaveConfig");
 
     // Retrieve global settings
     if (server.hasArg("volume"))
@@ -281,7 +282,7 @@ h1 { color: #333; margin-top: 20%; }
   void handleResetConfig()
   {
     wifiStartTime = millis();
-    Serial.println("Wi-Fi timer reset");
+    Serial.println("Wi-Fi timer reset in handleResetConfig");
 
     // Reset configurations to default values
     speakerDutyCycle = 64;
@@ -323,6 +324,9 @@ h1 { color: #333; margin-top: 20%; }
 
   void handleNotFound()
   {
+    wifiStartTime = millis();
+    Serial.println("Wi-Fi timer reset in handleNotFound");
+
     server.send(404, "text/plain", "404: Not found");
   }
 
