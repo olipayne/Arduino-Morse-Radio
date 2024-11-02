@@ -1,90 +1,80 @@
 #include "WiFiManager.h"
+#include "Config.h"
+#include "Station.h"
+#include <vector>
+#include <WiFi.h>
 
-// Web server object
-WebServer server(80);
-
-// Function prototypes
-void initWebServer();
-void handleRoot();
-void handleSaveConfig();
-void handleResetConfig();
-void handleNotFound();
-
-// Extern variables
-extern bool wifiEnabled;
-extern const int blueLEDPin;           // Access blue LED pin
-extern unsigned long wifiStartTime;    // Track when Wi-Fi was started
-extern unsigned long lastActivityTime; // Track last activity time
-
-// Initializes Wi-Fi manager (Wi-Fi is off by default)
-void initWiFiManager()
+namespace WiFiManager
 {
-  WiFi.mode(WIFI_OFF);
-}
+  using namespace Config;
 
-// Starts Wi-Fi and web server
-void startWiFi()
-{
-  // Get the MAC address
-  String macAddress = WiFi.macAddress();
-  macAddress.replace(":", "");
+  WebServer server(80);
 
-  // Create a unique SSID using the MAC address
-  String ssid = "Radio_" + macAddress.substring(6);
+  bool wifiEnabled = false;
+  unsigned long wifiStartTime = 0;
 
-  // Start Wi-Fi in Access Point mode
-  WiFi.mode(WIFI_AP);
-  WiFi.softAP(ssid.c_str());
+  // Function prototypes
+  void initWebServer();
+  void handleRoot();
+  void handleSaveConfig();
+  void handleResetConfig();
+  void handleNotFound();
 
-  IPAddress IP = WiFi.softAPIP();
-  Serial.print("AP SSID: ");
-  Serial.println(ssid);
-  Serial.print("AP IP address: ");
-  Serial.println(IP);
+  void initWiFiManager()
+  {
+    WiFi.mode(WIFI_OFF);
+  }
 
-  // Initialize web server routes
-  initWebServer();
+  void startWiFi()
+  {
+    String macAddress = WiFi.macAddress();
+    macAddress.replace(":", "");
+    String ssid = "Radio_" + macAddress.substring(6);
 
-  // Start web server
-  server.begin();
-  Serial.println("Web server started");
+    WiFi.mode(WIFI_AP);
+    WiFi.softAP(ssid.c_str());
 
-  // Record the start time for Wi-Fi
-  wifiStartTime = millis();
-}
+    IPAddress IP = WiFi.softAPIP();
+    Serial.print("AP SSID: ");
+    Serial.println(ssid);
+    Serial.print("AP IP address: ");
+    Serial.println(IP);
 
-// Stops Wi-Fi and web server
-void stopWiFi()
-{
-  server.stop();
-  WiFi.softAPdisconnect(true);
-  WiFi.mode(WIFI_OFF);
-  Serial.println("Web server stopped");
-}
+    initWebServer();
 
-// Handles Wi-Fi tasks
-void handleWiFi()
-{
-  server.handleClient();
-}
+    server.begin();
+    Serial.println("Web server started");
 
-// Initializes web server routes
-void initWebServer()
-{
-  server.on("/", HTTP_GET, handleRoot);
-  server.on("/save", HTTP_POST, handleSaveConfig);
-  server.on("/reset", HTTP_POST, handleResetConfig);
-  server.onNotFound(handleNotFound);
-}
+    wifiStartTime = millis();
+  }
 
-// Handles the root URL (configuration page)
-void handleRoot()
-{
-  // Reset the Wi-Fi timer
-  wifiStartTime = millis();
-  Serial.println("WiFi timer reset");
+  void stopWiFi()
+  {
+    server.stop();
+    WiFi.softAPdisconnect(true);
+    WiFi.mode(WIFI_OFF);
+    Serial.println("Web server stopped");
+  }
 
-  String html = R"rawliteral(
+  void handleWiFi()
+  {
+    server.handleClient();
+  }
+
+  void initWebServer()
+  {
+    server.on("/", HTTP_GET, handleRoot);
+    server.on("/save", HTTP_POST, handleSaveConfig);
+    server.on("/reset", HTTP_POST, handleResetConfig);
+    server.onNotFound(handleNotFound);
+  }
+
+  void handleRoot()
+  {
+    wifiStartTime = millis();
+    Serial.println("Wi-Fi timer reset");
+
+    String html = R"rawliteral(
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -92,45 +82,46 @@ void handleRoot()
 <title>Radio Configuration</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-  body {
+/* CSS styles here */
+body {
     font-family: Arial, sans-serif;
     background-color: #f0f0f0;
     margin: 0;
     padding: 0;
-  }
-  .container {
+}
+.container {
     max-width: 480px;
     margin: 0 auto;
     padding: 15px;
-  }
-  h1 {
+}
+h1 {
     color: #333;
     text-align: center;
     font-size: 1.5em;
-  }
-  form {
+}
+form {
     background-color: #fff;
     padding: 15px;
     border-radius: 10px;
     margin-bottom: 20px;
-  }
-  label {
+}
+label {
     display: block;
     margin-top: 15px;
     font-size: 1em;
-  }
-  input[type="text"],
-  input[type="number"],
-  select,
-  input[type="range"] {
+}
+input[type="text"],
+input[type="number"],
+select,
+input[type="range"] {
     width: 100%;
     padding: 8px;
     margin-top: 5px;
     box-sizing: border-box;
     font-size: 1em;
-  }
-  input[type="submit"],
-  button {
+}
+input[type="submit"],
+button {
     width: 100%;
     background-color: #4CAF50;
     color: white;
@@ -140,52 +131,65 @@ void handleRoot()
     border-radius: 4px;
     font-size: 1em;
     cursor: pointer;
-  }
-  input[type="submit"]:hover,
-  button:hover {
+}
+input[type="submit"]:hover,
+button:hover {
     background-color: #45a049;
-  }
-  .slider-value {
+}
+.slider-value {
     text-align: right;
     font-size: 0.9em;
     color: #555;
-  }
+}
 </style>
 <script>
-  function updateSliderValue(val) {
+function updateSliderValue(val) {
     document.getElementById('volumeValue').innerText = val;
-  }
+}
 </script>
 </head>
 <body>
 <div class="container">
   <h1>Radio Configuration</h1>
   <form action="/save" method="POST">
-    <label for="londonMessage">London Message:</label>
-    <input type="text" id="londonMessage" name="londonMessage" value="%londonMessage%" maxlength="20" pattern="[A-Za-z0-9]*">
+)rawliteral";
 
-    <label for="hilversumMessage">Hilversum Message:</label>
-    <input type="text" id="hilversumMessage" name="hilversumMessage" value="%hilversumMessage%" maxlength="20" pattern="[A-Za-z0-9]*">
+    // Generate station configurations
+    for (size_t i = 0; i < stations.size(); ++i)
+    {
+      html += "<label for=\"stationName" + String(i) + "\">Station Name:</label>";
+      html += "<input type=\"text\" id=\"stationName" + String(i) + "\" name=\"stationName" + String(i) + "\" value=\"" + stations[i].getName() + "\">";
 
-    <label for="barcelonaMessage">Barcelona Message:</label>
-    <input type="text" id="barcelonaMessage" name="barcelonaMessage" value="%barcelonaMessage%" maxlength="20" pattern="[A-Za-z0-9]*">
+      html += "<label for=\"stationFreq" + String(i) + "\">Station Frequency:</label>";
+      html += "<input type=\"number\" id=\"stationFreq" + String(i) + "\" name=\"stationFreq" + String(i) + "\" value=\"" + String(stations[i].getFrequency()) + "\">";
 
-    <label for="volume">Speaker Volume: <span id="volumeValue">%volume%</span></label>
-    <input type="range" min="1" max="255" id="volume" name="volume" value="%volume%" oninput="updateSliderValue(this.value)">
+      html += "<label for=\"stationMsg" + String(i) + "\">Station Message:</label>";
+      html += "<input type=\"text\" id=\"stationMsg" + String(i) + "\" name=\"stationMsg" + String(i) + "\" value=\"" + stations[i].getMessage() + "\">";
+    }
+
+    // Add global configurations
+    html += R"rawliteral(
+    <label for="volume">Speaker Volume: <span id="volumeValue">)rawliteral" +
+            String(speakerDutyCycle) + R"rawliteral(</span></label>
+    <input type="range" min="1" max="255" id="volume" name="volume" value=")rawliteral" +
+            String(speakerDutyCycle) + R"rawliteral(" oninput="updateSliderValue(this.value)">
 
     <label for="frequency">Speaker Frequency (Hz):</label>
-    <input type="number" id="frequency" name="frequency" value="%frequency%" min="100" max="2000">
+    <input type="number" id="frequency" name="frequency" value=")rawliteral" +
+            String(morseFrequency) + R"rawliteral(" min="100" max="2000">
 
     <label for="morseSpeed">Morse Code Speed:</label>
     <select id="morseSpeed" name="morseSpeed">
-      <option value="0"%lowSpeedSelected%>Low</option>
-      <option value="1"%mediumSpeedSelected%>Medium</option>
-      <option value="2"%highSpeedSelected%>High</option>
+      <option value="0")rawliteral" +
+            (morseSpeed == MorseSpeed::SLOW ? " selected" : "") + R"rawliteral(>Slow</option>
+      <option value="1")rawliteral" +
+            (morseSpeed == MorseSpeed::MEDIUM ? " selected" : "") + R"rawliteral(>Medium</option>
+      <option value="2")rawliteral" +
+            (morseSpeed == MorseSpeed::FAST ? " selected" : "") + R"rawliteral(>Fast</option>
     </select>
 
     <input type="submit" value="Save">
   </form>
-
   <form action="/reset" method="POST">
     <button type="submit">Reset to Defaults</button>
   </form>
@@ -194,81 +198,65 @@ void handleRoot()
 </html>
 )rawliteral";
 
-  // Replace placeholders with current values
-  html.replace("%londonMessage%", londonMessage);
-  html.replace("%hilversumMessage%", hilversumMessage);
-  html.replace("%barcelonaMessage%", barcelonaMessage);
-  html.replace("%volume%", String(speakerDutyCycle));
-  html.replace("%frequency%", String(morseFrequency));
-
-  // Set the selected option for Morse code speed
-  String lowSpeedSelected = "";
-  String mediumSpeedSelected = "";
-  String highSpeedSelected = "";
-
-  if (morseSpeed == LOW_SPEED)
-  {
-    lowSpeedSelected = " selected";
-  }
-  else if (morseSpeed == MEDIUM_SPEED)
-  {
-    mediumSpeedSelected = " selected";
-  }
-  else if (morseSpeed == HIGH_SPEED)
-  {
-    highSpeedSelected = " selected";
+    server.send(200, "text/html", html);
   }
 
-  html.replace("%lowSpeedSelected%", lowSpeedSelected);
-  html.replace("%mediumSpeedSelected%", mediumSpeedSelected);
-  html.replace("%highSpeedSelected%", highSpeedSelected);
+  void handleSaveConfig()
+  {
+    wifiStartTime = millis();
+    Serial.println("Wi-Fi timer reset");
 
-  // Send the HTML response
-  server.send(200, "text/html", html);
-}
-
-// Handles saving configurations
-void handleSaveConfig()
-{
-  // Reset the Wi-Fi timer
-  wifiStartTime = millis();
-  Serial.println("WiFi timer reset");
-  // Retrieve form data
-  if (server.hasArg("londonMessage"))
-  {
-    londonMessage = server.arg("londonMessage");
-  }
-  if (server.hasArg("hilversumMessage"))
-  {
-    hilversumMessage = server.arg("hilversumMessage");
-  }
-  if (server.hasArg("barcelonaMessage"))
-  {
-    barcelonaMessage = server.arg("barcelonaMessage");
-  }
-  if (server.hasArg("volume"))
-  {
-    speakerDutyCycle = server.arg("volume").toInt();
-  }
-  if (server.hasArg("frequency"))
-  {
-    morseFrequency = server.arg("frequency").toInt();
-  }
-  if (server.hasArg("morseSpeed"))
-  {
-    int speedValue = server.arg("morseSpeed").toInt();
-    if (speedValue >= 0 && speedValue <= 2)
+    // Retrieve global settings
+    if (server.hasArg("volume"))
     {
-      morseSpeed = static_cast<MorseSpeed>(speedValue);
-      setMorseSpeed(morseSpeed);
+      speakerDutyCycle = server.arg("volume").toInt();
     }
-  }
+    if (server.hasArg("frequency"))
+    {
+      morseFrequency = server.arg("frequency").toInt();
+    }
+    if (server.hasArg("morseSpeed"))
+    {
+      int speedValue = server.arg("morseSpeed").toInt();
+      if (speedValue >= 0 && speedValue <= 2)
+      {
+        morseSpeed = static_cast<MorseSpeed>(speedValue);
+        setMorseSpeed(morseSpeed);
+      }
+    }
 
-  // Save configurations
-  saveConfigurations();
+    // Retrieve station settings
+    std::vector<Station> newStations;
 
-  // Send confirmation page with auto-redirect
-  String html = R"rawliteral(
+    // Since we don't have a fixed number of stations, we'll iterate until we can't find more
+    for (size_t i = 0;; ++i)
+    {
+      String indexStr = String(i);
+
+      String nameKey = "stationName" + indexStr;
+      String freqKey = "stationFreq" + indexStr;
+      String msgKey = "stationMsg" + indexStr;
+
+      if (!server.hasArg(nameKey) || !server.hasArg(freqKey) || !server.hasArg(msgKey))
+      {
+        break;
+      }
+
+      String name = server.arg(nameKey);
+      int frequency = server.arg(freqKey).toInt();
+      String message = server.arg(msgKey);
+
+      newStations.emplace_back(name, frequency, message);
+    }
+
+    // Update stations
+    stations = newStations;
+
+    // Save configurations
+    saveConfigurations();
+
+    // Send confirmation page with auto-redirect
+    String html = R"rawliteral(
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -276,8 +264,8 @@ void handleSaveConfig()
 <meta http-equiv="refresh" content="1; url=/" />
 <title>Configuration Saved</title>
 <style>
-  body { font-family: Arial, sans-serif; text-align: center; background-color: #f0f0f0; margin: 0; padding: 0; }
-  h1 { color: #333; margin-top: 20%; }
+body { font-family: Arial, sans-serif; text-align: center; background-color: #f0f0f0; margin: 0; padding: 0; }
+h1 { color: #333; margin-top: 20%; }
 </style>
 </head>
 <body>
@@ -287,31 +275,30 @@ void handleSaveConfig()
 </html>
 )rawliteral";
 
-  server.send(200, "text/html", html);
-}
+    server.send(200, "text/html", html);
+  }
 
-// Handles resetting configurations to defaults
-void handleResetConfig()
-{
-  // Reset the Wi-Fi timer
-  wifiStartTime = millis();
-  Serial.println("WiFi timer reset");
-  // Reset configurations to default values
-  londonMessage = "L";
-  hilversumMessage = "H";
-  barcelonaMessage = "B";
-  speakerDutyCycle = 64;
-  morseFrequency = 800;
-  morseSpeed = MEDIUM_SPEED;
+  void handleResetConfig()
+  {
+    wifiStartTime = millis();
+    Serial.println("Wi-Fi timer reset");
 
-  // Update Morse code timing
-  setMorseSpeed(morseSpeed);
+    // Reset configurations to default values
+    speakerDutyCycle = 64;
+    morseFrequency = 800;
+    morseSpeed = MorseSpeed::MEDIUM;
+    setMorseSpeed(morseSpeed);
 
-  // Save configurations
-  saveConfigurations();
+    stations.clear();
+    stations.emplace_back("London", 1000, "L");
+    stations.emplace_back("Hilversum", 2000, "H");
+    stations.emplace_back("Barcelona", 3000, "B");
 
-  // Send confirmation page with auto-redirect
-  String html = R"rawliteral(
+    // Save configurations
+    saveConfigurations();
+
+    // Send confirmation page with auto-redirect
+    String html = R"rawliteral(
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -319,8 +306,8 @@ void handleResetConfig()
 <meta http-equiv="refresh" content="1; url=/" />
 <title>Configuration Reset</title>
 <style>
-  body { font-family: Arial, sans-serif; text-align: center; background-color: #f0f0f0; margin: 0; padding: 0; }
-  h1 { color: #333; margin-top: 20%; }
+body { font-family: Arial, sans-serif; text-align: center; background-color: #f0f0f0; margin: 0; padding: 0; }
+h1 { color: #333; margin-top: 20%; }
 </style>
 </head>
 <body>
@@ -331,29 +318,28 @@ void handleResetConfig()
 </html>
 )rawliteral";
 
-  server.send(200, "text/html", html);
-}
-
-// Handles not found pages (404)
-void handleNotFound()
-{
-  server.send(404, "text/plain", "404: Not found");
-}
-
-// Toggle Wi-Fi function
-void toggleWiFi()
-{
-  if (wifiEnabled)
-  {
-    stopWiFi();
-    wifiEnabled = false;
-    Serial.println("Wi-Fi disabled");
+    server.send(200, "text/html", html);
   }
-  else
+
+  void handleNotFound()
   {
-    startWiFi();
-    wifiEnabled = true;
-    wifiStartTime = millis(); // Initialize the timer when Wi-Fi is started
-    Serial.println("Wi-Fi enabled");
+    server.send(404, "text/plain", "404: Not found");
   }
-}
+
+  void toggleWiFi()
+  {
+    if (wifiEnabled)
+    {
+      stopWiFi();
+      wifiEnabled = false;
+      Serial.println("Wi-Fi disabled");
+    }
+    else
+    {
+      startWiFi();
+      wifiEnabled = true;
+      wifiStartTime = millis();
+      Serial.println("Wi-Fi enabled");
+    }
+  }
+} // namespace WiFiManager

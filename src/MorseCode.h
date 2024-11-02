@@ -3,8 +3,11 @@
 
 #include <Arduino.h>
 
-String getMorseCode(char c);
-void playStaticNoise(int overallSignalStrength);
-int calculateSignalStrength(int potValue, int targetValue);
+namespace MorseCode
+{
+    String getMorseCode(char c);
+    void playStaticNoise(int overallSignalStrength);
+    int calculateSignalStrength(int potValue, int targetValue);
+} // namespace MorseCode
 
-#endif
+#endif // MORSECODE_H
