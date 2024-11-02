@@ -1,45 +1,50 @@
-## [0.3.7](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.3.6...v0.3.7) (2024-10-23)
+# [0.5.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.4.7...v0.5.0) (2024-11-02)
+
+
+### Features
+
+* oof ([1c1c481](https://github.com/olipayne/Arduino-Morse-Radio/commit/1c1c48110963d06fc78ff2717ea18171bc84335e))
+
+
+### Reverts
+
+* Revert "fix: refactor" ([3d65e51](https://github.com/olipayne/Arduino-Morse-Radio/commit/3d65e513580605bfbe9b156ef50b336015cb2b56))
+
+
+
+## [0.4.7](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.4.6...v0.4.7) (2024-11-02)
 
 
 ### Bug Fixes
 
-* check batto less often and print if on charge ([d236d90](https://github.com/olipayne/Arduino-Morse-Radio/commit/d236d90ee29029b1841d8cbdb388f8e2855896f1))
+* refactor ([00f9134](https://github.com/olipayne/Arduino-Morse-Radio/commit/00f9134eca012173b1dd8b7c9b16f4ffcdf36b70))
 
 
 
-## [0.3.6](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.3.5...v0.3.6) (2024-10-23)
+## [0.4.6](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.4.5...v0.4.6) (2024-11-02)
 
 
-### Bug Fixes
+### Reverts
 
-* ok it turns out that the filenames are fine to have with version numbers ([d5deb0c](https://github.com/olipayne/Arduino-Morse-Radio/commit/d5deb0c8777dd2567fc63ca21c49e2908a9bdb5c))
-
-
-
-## [0.3.5](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.3.4...v0.3.5) (2024-10-23)
-
-
-### Bug Fixes
-
-* fixed version file names so we can always grab latest automagically ([7fe946a](https://github.com/olipayne/Arduino-Morse-Radio/commit/7fe946afc6fe953f2e9ac05ac6278935b4282a8e))
+* Revert "fix: one-off commit to have a debug bin" ([5d1b6be](https://github.com/olipayne/Arduino-Morse-Radio/commit/5d1b6bed293c55fc3ee248510455ef05f283e071))
 
 
 
-## [0.3.4](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.3.3...v0.3.4) (2024-10-23)
+## [0.4.5](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.4.4...v0.4.5) (2024-10-30)
 
 
 ### Bug Fixes
 
-* versioned .bins ([578da6a](https://github.com/olipayne/Arduino-Morse-Radio/commit/578da6a2f4568b4e8704813ea39a0c14e3e1d833))
+* one-off commit to have a debug bin ([29daeb2](https://github.com/olipayne/Arduino-Morse-Radio/commit/29daeb27cc49b65dd831c7f5754ff8f0cfe6f51c))
 
 
 
-## [0.3.3](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.3.2...v0.3.3) (2024-10-23)
+## [0.4.4](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.4.3...v0.4.4) (2024-10-24)
 
 
 ### Bug Fixes
 
-* versioned .bins ([feec1ea](https://github.com/olipayne/Arduino-Morse-Radio/commit/feec1ea1195abd49b06c332e52b1f6fd4f0fc2a9))
+* let's make that pixel orange ([49d58d4](https://github.com/olipayne/Arduino-Morse-Radio/commit/49d58d487670f4071fc06e23077c8f09c106dab7))
 
 
 
