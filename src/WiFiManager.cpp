@@ -116,20 +116,20 @@ void WiFiManager::startWiFi()
 void WiFiManager::stop()
 {
   // Stop the web server first
-  server.close(); // Close the server
+  server.close(); // Use close() instead of stop() for better resource cleanup
   server.stop();
   Serial.println("Web server stopped");
 
-  // Disconnect clients and stop the AP
-  WiFi.softAPdisconnect(true); // Disconnect all clients and shut down the AP
+  // Disconnect clients
+  WiFi.softAPdisconnect(true); // Disconnect all connected clients and shut down the AP
   Serial.println("Wi-Fi Soft AP disconnected");
 
   // Wait for the Wi-Fi stack to process the disconnection
   delay(100);
 
   // Disable Wi-Fi and release resources
-  WiFi.disconnect(true, true); // Disconnect and reset the Wi-Fi driver
   WiFi.mode(WIFI_OFF);
+  WiFi.disconnect(true, true); // Disconnect and reset the Wi-Fi driver
   Serial.println("Wi-Fi mode set to WIFI_OFF and Wi-Fi disconnected");
 
   // Update Wi-Fi state

@@ -8,9 +8,6 @@
 #include "StationManager.h"
 #include "WiFiManager.h"
 #include "PowerManager.h"
-#include "esp_pm.h"
-#include "esp_wifi.h"
-#include "esp_system.h"
 
 // Hardware pin definitions
 #define POTENTIOMETER_PIN 17     // Potentiometer pin (ADC input)
@@ -95,21 +92,8 @@ void setMorseSpeed(unsigned int dotDuration)
 
 void setup()
 {
-
   // Initialize serial communication
   Serial.begin(115200);
-
-  // Configure dynamic frequency scaling for ESP32-S3
-  esp_pm_config_esp32s3_t pm_config = {
-      .max_freq_mhz = 240,       // Max CPU frequency in MHz
-      .min_freq_mhz = 80,        // Min CPU frequency in MHz
-      .light_sleep_enable = true // Enable light sleep
-  };
-  esp_err_t err = esp_pm_configure(&pm_config);
-  if (err != ESP_OK)
-  {
-    Serial.printf("Failed to configure PM: %d\n", err);
-  }
 
   // Initialize UMS3
   ums3.begin();
@@ -170,26 +154,14 @@ void loop()
   wifiManager.handle();
 
   // Read potentiometer value (0-4095 for ESP32 ADC)
-  static unsigned long lastPotReadTime = 0;
-  int potValue = 0;
-  if (currentTime - lastPotReadTime >= 100)
-  { // Every 100ms
-    potValue = analogRead(POTENTIOMETER_PIN);
-    lastPotReadTime = currentTime;
-  }
+  int potValue = analogRead(POTENTIOMETER_PIN);
+
   // Determine the strongest station
   int signalStrength = 0;
   const Station *lockedStation = stationManager.getStrongestStation(potValue, signalStrength);
 
   // Set lock LED brightness
   ledcWrite(0, signalStrength); // Assuming lock LED is on PWM channel 0
-
-  if (!morseCodePlayer.isPlaying() && !wifiManager.isWiFiEnabled())
-  {
-    // Configure light sleep
-    esp_sleep_enable_timer_wakeup(1000000); // Wake up after 1 second
-    esp_light_sleep_start();
-  }
 
   if (lockedStation && signalStrength > 0)
   {
