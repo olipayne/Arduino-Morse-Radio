@@ -3,42 +3,60 @@
 
 #include <Arduino.h>
 #include <Preferences.h>
-#include <vector>
-#include "Station.h" // Include Station.h to use the Station class
 
-namespace Config
+enum MorseSpeed
 {
-  // Morse code speed settings
-  enum class MorseSpeed : uint8_t
-  {
-    SLOW,
-    MEDIUM,
-    FAST
-  };
+  LOW_SPEED,
+  MEDIUM_SPEED,
+  HIGH_SPEED
+};
+enum WaveBand
+{
+  LONG_WAVE,
+  MEDIUM_WAVE,
+  SHORT_WAVE
+};
 
-  // Shared variables
-  extern unsigned int speakerDutyCycle; // Speaker volume (duty cycle)
-  extern unsigned int morseFrequency;   // Speaker frequency (Hz)
-  extern MorseSpeed morseSpeed;
-  extern unsigned int characterGap;
-  extern unsigned int partGap;
-  extern unsigned int dotDuration;
-  extern unsigned int dashDuration;
+extern bool wifiEnabled; // External declaration of Wi-Fi state
 
-  // Preferences object for NVS storage
-  extern Preferences preferences;
+extern unsigned int speakerDutyCycle; // Declare speakerDutyCycle as extern
+extern unsigned int morseFrequency;
+extern String londonMessage;
+extern String hilversumMessage;
+extern String barcelonaMessage;
+extern MorseSpeed morseSpeed;
+extern WaveBand currentWave;
+extern Preferences preferences;
 
-  // Global stations vector
-  extern std::vector<Station> stations; // Declare stations as extern
+extern bool morsePlaying;
+extern const int SPEAKER_PIN;
+extern const int SPEAKER_CHANNEL;
+extern bool morseToneOn;
+extern unsigned int dashDuration;
+extern unsigned int dotDuration;
+extern unsigned int partGap;
+extern unsigned int characterGap;
+const int LEEWAY = 100;
 
-  // Hardware pins
-  constexpr int BLUE_LED_PIN = LED_BUILTIN; // Blue LED pin for Wi-Fi status
-  constexpr int LEEWAY = 100;               // Range around station frequency for locking
-  constexpr int SPEAKER_CHANNEL = 1;        // Speaker pin
-  // Function prototypes
-  void setMorseSpeed(MorseSpeed speed); // Sets Morse code speed
-  void saveConfigurations();            // Saves configurations to NVS
-  void loadConfigurations();            // Loads configurations from NVS
-} // namespace Config
+const int PWR_SW = 14;
+const int LW_BAND_SW = 12;
+const int MW_BAND_SW = 6;
+const int SLOW_DECODE = 5;
+const int MED_DECODE = 11;
+const int AUDIO_ON_OFF = 10;
+const int TUNING_ADC = 17;
+const int VOLUME_ADC = 18;
+const int BACKLIGHT_PIN = 33;
+const int POWER_LED_PIN = 35;
+const int LW_LED_PIN = 36;
+const int MW_LED_PIN = 37;
+const int SW_LED_PIN = 38;
+const int LOCK_LED_PIN = 43;
+const int CARRIER_PWM_PIN = 7;
+const int DECODE_PWM_PIN = 3;
+const int MORSE_LEDS_PIN = 44;
 
-#endif // CONFIG_H
+void saveConfigurations();
+void loadConfigurations();
+
+#endif

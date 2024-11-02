@@ -1,349 +1,129 @@
 #include "WiFiManager.h"
-#include "Config.h"
-#include "Station.h"
-#include <vector>
 #include <WiFi.h>
+#include <WebServer.h>
+#include "Config.h"
+#include "Stations.h"
 
-namespace WiFiManager
+WebServer server(80);
+bool wifiEnabled = false; // Define Wi-Fi state here
+unsigned long wifiStartTime = 0;
+unsigned long ledFlashStartTime = 0;     // LED flashing timer
+const int LED_FLASH_INTERVAL = 500;      // Flash interval for LED
+const int LED_BUILTIN_PIN = LED_BUILTIN; // Onboard LED pin
+
+// Function prototypes
+void handleRoot();       // Prototype for the root handler
+void handleSaveConfig(); // Prototype for the save configuration handler
+
+void initWiFiManager()
 {
-  using namespace Config;
+  WiFi.mode(WIFI_OFF);
+  pinMode(LED_BUILTIN_PIN, OUTPUT);   // Set LED as output
+  digitalWrite(LED_BUILTIN_PIN, LOW); // Ensure LED is off initially
+}
 
-  WebServer server(80);
+void startWiFi()
+{
+  WiFi.mode(WIFI_AP);
+  WiFi.softAP("Radio_" + WiFi.macAddress().substring(6));
+  server.begin();
+  wifiEnabled = true;
+  wifiStartTime = millis();
+  Serial.println("Wi-Fi started");
+  server.on("/", HTTP_GET, handleRoot);
+  server.on("/save", HTTP_POST, handleSaveConfig);
+}
 
-  bool wifiEnabled = false;
-  unsigned long wifiStartTime = 0;
+void stopWiFi()
+{
+  server.stop();
+  WiFi.softAPdisconnect(true);
+  WiFi.mode(WIFI_OFF);
+  wifiEnabled = false;
+  digitalWrite(LED_BUILTIN_PIN, LOW); // Turn off LED when Wi-Fi stops
+  Serial.println("Wi-Fi stopped");
+}
 
-  // Function prototypes
-  void initWebServer();
-  void handleRoot();
-  void handleSaveConfig();
-  void handleResetConfig();
-  void handleNotFound();
-
-  void initWiFiManager()
+void toggleWiFi()
+{
+  if (wifiEnabled)
   {
-    WiFi.mode(WIFI_OFF);
+    stopWiFi();
   }
-
-  void startWiFi()
+  else
   {
-    String macAddress = WiFi.macAddress();
-    macAddress.replace(":", "");
-    String ssid = "Radio_" + macAddress.substring(6);
-
-    WiFi.mode(WIFI_AP);
-    WiFi.softAP(ssid.c_str());
-
-    IPAddress IP = WiFi.softAPIP();
-    Serial.print("AP SSID: ");
-    Serial.println(ssid);
-    Serial.print("AP IP address: ");
-    Serial.println(IP);
-
-    initWebServer();
-
-    server.begin();
-    Serial.println("Web server started");
-
-    wifiStartTime = millis();
+    startWiFi();
   }
+}
 
-  void stopWiFi()
+void handleWiFi()
+{
+  server.handleClient();
+  if (millis() - wifiStartTime > 120000)
   {
-    server.stop();
-    WiFi.softAPdisconnect(true);
-    WiFi.mode(WIFI_OFF);
-    Serial.println("Web server stopped");
+    stopWiFi();
   }
+}
 
-  void handleWiFi()
+// Flash the built-in LED while Wi-Fi is active
+void updateWiFiLED()
+{
+  if (wifiEnabled)
   {
-    server.handleClient();
-    // No need to reset wifiStartTime here
+    unsigned long currentTime = millis();
+    if (currentTime - ledFlashStartTime >= LED_FLASH_INTERVAL)
+    {
+      digitalWrite(LED_BUILTIN_PIN, !digitalRead(LED_BUILTIN_PIN)); // Toggle LED state
+      ledFlashStartTime = currentTime;                              // Reset flash timer
+    }
   }
-
-  void initWebServer()
+  else
   {
-    server.on("/", HTTP_GET, handleRoot);
-    server.on("/save", HTTP_POST, handleSaveConfig);
-    server.on("/reset", HTTP_POST, handleResetConfig);
-    server.onNotFound(handleNotFound);
+    digitalWrite(LED_BUILTIN_PIN, LOW); // Ensure LED is off when Wi-Fi is inactive
   }
+}
 
-  void handleRoot()
-  {
-    wifiStartTime = millis();
-    Serial.println("Wi-Fi timer reset in handleRoot");
-
-    String html = R"rawliteral(
+// HTML form to configure station frequencies and messages
+void handleRoot()
+{
+  String html = R"rawliteral(
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Radio Configuration</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-/* CSS styles here */
-body {
-    font-family: Arial, sans-serif;
-    background-color: #f0f0f0;
-    margin: 0;
-    padding: 0;
-}
-.container {
-    max-width: 480px;
-    margin: 0 auto;
-    padding: 15px;
-}
-h1 {
-    color: #333;
-    text-align: center;
-    font-size: 1.5em;
-}
-form {
-    background-color: #fff;
-    padding: 15px;
-    border-radius: 10px;
-    margin-bottom: 20px;
-}
-label {
-    display: block;
-    margin-top: 15px;
-    font-size: 1em;
-}
-input[type="text"],
-input[type="number"],
-select,
-input[type="range"] {
-    width: 100%;
-    padding: 8px;
-    margin-top: 5px;
-    box-sizing: border-box;
-    font-size: 1em;
-}
-input[type="submit"],
-button {
-    width: 100%;
-    background-color: #4CAF50;
-    color: white;
-    padding: 10px;
-    margin-top: 15px;
-    border: none;
-    border-radius: 4px;
-    font-size: 1em;
-    cursor: pointer;
-}
-input[type="submit"]:hover,
-button:hover {
-    background-color: #45a049;
-}
-.slider-value {
-    text-align: right;
-    font-size: 0.9em;
-    color: #555;
-}
-</style>
-<script>
-function updateSliderValue(val) {
-    document.getElementById('volumeValue').innerText = val;
-}
-</script>
-</head>
+<html>
+<head><title>Radio Configuration</title></head>
 <body>
-<div class="container">
-  <h1>Radio Configuration</h1>
+  <h1>Station Configuration</h1>
   <form action="/save" method="POST">
 )rawliteral";
 
-    // Generate station configurations
-    for (size_t i = 0; i < stations.size(); ++i)
-    {
-      html += "<label for=\"stationName" + String(i) + "\">Station Name:</label>";
-      html += "<input type=\"text\" id=\"stationName" + String(i) + "\" name=\"stationName" + String(i) + "\" value=\"" + stations[i].getName() + "\">";
-
-      html += "<label for=\"stationFreq" + String(i) + "\">Station Frequency:</label>";
-      html += "<input type=\"number\" id=\"stationFreq" + String(i) + "\" name=\"stationFreq" + String(i) + "\" value=\"" + String(stations[i].getFrequency()) + "\">";
-
-      html += "<label for=\"stationMsg" + String(i) + "\">Station Message:</label>";
-      html += "<input type=\"text\" id=\"stationMsg" + String(i) + "\" name=\"stationMsg" + String(i) + "\" value=\"" + stations[i].getMessage() + "\">";
-    }
-
-    // Add global configurations
-    html += R"rawliteral(
-    <label for="volume">Speaker Volume: <span id="volumeValue">)rawliteral" +
-            String(speakerDutyCycle) + R"rawliteral(</span></label>
-    <input type="range" min="1" max="255" id="volume" name="volume" value=")rawliteral" +
-            String(speakerDutyCycle) + R"rawliteral(" oninput="updateSliderValue(this.value)">
-
-    <label for="frequency">Speaker Frequency (Hz):</label>
-    <input type="number" id="frequency" name="frequency" value=")rawliteral" +
-            String(morseFrequency) + R"rawliteral(" min="100" max="2000">
-
-    <label for="morseSpeed">Morse Code Speed:</label>
-    <select id="morseSpeed" name="morseSpeed">
-      <option value="0")rawliteral" +
-            (morseSpeed == MorseSpeed::SLOW ? " selected" : "") + R"rawliteral(>Slow</option>
-      <option value="1")rawliteral" +
-            (morseSpeed == MorseSpeed::MEDIUM ? " selected" : "") + R"rawliteral(>Medium</option>
-      <option value="2")rawliteral" +
-            (morseSpeed == MorseSpeed::FAST ? " selected" : "") + R"rawliteral(>Fast</option>
-    </select>
-
-    <input type="submit" value="Save">
-  </form>
-  <form action="/reset" method="POST">
-    <button type="submit">Reset to Defaults</button>
-  </form>
-</div>
-</body>
-</html>
-)rawliteral";
-
-    server.send(200, "text/html", html);
-  }
-
-  void handleSaveConfig()
+  for (int i = 0; i < numStations; i++)
   {
-    wifiStartTime = millis();
-    Serial.println("Wi-Fi timer reset in handleSaveConfig");
-
-    // Retrieve global settings
-    if (server.hasArg("volume"))
-    {
-      speakerDutyCycle = server.arg("volume").toInt();
-    }
-    if (server.hasArg("frequency"))
-    {
-      morseFrequency = server.arg("frequency").toInt();
-    }
-    if (server.hasArg("morseSpeed"))
-    {
-      int speedValue = server.arg("morseSpeed").toInt();
-      if (speedValue >= 0 && speedValue <= 2)
-      {
-        morseSpeed = static_cast<MorseSpeed>(speedValue);
-        setMorseSpeed(morseSpeed);
-      }
-    }
-
-    // Retrieve station settings
-    std::vector<Station> newStations;
-
-    // Since we don't have a fixed number of stations, we'll iterate until we can't find more
-    for (size_t i = 0;; ++i)
-    {
-      String indexStr = String(i);
-
-      String nameKey = "stationName" + indexStr;
-      String freqKey = "stationFreq" + indexStr;
-      String msgKey = "stationMsg" + indexStr;
-
-      if (!server.hasArg(nameKey) || !server.hasArg(freqKey) || !server.hasArg(msgKey))
-      {
-        break;
-      }
-
-      String name = server.arg(nameKey);
-      int frequency = server.arg(freqKey).toInt();
-      String message = server.arg(msgKey);
-
-      newStations.emplace_back(name, frequency, message);
-    }
-
-    // Update stations
-    stations = newStations;
-
-    // Save configurations
-    saveConfigurations();
-
-    // Send confirmation page with auto-redirect
-    String html = R"rawliteral(
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta http-equiv="refresh" content="1; url=/" />
-<title>Configuration Saved</title>
-<style>
-body { font-family: Arial, sans-serif; text-align: center; background-color: #f0f0f0; margin: 0; padding: 0; }
-h1 { color: #333; margin-top: 20%; }
-</style>
-</head>
-<body>
-  <h1>Configuration Saved!</h1>
-  <p>You will be redirected back shortly.</p>
-</body>
-</html>
-)rawliteral";
-
-    server.send(200, "text/html", html);
+    html += "<h2>" + String(stations[i].name) + " (" + String(stations[i].band == LONG_WAVE ? "Long Wave" : (stations[i].band == MEDIUM_WAVE ? "Medium Wave" : "Short Wave")) + ")</h2>";
+    html += "Frequency: <input type='number' name='freq" + String(i) + "' value='" + String(stations[i].frequency) + "'><br>";
+    html += "Message: <input type='text' name='msg" + String(i) + "' value='" + stations[i].message + "'><br><br>";
   }
 
-  void handleResetConfig()
+  html += "<input type='submit' value='Save Configurations'>";
+  html += "</form></body></html>";
+
+  server.send(200, "text/html", html);
+}
+
+// Save configurations from the web form
+void handleSaveConfig()
+{
+  for (int i = 0; i < numStations; i++)
   {
-    wifiStartTime = millis();
-    Serial.println("Wi-Fi timer reset in handleResetConfig");
-
-    // Reset configurations to default values
-    speakerDutyCycle = 64;
-    morseFrequency = 800;
-    morseSpeed = MorseSpeed::MEDIUM;
-    setMorseSpeed(morseSpeed);
-
-    stations.clear();
-    stations.emplace_back("London", 1000, "L");
-    stations.emplace_back("Hilversum", 2000, "H");
-    stations.emplace_back("Barcelona", 3000, "B");
-
-    // Save configurations
-    saveConfigurations();
-
-    // Send confirmation page with auto-redirect
-    String html = R"rawliteral(
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta http-equiv="refresh" content="1; url=/" />
-<title>Configuration Reset</title>
-<style>
-body { font-family: Arial, sans-serif; text-align: center; background-color: #f0f0f0; margin: 0; padding: 0; }
-h1 { color: #333; margin-top: 20%; }
-</style>
-</head>
-<body>
-  <h1>Configuration Reset!</h1>
-  <p>All settings have been restored to default values.</p>
-  <p>You will be redirected back shortly.</p>
-</body>
-</html>
-)rawliteral";
-
-    server.send(200, "text/html", html);
-  }
-
-  void handleNotFound()
-  {
-    wifiStartTime = millis();
-    Serial.println("Wi-Fi timer reset in handleNotFound");
-
-    server.send(404, "text/plain", "404: Not found");
-  }
-
-  void toggleWiFi()
-  {
-    if (wifiEnabled)
+    if (server.hasArg("freq" + String(i)))
     {
-      stopWiFi();
-      wifiEnabled = false;
-      Serial.println("Wi-Fi disabled");
+      stations[i].frequency = server.arg("freq" + String(i)).toInt();
     }
-    else
+    if (server.hasArg("msg" + String(i)))
     {
-      startWiFi();
-      wifiEnabled = true;
-      wifiStartTime = millis();
-      Serial.println("Wi-Fi enabled");
+      stations[i].message = server.arg("msg" + String(i));
     }
   }
-} // namespace WiFiManager
+
+  // Provide feedback and redirect back to the root page
+  String html = "<html><body><h2>Configurations Saved!</h2><a href='/'>Go Back</a></body></html>";
+  server.send(200, "text/html", html);
+}
