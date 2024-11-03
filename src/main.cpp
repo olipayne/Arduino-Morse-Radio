@@ -8,7 +8,7 @@
 #include "StationManager.h"
 #include "WaveBandManager.h"
 #include "WiFiManager.h"
-
+#include "SpeedManager.h"
 // Main system manager class
 class RadioSystem
 {
@@ -46,6 +46,7 @@ private:
     WaveBandManager::getInstance().begin();
     WiFiManager::getInstance().begin();
     MorseCode::getInstance().begin();
+    SpeedManager::getInstance().begin();
 
     Serial.println("All subsystems initialized");
   }
@@ -135,6 +136,7 @@ private:
     AudioManager::getInstance().handlePlayback();
     WiFiManager::getInstance().handle();
     WaveBandManager::getInstance().updateLEDs();
+    SpeedManager::getInstance().update();
   }
 
   void setupDebugOutput()

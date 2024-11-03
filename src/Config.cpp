@@ -1,26 +1,24 @@
 #include "Config.h"
 
-// Define morse timing constants
-const Audio::MorseTimings Audio::MORSE_SLOW = {
-    .dotDuration = 200,
-    .dashDuration = 600,
-    .symbolGap = 200,
-    .letterGap = 600,
-    .wordGap = 1400};
+namespace
+{
+    // Helper function to create MorseTimings from a base duration
+    Audio::MorseTimings createTimings(unsigned int baseDuration)
+    {
+        return Audio::MorseTimings{
+            .dotDuration = baseDuration,
+            .dashDuration = baseDuration * 3, // Dash is 3x dot
+            .symbolGap = baseDuration,        // Symbol gap equals dot length
+            .letterGap = baseDuration * 4,    // Letter gap is 4x dot
+            .wordGap = baseDuration * 8       // Word gap is 8x dot
+        };
+    }
+}
 
-const Audio::MorseTimings Audio::MORSE_MEDIUM = {
-    .dotDuration = 100,
-    .dashDuration = 300,
-    .symbolGap = 100,
-    .letterGap = 300,
-    .wordGap = 700};
-
-const Audio::MorseTimings Audio::MORSE_FAST = {
-    .dotDuration = 50,
-    .dashDuration = 150,
-    .symbolGap = 50,
-    .letterGap = 150,
-    .wordGap = 350};
+// Define morse timing constants based on base durations
+const Audio::MorseTimings Audio::MORSE_SLOW = createTimings(500);
+const Audio::MorseTimings Audio::MORSE_MEDIUM = createTimings(300);
+const Audio::MorseTimings Audio::MORSE_FAST = createTimings(200);
 
 const char *toString(MorseSpeed speed)
 {

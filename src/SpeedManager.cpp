@@ -1,14 +1,25 @@
 #include "SpeedManager.h"
 
-void updatePlaybackSpeed()
+void SpeedManager::begin()
+{
+    pinMode(Pins::SLOW_DECODE, INPUT_PULLUP);
+    pinMode(Pins::MED_DECODE, INPUT_PULLUP);
+}
+
+void SpeedManager::update()
 {
     auto &config = ConfigManager::getInstance();
 
-    if (digitalRead(Pins::SLOW_DECODE) == LOW)
+    // Read the decode speed switches
+    bool slowSwitch = (digitalRead(Pins::SLOW_DECODE) == LOW);
+    bool medSwitch = (digitalRead(Pins::MED_DECODE) == LOW);
+
+    // Determine the speed based on switch states
+    if (slowSwitch)
     {
         config.setMorseSpeed(MorseSpeed::SLOW);
     }
-    else if (digitalRead(Pins::MED_DECODE) == LOW)
+    else if (medSwitch)
     {
         config.setMorseSpeed(MorseSpeed::MEDIUM);
     }
