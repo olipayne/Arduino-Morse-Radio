@@ -40,25 +40,25 @@ jobs:
           VERSION=${{ github.sha }}
           # Merge binary
           ~/.platformio/packages/tool-esptoolpy/esptool.py --chip esp32s3 merge_bin --output .pio/build/${{ matrix.env }}/merged-flash.bin --flash_mode dio --flash_size=keep 0x0 .pio/build/${{ matrix.env }}/bootloader.bin 0x8000 .pio/build/${{ matrix.env }}/partitions.bin 0x10000 .pio/build/${{ matrix.env }}/firmware.bin
-          mv .pio/build/${{ matrix.env }}/merged-flash.bin .pio/build/${{ matrix.env }}/firmware-${VERSION}-${{ matrix.env }}.bin
+          mv .pio/build/${{ matrix.env }}/merged-flash.bin .pio/build/${{ matrix.env }}/firmware-${{ github.sha }}-${{ matrix.env }}.bin
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
           name: firmware-${{ matrix.env }}
-          path: .pio/build/${{ matrix.env }}/firmware-${VERSION}-${{ matrix.env }}.bin
+          path: .pio/build/${{ matrix.env }}/firmware-${{ github.sha }}-${{ matrix.env }}.bin
 
   release:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - name: Download Artifacts
+      - name: Download Production Artifact
         uses: actions/download-artifact@v3
         with:
           name: firmware-production
           path: ./artifacts
 
-      - name: Download Artifacts
+      - name: Download Debug Artifact
         uses: actions/download-artifact@v3
         with:
           name: firmware-debug
