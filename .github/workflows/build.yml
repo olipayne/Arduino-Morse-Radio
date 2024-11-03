@@ -33,6 +33,13 @@ jobs:
       - name: Build Debug Binary
         run: pio run -e debug
 
+      - name: Create changelog
+        id: changelog
+        uses: TriPSs/conventional-changelog-action@v5
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          skip-version-file: "true"
+
       - name: Merge Binaries
         run: |
           VERSION=${{ steps.changelog.outputs.tag }}
@@ -44,12 +51,7 @@ jobs:
           ~/.platformio/packages/tool-esptoolpy/esptool.py --chip esp32s3 merge_bin --output .pio/build/debug/merged-flash.bin --flash_mode dio --flash_size=keep 0x0 .pio/build/debug/bootloader.bin 0x8000 .pio/build/debug/partitions.bin 0x10000 .pio/build/debug/firmware.bin
           mv .pio/build/debug/merged-flash.bin .pio/build/debug/firmware-${VERSION}-debug.bin
 
-      - name: Create changelog
-        id: changelog
-        uses: TriPSs/conventional-changelog-action@v5
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          skip-version-file: "true"
+
 
       - name: Create release
         run: gh release create "$TAG_NAME" --notes "$BODY" .pio/build/production/firmware-${{ steps.changelog.outputs.tag }}-production.bin .pio/build/debug/firmware-${{ steps.changelog.outputs.tag }}-debug.bin
