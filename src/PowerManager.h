@@ -35,7 +35,7 @@ private:
     PowerManager &operator=(const PowerManager &) = delete;
 
     void configureADC();
-    void enterDeepSleep();
+    void enterLightSleep();
     bool checkForInputChanges();
     void updatePinStates();
 

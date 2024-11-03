@@ -148,46 +148,51 @@ void PowerManager::checkActivity()
 
     if (currentTime - lastActivityTime >= INACTIVITY_TIMEOUT)
     {
-        Serial.println("No activity detected for 5 minutes, entering deep sleep...");
+        Serial.println("No activity detected for some time, entering light sleep...");
         delay(100);
-        enterDeepSleep();
+        enterLightSleep();
     }
 }
 
-void PowerManager::enterDeepSleep()
+void PowerManager::enterLightSleep()
 {
-    Serial.println("Preparing for deep sleep...");
+    Serial.println("Preparing for light sleep...");
     delay(100);
 
-    // Disable all RTC peripherals except for those we need
-    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
-    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_OFF);
-    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_OFF);
-    esp_sleep_pd_config(ESP_PD_DOMAIN_XTAL, ESP_PD_OPTION_OFF);
+    // Enable GPIO wakeup
+    esp_sleep_enable_gpio_wakeup();
 
-    // Configure wake pins using EXT1 (multiple pin wake)
-    // const uint64_t wakeupPins = (1ULL << Pins::LW_BAND_SWITCH |
-    //                              1ULL << Pins::MW_BAND_SWITCH |
-    //                              1ULL << Pins::SLOW_DECODE |
-    //                              1ULL << Pins::MED_DECODE |
-    //                              1ULL << Pins::WIFI_BUTTON);
+    // List of pins to monitor
+    const gpio_num_t monitoredPins[] = {
+        static_cast<gpio_num_t>(Pins::LW_BAND_SWITCH),
+        static_cast<gpio_num_t>(Pins::MW_BAND_SWITCH),
+        static_cast<gpio_num_t>(Pins::SLOW_DECODE),
+        static_cast<gpio_num_t>(Pins::MED_DECODE),
+        static_cast<gpio_num_t>(Pins::WIFI_BUTTON)};
 
-    const uint64_t wakeupPins = (1ULL << Pins::WIFI_BUTTON);
+    // Configure per-pin wakeup triggers based on opposite of current state
+    for (const auto &pin : monitoredPins)
+    {
+        // Read current level
+        int pinLevel = gpio_get_level(pin);
 
-    // Enable wake on pin state change
-    ESP_ERROR_CHECK(esp_sleep_enable_ext1_wakeup(wakeupPins, ESP_EXT1_WAKEUP_ANY_HIGH));
+        // Set wakeup trigger to opposite level
+        gpio_int_type_t wakeupMode = (pinLevel == 1) ? GPIO_INTR_LOW_LEVEL : GPIO_INTR_HIGH_LEVEL;
+        esp_err_t result = gpio_wakeup_enable(pin, wakeupMode);
+        if (result != ESP_OK)
+        {
+            Serial.printf("Failed to configure wakeup on pin %d: %s\n", pin, esp_err_to_name(result));
+        }
+    }
 
-    // Hold the current GPIO states
-    gpio_deep_sleep_hold_en();
+    // Prepare for light sleep
+    Serial.flush(); // Ensure all serial output is sent
+    esp_light_sleep_start();
 
-    Serial.println("Entering deep sleep. Change any switch position to wake.");
-    delay(100);
-
-    // Force a clean serial buffer flush
-    Serial.flush();
-
-    // Enter deep sleep
-    esp_deep_sleep_start();
+    // Execution resumes here after wake-up
+    Serial.println("Woke up from light sleep");
+    // Reinitialize any peripherals if necessary
+    lastActivityTime = millis();
 }
 
 float PowerManager::getBatteryVoltage()
