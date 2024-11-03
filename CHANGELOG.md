@@ -1,3 +1,13 @@
+## [0.8.1](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.8.0...v0.8.1) (2024-11-03)
+
+
+### Bug Fixes
+
+* light sleep better ([e67e5c8](https://github.com/olipayne/Arduino-Morse-Radio/commit/e67e5c81b42be566ca25e55a2caaf548d130b6b7))
+* light sleep better ([4d64948](https://github.com/olipayne/Arduino-Morse-Radio/commit/4d64948790a681ce33c25ccf243e5e269dad73da))
+
+
+
 # [0.8.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.7.0...v0.8.0) (2024-11-03)
 
 
@@ -49,15 +59,6 @@
 ### Reverts
 
 * Revert "fix: refactor" ([3d65e51](https://github.com/olipayne/Arduino-Morse-Radio/commit/3d65e513580605bfbe9b156ef50b336015cb2b56))
-
-
-
-## [0.4.7](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.4.6...v0.4.7) (2024-11-02)
-
-
-### Bug Fixes
-
-* refactor ([00f9134](https://github.com/olipayne/Arduino-Morse-Radio/commit/00f9134eca012173b1dd8b7c9b16f4ffcdf36b70))
 
 
 
