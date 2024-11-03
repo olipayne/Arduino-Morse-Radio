@@ -145,7 +145,9 @@ void WiFiManager::stop()
     WiFi.mode(WIFI_OFF);
     wifiEnabled = false;
     digitalWrite(LED_BUILTIN, LOW);
+#ifdef DEBUG_SERIAL_OUTPUT
     Serial.println("WiFi stopped");
+#endif
   }
 }
 
@@ -162,13 +164,18 @@ void WiFiManager::startAP()
 
     wifiEnabled = true;
     startTime = millis();
+
+#ifdef DEBUG_SERIAL_OUTPUT
     Serial.println("WiFi AP started: " + ssid);
     Serial.print("AP IP address: ");
     Serial.println(WiFi.softAPIP());
+#endif
   }
   else
   {
+#ifdef DEBUG_SERIAL_OUTPUT
     Serial.println("Failed to start WiFi AP");
+#endif
   }
 }
 
@@ -210,7 +217,9 @@ void WiFiManager::setupMDNS()
   if (MDNS.begin(hostname.c_str()))
   {
     MDNS.addService("http", "tcp", 80);
+#ifdef DEBUG_SERIAL_OUTPUT
     Serial.println("MDNS responder started at http://" + hostname + ".local");
+#endif
   }
 }
 

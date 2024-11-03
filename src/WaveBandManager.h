@@ -23,9 +23,6 @@ public:
     void updateLEDs();
     void setLEDBrightness(uint8_t brightness);
 
-    // Debug
-    void printStatus() const;
-
 private:
     WaveBandManager() = default;
     WaveBandManager(const WaveBandManager &) = delete;

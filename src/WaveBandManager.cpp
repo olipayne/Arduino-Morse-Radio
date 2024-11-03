@@ -110,20 +110,3 @@ void WaveBandManager::setLEDBrightness(uint8_t brightness)
     ledBrightness = constrain(brightness, LED_MIN_BRIGHTNESS, LED_MAX_BRIGHTNESS);
     updateLEDs(); // Update LEDs with new brightness
 }
-
-void WaveBandManager::printStatus() const
-{
-    WaveBand currentBand = getCurrentBand();
-    Serial.println("=== Wave Band Status ===");
-    Serial.print("Current Band: ");
-    Serial.println(toString(currentBand));
-    Serial.print("LED Brightness: ");
-    Serial.println(ledBrightness);
-
-    Serial.println("Switch States:");
-    Serial.print("LW Switch: ");
-    Serial.println(digitalRead(Pins::LW_BAND_SWITCH) == LOW ? "ACTIVE" : "INACTIVE");
-    Serial.print("MW Switch: ");
-    Serial.println(digitalRead(Pins::MW_BAND_SWITCH) == LOW ? "ACTIVE" : "INACTIVE");
-    Serial.println("====================");
-}

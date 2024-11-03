@@ -7,13 +7,6 @@ void PowerManager::begin()
     // Initialize FeatherS3 specific features
     ums3.begin();
 
-    // Check if we're waking from deep sleep
-    if (checkWakeupCause())
-    {
-        // We just woke up, reset all our states
-        lastActivityTime = millis();
-    }
-
     // Configure pins with explicit pull-ups and set pin modes
     configurePins();
 
@@ -56,13 +49,17 @@ bool PowerManager::checkForInputChanges()
     if (abs(currentTuning - lastTuningValue) > POTENTIOMETER_THRESHOLD)
     {
         activity = true;
+#ifdef DEBUG_SERIAL_OUTPUT
         Serial.printf("Tuning change: %d -> %d\n", lastTuningValue, currentTuning);
+#endif
     }
 
     if (abs(currentVolume - lastVolumeValue) > POTENTIOMETER_THRESHOLD)
     {
         activity = true;
+#ifdef DEBUG_SERIAL_OUTPUT
         Serial.printf("Volume change: %d -> %d\n", lastVolumeValue, currentVolume);
+#endif
     }
 
     // Check digital inputs for state changes
@@ -75,31 +72,41 @@ bool PowerManager::checkForInputChanges()
     if (currentLWState != lastLWState)
     {
         activity = true;
+#ifdef DEBUG_SERIAL_OUTPUT
         Serial.println("LW switch changed");
+#endif
     }
 
     if (currentMWState != lastMWState)
     {
         activity = true;
+#ifdef DEBUG_SERIAL_OUTPUT
         Serial.println("MW switch changed");
+#endif
     }
 
     if (currentSlowState != lastSlowState)
     {
         activity = true;
+#ifdef DEBUG_SERIAL_OUTPUT
         Serial.println("Slow decode changed");
+#endif
     }
 
     if (currentMedState != lastMedState)
     {
         activity = true;
+#ifdef DEBUG_SERIAL_OUTPUT
         Serial.println("Med decode changed");
+#endif
     }
 
     if (currentWiFiState != lastWiFiState)
     {
         activity = true;
+#ifdef DEBUG_SERIAL_OUTPUT
         Serial.println("WiFi button changed");
+#endif
     }
 
     // Update stored states
@@ -150,7 +157,9 @@ void PowerManager::checkActivity()
 
     if (currentTime - lastActivityTime >= INACTIVITY_TIMEOUT)
     {
+#ifdef DEBUG_SERIAL_OUTPUT
         Serial.println("No activity detected for some time, entering light sleep...");
+#endif
         delay(100);
         enterLightSleep();
     }
@@ -158,7 +167,9 @@ void PowerManager::checkActivity()
 
 void PowerManager::enterLightSleep()
 {
+#ifdef DEBUG_SERIAL_OUTPUT
     Serial.println("Preparing for light sleep...");
+#endif
     delay(100);
 
     // Enable GPIO wakeup
@@ -183,7 +194,9 @@ void PowerManager::enterLightSleep()
         esp_err_t result = gpio_wakeup_enable(pin, wakeupMode);
         if (result != ESP_OK)
         {
+#ifdef DEBUG_SERIAL_OUTPUT
             Serial.printf("Failed to configure wakeup on pin %d: %s\n", pin, esp_err_to_name(result));
+#endif
         }
     }
 
@@ -192,7 +205,9 @@ void PowerManager::enterLightSleep()
     esp_light_sleep_start();
 
     // Execution resumes here after wake-up
+#ifdef DEBUG_SERIAL_OUTPUT
     Serial.println("Woke up from light sleep");
+#endif
 
     // Reinitialize any peripherals if necessary
     lastActivityTime = millis();
@@ -208,57 +223,6 @@ bool PowerManager::isLowBattery()
 {
     float voltage = getBatteryVoltage();
     return voltage < LOW_BATTERY_THRESHOLD;
-}
-
-bool PowerManager::checkWakeupCause()
-{
-    esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
-
-    if (wakeup_reason != ESP_SLEEP_WAKEUP_UNDEFINED)
-    {
-        printWakeupCause();
-        return true;
-    }
-    return false;
-}
-
-void PowerManager::printWakeupCause()
-{
-    esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
-
-    Serial.print("Wakeup cause: ");
-    switch (wakeup_reason)
-    {
-    case ESP_SLEEP_WAKEUP_EXT0:
-        Serial.println("External signal using RTC_IO");
-        break;
-    case ESP_SLEEP_WAKEUP_EXT1:
-    {
-        uint64_t wakeup_pin_mask = esp_sleep_get_ext1_wakeup_status();
-        if (wakeup_pin_mask != 0)
-        {
-            int pin = __builtin_ffsll(wakeup_pin_mask) - 1;
-            Serial.printf("External signal using RTC_CNTL on pin %d\n", pin);
-        }
-        else
-        {
-            Serial.println("External signal using RTC_CNTL (pin not identified)");
-        }
-    }
-    break;
-    case ESP_SLEEP_WAKEUP_TIMER:
-        Serial.println("Timer");
-        break;
-    case ESP_SLEEP_WAKEUP_TOUCHPAD:
-        Serial.println("Touchpad");
-        break;
-    case ESP_SLEEP_WAKEUP_ULP:
-        Serial.println("ULP program");
-        break;
-    default:
-        Serial.printf("Unknown reason %d\n", wakeup_reason);
-        break;
-    }
 }
 
 void PowerManager::configurePins()
