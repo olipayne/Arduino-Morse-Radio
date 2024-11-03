@@ -1,3 +1,12 @@
+## [0.8.5](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.8.4...v0.8.5) (2024-11-03)
+
+
+### Bug Fixes
+
+* remove dead code and wrap all serial out in debug flag ([395fd75](https://github.com/olipayne/Arduino-Morse-Radio/commit/395fd7595b722b0adb9992b48ac90e495c6cf273))
+
+
+
 ## [0.8.4](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.8.3...v0.8.4) (2024-11-03)
 
 
@@ -32,15 +41,6 @@
 
 * light sleep better ([e67e5c8](https://github.com/olipayne/Arduino-Morse-Radio/commit/e67e5c81b42be566ca25e55a2caaf548d130b6b7))
 * light sleep better ([4d64948](https://github.com/olipayne/Arduino-Morse-Radio/commit/4d64948790a681ce33c25ccf243e5e269dad73da))
-
-
-
-# [0.8.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.7.0...v0.8.0) (2024-11-03)
-
-
-### Features
-
-* sleep stuff, WIP ([96e5327](https://github.com/olipayne/Arduino-Morse-Radio/commit/96e53274d75646367840b254ed3317aad9db97dd))
 
 
 
