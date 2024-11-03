@@ -17,7 +17,7 @@ namespace
 
 // Define morse timing constants based on base durations
 const Audio::MorseTimings Audio::MORSE_SLOW = createTimings(500);
-const Audio::MorseTimings Audio::MORSE_MEDIUM = createTimings(300);
+const Audio::MorseTimings Audio::MORSE_MEDIUM = createTimings(350);
 const Audio::MorseTimings Audio::MORSE_FAST = createTimings(200);
 
 const char *toString(MorseSpeed speed)

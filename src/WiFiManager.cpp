@@ -1,6 +1,5 @@
 #include "WiFiManager.h"
 
-// HTML Templates
 const char *WiFiManager::HTML_HEADER = R"(
 <!DOCTYPE html>
 <html>
@@ -10,63 +9,119 @@ const char *WiFiManager::HTML_HEADER = R"(
     <style>)";
 
 const char *WiFiManager::CSS_STYLES = R"(
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-        .station { background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 5px; }
-        .wave-band { background: #e0e0e0; padding: 10px; margin: 15px 0; border-radius: 3px; }
-        input[type="number"], input[type="text"] { width: 100%; padding: 8px; margin: 5px 0; box-sizing: border-box; }
-        button { background: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
-        button:hover { background: #45a049; }
-        .status { color: #666; font-size: 0.9em; margin-top: 5px; }
-        .error { color: #ff0000; }
-        .success { color: #008000; }
+    body { 
+        font-family: Arial, sans-serif; 
+        max-width: 800px; 
+        margin: 0 auto; 
+        padding: 20px;
+        background-color: #f0f0f0;
+    }
+    .station { 
+        background: #ffffff; 
+        padding: 15px; 
+        margin: 10px 0; 
+        border-radius: 5px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .wave-band { 
+        background: #e0e0e0; 
+        padding: 10px; 
+        margin: 15px 0; 
+        border-radius: 3px;
+        border-left: 4px solid #2196F3;
+    }
+    .freq-group { 
+        display: flex; 
+        align-items: center; 
+        gap: 10px; 
+        margin: 5px 0; 
+    }
+    input[type="number"], input[type="text"] { 
+        flex: 1; 
+        padding: 8px; 
+        margin: 5px 0; 
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+    }
+    button { 
+        background: #4CAF50; 
+        color: white; 
+        padding: 8px 15px; 
+        border: none; 
+        border-radius: 5px; 
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+    button:hover { 
+        background: #45a049; 
+    }
+    .tune-button { 
+        background: #2196F3;
+        min-width: 100px;
+    }
+    .tune-button:hover { 
+        background: #1976D2; 
+    }
+    .status { 
+        color: #666; 
+        font-size: 0.9em; 
+        margin-top: 5px;
+        background: #fff;
+        padding: 10px;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1 {
+        color: #333;
+        border-bottom: 2px solid #2196F3;
+        padding-bottom: 10px;
+    }
+    h2 {
+        color: #444;
+        margin-top: 0;
+    }
+    h3 {
+        color: #666;
+        margin: 0 0 10px 0;
+    }
 )";
 
 const char *WiFiManager::HTML_FOOTER = R"(
     </body>
 </html>)";
 
-WiFiManager::WiFiManager()
-    : server(80),
-      wifiEnabled(false),
-      startTime(0),
-      lastLedFlash(0),
-      timeoutDuration(DEFAULT_TIMEOUT),
-      hostname("radio-config")
-{
-}
+const char *WiFiManager::JAVASCRIPT_CODE = R"(
+    function updateTuningValue() {
+        fetch('/tuning')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('currentTuning').textContent = data.value;
+            })
+            .catch(error => console.error('Error fetching tuning value:', error));
+    }
 
-String WiFiManager::generateHTML(const String &content) const
-{
-  String html = HTML_HEADER;
-  html += CSS_STYLES;
-  html += "</style></head><body>";
-  html += content;
-  html += HTML_FOOTER;
-  return html;
-}
+    function setFrequency(inputId) {
+        fetch('/tuning')
+            .then(response => response.json())
+            .then(data => {
+                const input = document.getElementById(inputId);
+                input.value = data.value;
+                input.style.backgroundColor = '#e8f5e9';
+                setTimeout(() => input.style.backgroundColor = '', 500);
+            })
+            .catch(error => console.error('Error setting frequency:', error));
+    }
+
+    // Update tuning value every second
+    setInterval(updateTuningValue, 1000);
+)";
 
 void WiFiManager::begin()
 {
   pinMode(Pins::WIFI_BUTTON, INPUT_PULLUP);
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
-}
-
-void WiFiManager::handle()
-{
-  if (!wifiEnabled)
-    return;
-
-  server.handleClient();
-
-  // Check for timeout
-  if (millis() - startTime > timeoutDuration)
-  {
-    stop();
-    return;
-  }
-
-  updateStatusLED();
 }
 
 void WiFiManager::toggle()
@@ -98,10 +153,8 @@ void WiFiManager::startAP()
 {
   WiFi.mode(WIFI_AP);
 
-  // Create unique SSID using chip ID
   String ssid = "Radio_" + String((uint32_t)ESP.getEfuseMac(), HEX);
 
-  // Start AP with generated SSID
   if (WiFi.softAP(ssid.c_str(), nullptr, AP_CHANNEL, false, MAX_CONNECTIONS))
   {
     setupServer();
@@ -119,12 +172,30 @@ void WiFiManager::startAP()
   }
 }
 
+void WiFiManager::handle()
+{
+  if (!wifiEnabled)
+    return;
+
+  server.handleClient();
+
+  if (millis() - startTime > DEFAULT_TIMEOUT)
+  {
+    stop();
+    return;
+  }
+
+  updateStatusLED();
+}
+
 void WiFiManager::setupServer()
 {
   server.on("/", HTTP_GET, [this]()
             { handleRoot(); });
   server.on("/save", HTTP_POST, [this]()
             { handleSaveConfig(); });
+  server.on("/tuning", HTTP_GET, [this]()
+            { handleGetTuningValue(); });
   server.on("/stations", HTTP_GET, [this]()
             { handleStationConfig(); });
   server.on("/api/status", HTTP_GET, [this]()
@@ -146,6 +217,13 @@ void WiFiManager::setupMDNS()
 void WiFiManager::handleRoot()
 {
   server.send(200, "text/html", generateHTML(generateConfigPage()));
+}
+
+void WiFiManager::handleGetTuningValue()
+{
+  int tuningValue = analogRead(Pins::TUNING_POT);
+  String response = "{\"value\":" + String(tuningValue) + "}";
+  server.send(200, "application/json", response);
 }
 
 void WiFiManager::handleSaveConfig()
@@ -183,7 +261,8 @@ void WiFiManager::handleSaveConfig()
     stationManager.saveToPreferences();
   }
 
-  String response = "<div class='" + String(success ? "success" : "error") + "'>" + message + "</div>";
+  String response = "<div class='" + String(success ? "success" : "error") + "'>" +
+                    message + "</div>";
   server.send(200, "text/html", generateHTML(response + generateConfigPage()));
 }
 
@@ -201,6 +280,8 @@ String WiFiManager::generateStationTable() const
 {
   String html;
   auto &stationManager = StationManager::getInstance();
+
+  html += "<div class='status'>Current Tuning Value: <span id='currentTuning'>-</span></div>";
 
   WaveBand currentBand = WaveBand::LONG_WAVE;
   bool firstBand = true;
@@ -222,26 +303,22 @@ String WiFiManager::generateStationTable() const
 
     html += "<div class='station'>";
     html += "<h3>" + String(station->getName()) + "</h3>";
-    html += "<label>Frequency:<br><input type='number' name='freq_" + String(i) +
-            "' value='" + String(station->getFrequency()) + "'></label><br>";
+
+    html += "<div class='freq-group'>";
+    html += "<input type='number' id='freq_" + String(i) + "' name='freq_" + String(i) +
+            "' value='" + String(station->getFrequency()) + "'>";
+    html += "<button type='button' class='tune-button' " +
+            String("onclick='setFrequency(\"freq_") + String(i) + "\")'>Set Current</button>";
+    html += "</div>";
+
     html += "<label>Message:<br><input type='text' name='msg_" + String(i) +
             "' value='" + station->getMessage() + "'></label>";
     html += "</div>";
   }
 
   if (!firstBand)
-    html += "</div>"; // Close last wave-band div
+    html += "</div>";
   return html;
-}
-
-void WiFiManager::handleStationConfig()
-{
-  server.send(200, "text/html", generateHTML(generateStationTable()));
-}
-
-void WiFiManager::handleAPI()
-{
-  server.send(200, "application/json", generateStatusJson());
 }
 
 String WiFiManager::generateStatusJson() const
@@ -249,7 +326,7 @@ String WiFiManager::generateStatusJson() const
   String json = "{";
   json += "\"wifiEnabled\":" + String(wifiEnabled ? "true" : "false") + ",";
   json += "\"uptime\":" + String((millis() - startTime) / 1000) + ",";
-  json += "\"timeoutIn\":" + String((timeoutDuration - (millis() - startTime)) / 1000);
+  json += "\"timeoutIn\":" + String((DEFAULT_TIMEOUT - (millis() - startTime)) / 1000);
   json += "}";
   return json;
 }
@@ -260,6 +337,16 @@ void WiFiManager::handleNotFound()
   message += "URI: " + server.uri() + "\n";
   message += "Method: " + String(server.method() == HTTP_GET ? "GET" : "POST") + "\n";
   server.send(404, "text/plain", message);
+}
+
+void WiFiManager::handleStationConfig()
+{
+  server.send(200, "text/html", generateHTML(generateStationTable()));
+}
+
+void WiFiManager::handleAPI()
+{
+  server.send(200, "application/json", generateStatusJson());
 }
 
 void WiFiManager::updateStatusLED()
@@ -282,11 +369,16 @@ void WiFiManager::flashLED()
   digitalWrite(LED_BUILTIN, ledState);
 }
 
-void WiFiManager::setHostname(const String &name)
+String WiFiManager::generateHTML(const String &content) const
 {
-  hostname = name;
-  if (wifiEnabled)
-  {
-    setupMDNS(); // Restart MDNS with new hostname
-  }
+  String html = String(HTML_HEADER);
+  html += CSS_STYLES;
+  html += "</style>";
+  html += "<script>";
+  html += JAVASCRIPT_CODE;
+  html += "</script>";
+  html += "</head><body>";
+  html += content;
+  html += HTML_FOOTER;
+  return html;
 }

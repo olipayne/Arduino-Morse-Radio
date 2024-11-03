@@ -17,29 +17,32 @@ public:
         return instance;
     }
 
-    // Core functionality
     void begin();
     void handle();
     void toggle();
-
-    // Status and control
-    bool isEnabled() const { return wifiEnabled; }
     void stop();
+    bool isEnabled() const { return wifiEnabled; }
     void updateStatusLED();
 
-    // Configuration
-    void setTimeoutDuration(unsigned long duration) { timeoutDuration = duration; }
-    void setHostname(const String &name);
-
 private:
-    WiFiManager();
+    WiFiManager() : server(80),
+                    wifiEnabled(false),
+                    startTime(0),
+                    lastLedFlash(0),
+                    hostname("radio-config") {}
+
     WiFiManager(const WiFiManager &) = delete;
     WiFiManager &operator=(const WiFiManager &) = delete;
 
-    // Web server handlers
     void setupServer();
+    void startAP();
+    void setupMDNS();
+    void flashLED();
+
+    // Web handlers
     void handleRoot();
     void handleSaveConfig();
+    void handleGetTuningValue();
     void handleStationConfig();
     void handleAPI();
     void handleNotFound();
@@ -50,19 +53,11 @@ private:
     String generateStationTable() const;
     String generateStatusJson() const;
 
-    // WiFi setup
-    void startAP();
-    void setupMDNS();
-
-    // LED control
-    void flashLED();
-
-    // Internal state
+    // Server instance
     WebServer server;
     bool wifiEnabled;
     unsigned long startTime;
     unsigned long lastLedFlash;
-    unsigned long timeoutDuration;
     String hostname;
 
     // Constants
@@ -75,6 +70,7 @@ private:
     static const char *HTML_HEADER;
     static const char *HTML_FOOTER;
     static const char *CSS_STYLES;
+    static const char *JAVASCRIPT_CODE;
 };
 
 #endif
