@@ -66,9 +66,10 @@ void WaveBandManager::update()
         config.setWaveBand(newBand);
         updateLEDs();
 
-        // Debug output
+#ifdef DEBUG_SERIAL_OUTPUT
         Serial.print("Wave band changed to: ");
         Serial.println(toString(newBand));
+#endif
     }
 }
 
