@@ -8,7 +8,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    strategy:
+      matrix:
+        env: [production, debug]
     steps:
       - uses: actions/checkout@v4
 
@@ -30,11 +32,8 @@ jobs:
       - name: Install PlatformIO Core
         run: pip install --upgrade platformio
 
-      - name: Build Production Binary
-        run: pio run -e production
-
-      - name: Build Debug Binary
-        run: pio run -e debug
+      - name: Build Binaries
+        run: pio run -e ${{ matrix.env }}
 
       - name: Create changelog
         id: changelog
