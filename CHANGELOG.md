@@ -1,3 +1,12 @@
+# [0.8.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.7.0...v0.8.0) (2024-11-03)
+
+
+### Features
+
+* sleep stuff, WIP ([96e5327](https://github.com/olipayne/Arduino-Morse-Radio/commit/96e53274d75646367840b254ed3317aad9db97dd))
+
+
+
 # [0.7.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.6.0...v0.7.0) (2024-11-03)
 
 
@@ -49,15 +58,6 @@
 ### Bug Fixes
 
 * refactor ([00f9134](https://github.com/olipayne/Arduino-Morse-Radio/commit/00f9134eca012173b1dd8b7c9b16f4ffcdf36b70))
-
-
-
-## [0.4.6](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.4.5...v0.4.6) (2024-11-02)
-
-
-### Reverts
-
-* Revert "fix: one-off commit to have a debug bin" ([5d1b6be](https://github.com/olipayne/Arduino-Morse-Radio/commit/5d1b6bed293c55fc3ee248510455ef05f283e071))
 
 
 
