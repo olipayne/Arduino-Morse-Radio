@@ -16,15 +16,18 @@ class RadioSystem
 public:
   void begin()
   {
+#ifdef DEBUG_SERIAL_OUTPUT
     Serial.begin(115200);
     Serial.println("\nRadio Starting...");
-
+#endif
     setCpuFrequencyMhz(80);
 
     // Verify the CPU frequency
+#ifdef DEBUG_SERIAL_OUTPUT
     Serial.print("CPU Frequency set to ");
     Serial.print(getCpuFrequencyMhz());
     Serial.println(" MHz");
+#endif
     initializeSubsystems();
   }
 
@@ -50,7 +53,9 @@ public:
       handleWiFiButton();
       handleTuning();
       updateManagers();
+#ifdef DEBUG_SERIAL_OUTPUT
       outputDebugInfo();
+#endif
       lastSystemUpdate = currentTime;
     }
 
@@ -76,8 +81,9 @@ private:
     WiFiManager::getInstance().begin();
     MorseCode::getInstance().begin();
     SpeedManager::getInstance().begin();
-
+#ifdef DEBUG_SERIAL_OUTPUT
     Serial.println("All subsystems initialized");
+#endif
   }
 
   void handleBatteryStatus()
@@ -97,7 +103,9 @@ private:
       }
     }
 
+#ifdef DEBUG_SERIAL_OUTPUT
     Serial.printf("Battery Voltage: %.2fV\n", voltage);
+#endif
   }
 
   void handleWiFiButton()
@@ -156,8 +164,10 @@ private:
         // New station found or changed
         if (station != lastStation)
         {
+#ifdef DEBUG_SERIAL_OUTPUT
           Serial.printf("Station locked: %s (Signal: %d)\n",
                         station->getName(), signalStrength);
+#endif
           // Stop the static noise
           audio.stop();
         }
@@ -170,7 +180,9 @@ private:
     {
       if (config.isMorsePlaying())
       {
+#ifdef DEBUG_SERIAL_OUTPUT
         Serial.println("Lost station lock");
+#endif
         morse.stop();
         lastStation = nullptr;
       }
@@ -213,7 +225,6 @@ private:
 
     // Wave Band Status
     Serial.printf("Wave Band: %s\n", toString(config.getWaveBand()));
-
     // Tuning Status
     int tuningValue = analogRead(Pins::TUNING_POT);
     int volumeValue = analogRead(Pins::VOLUME_POT);

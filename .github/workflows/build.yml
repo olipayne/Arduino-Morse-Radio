@@ -27,12 +27,22 @@ jobs:
       - name: Install PlatformIO Core
         run: pip install --upgrade platformio
 
-      - name: Build PlatformIO Project
-        run: pio run
+      - name: Build Production Binary
+        run: pio run -e production
+
+      - name: Build Debug Binary
+        run: pio run -e debug
 
       - name: Merge Binaries
         run: |
-          ~/.platformio/packages/tool-esptoolpy/esptool.py --chip esp32s3 merge_bin --output .pio/build/fs3_radio/merged-flash.bin --flash_mode dio --flash_size=keep 0x0 .pio/build/fs3_radio/bootloader.bin 0x8000 .pio/build/fs3_radio/partitions.bin 0x10000 .pio/build/fs3_radio/firmware.bin
+          VERSION=${{ steps.changelog.outputs.tag }}
+          # Merge production binary
+          ~/.platformio/packages/tool-esptoolpy/esptool.py --chip esp32s3 merge_bin --output .pio/build/production/merged-flash.bin --flash_mode dio --flash_size=keep 0x0 .pio/build/production/bootloader.bin 0x8000 .pio/build/production/partitions.bin 0x10000 .pio/build/production/firmware.bin
+          mv .pio/build/production/merged-flash.bin .pio/build/production/firmware-${VERSION}-production.bin
+
+          # Merge debug binary
+          ~/.platformio/packages/tool-esptoolpy/esptool.py --chip esp32s3 merge_bin --output .pio/build/debug/merged-flash.bin --flash_mode dio --flash_size=keep 0x0 .pio/build/debug/bootloader.bin 0x8000 .pio/build/debug/partitions.bin 0x10000 .pio/build/debug/firmware.bin
+          mv .pio/build/debug/merged-flash.bin .pio/build/debug/firmware-${VERSION}-debug.bin
 
       - name: Create changelog
         id: changelog
@@ -41,13 +51,8 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           skip-version-file: "true"
 
-      - name: Rename Merged Binary
-        run: |
-          VERSION=${{ steps.changelog.outputs.tag }}
-          mv .pio/build/fs3_radio/merged-flash.bin .pio/build/fs3_radio/firmware-${VERSION}.bin
-
       - name: Create release
-        run: gh release create "$TAG_NAME" --notes "$BODY" .pio/build/fs3_radio/firmware-${{ steps.changelog.outputs.tag }}.bin
+        run: gh release create "$TAG_NAME" --notes "$BODY" .pio/build/production/firmware-${{ steps.changelog.outputs.tag }}-production.bin .pio/build/debug/firmware-${{ steps.changelog.outputs.tag }}-debug.bin
         if: ${{ steps.changelog.outputs.skipped == 'false' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
