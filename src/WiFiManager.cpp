@@ -36,12 +36,15 @@ void startWiFi()
 
 void stopWiFi()
 {
-  server.stop();
-  WiFi.softAPdisconnect(true);
-  WiFi.mode(WIFI_OFF);
-  wifiEnabled = false;
-  digitalWrite(LED_BUILTIN_PIN, LOW); // Turn off LED when Wi-Fi stops
-  Serial.println("Wi-Fi stopped");
+  if (wifiEnabled)
+  {
+    server.stop();
+    WiFi.softAPdisconnect(true);
+    WiFi.mode(WIFI_OFF);
+    wifiEnabled = false;
+    digitalWrite(LED_BUILTIN_PIN, LOW); // Turn off LED when Wi-Fi stops
+    Serial.println("Wi-Fi stopped");
+  }
 }
 
 void toggleWiFi()
@@ -58,10 +61,13 @@ void toggleWiFi()
 
 void handleWiFi()
 {
-  server.handleClient();
-  if (millis() - wifiStartTime > 120000)
+  if (wifiEnabled)
   {
-    stopWiFi();
+    server.handleClient();
+    if (millis() - wifiStartTime > 120000)
+    {             // Check if 2 minutes have passed
+      stopWiFi(); // Stop Wi-Fi only once
+    }
   }
 }
 

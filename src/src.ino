@@ -1,5 +1,4 @@
 #include <Arduino.h>
-#include <Preferences.h>
 #include "Config.h"
 #include "Stations.h"
 #include "MorseCode.h"
@@ -11,7 +10,6 @@
 #include <UMS3.h>
 
 Preferences preferences;
-UMS3 ums3;
 unsigned long lastDebugTime = 0;
 unsigned long lastButtonPress = 0;
 unsigned long stationLockTime = 0; // Track when the station was locked
@@ -19,17 +17,17 @@ const int WIFI_BUTTON_PIN = 0;     // GPIO0 for Wi-Fi toggle button
 const int DEBOUNCE_DELAY = 500;    // 500 ms debounce delay
 const int SPEAKER_PIN = 1;         // GPIO1 for speaker
 const int SPEAKER_CHANNEL = 0;     // PWM channel for speaker output
+
 void setup()
 {
   Serial.begin(115200);
-  ums3.begin();
-  ums3.setPixelBrightness(5);
+
+  // Set up PWM on SPEAKER_PIN
+  ledcSetup(SPEAKER_CHANNEL, 5000, 8); // 5 kHz frequency, 8-bit resolution
+  ledcAttachPin(SPEAKER_PIN, SPEAKER_CHANNEL);
 
   pinMode(WIFI_BUTTON_PIN, INPUT_PULLUP); // Set GPIO0 as input with pull-up resistor
   initWiFiManager();
-
-  ledcSetup(SPEAKER_CHANNEL, 5000, 8); // 5 kHz frequency, 8-bit resolution
-  ledcAttachPin(SPEAKER_PIN, SPEAKER_CHANNEL);
 }
 
 void loop()
@@ -49,65 +47,95 @@ void loop()
 
   // Tuning logic for Morse code playback
   int tuningValue = analogRead(TUNING_ADC); // Read the tuning potentiometer value
-  Station *lockedStation = nullptr;
-  int signalStrength = 0;
+  int volumeValue = analogRead(VOLUME_ADC); // Read the volume potentiometer value
 
   // Determine the closest station on the current wave band
+  Station *closestStation = nullptr;
+  int closestSignalStrength = 0;
+  int distanceToClosestStation = -1; // Distance to the closest station if outside lock range
+
   for (int i = 0; i < numStations; i++)
   {
     if (stations[i].band == currentWave)
     { // Only consider stations on the current wave band
       int strength = calculateSignalStrength(tuningValue, stations[i].frequency);
-      if (strength > signalStrength)
+      int distance = abs(tuningValue - stations[i].frequency);
+
+      if (strength > closestSignalStrength)
       {
-        signalStrength = strength;
-        lockedStation = &stations[i];
+        closestSignalStrength = strength;
+        closestStation = &stations[i];
+        distanceToClosestStation = distance;
       }
     }
   }
 
-  if (signalStrength > 0)
+  bool stationLocked = (closestSignalStrength > 0);
+  if (stationLocked && !morsePlaying)
   {
-    // Station is locked
-    if (lockedStation != nullptr && !morsePlaying)
-    {
-      Serial.print("Station locked: ");
-      Serial.print(lockedStation->name);
-      Serial.print(" | Frequency: ");
-      Serial.print(lockedStation->frequency);
-      Serial.print(" | Signal Strength: ");
-      Serial.println(signalStrength);
+    // Start Morse code playback
+    Serial.print("Station locked: ");
+    Serial.print(closestStation->name);
+    Serial.print(" | Frequency: ");
+    Serial.print(closestStation->frequency);
+    Serial.print(" | Signal Strength: ");
+    Serial.println(closestSignalStrength);
 
-      // Start Morse code playback
-      playMorseMessage(lockedStation->message);
-      morsePlaying = true;
-      stationLockTime = millis();
-    }
+    playMorseMessage(closestStation->message);
+    morsePlaying = true;
+    stationLockTime = millis();
   }
-  else
+  else if (!stationLocked && morsePlaying)
   {
-    // No station locked
-    if (morsePlaying)
-    {
-      Serial.println("Lost station lock. Stopping Morse code.");
-      stopMorse();
-      morsePlaying = false;
-    }
+    // Stop Morse code playback if lock is lost
+    Serial.println("Lost station lock. Stopping Morse code.");
+    stopMorse();
+    morsePlaying = false;
   }
 
   handleWiFi();
   updateWiFiLED();
 
-  // Debug output every second for current tuning value and status
+  // Debug output every second
   unsigned long currentTime = millis();
   if (currentTime - lastDebugTime >= 1000)
   {
     Serial.println("---- Debug Data ----");
+
+    // Volume Potentiometer
+    Serial.print("Volume Potentiometer Value: ");
+    Serial.println(volumeValue);
+
+    // Current Tuning Value and Wave Band
     Serial.print("Current Tuning Value: ");
     Serial.println(tuningValue);
     Serial.print("Current Wave: ");
     Serial.println(currentWave == LONG_WAVE ? "Long Wave" : (currentWave == MEDIUM_WAVE ? "Medium Wave" : "Short Wave"));
+
+    // Closest Station Information
+    if (closestStation != nullptr)
+    {
+      Serial.print("Closest Station: ");
+      Serial.print(closestStation->name);
+      Serial.print(" | Frequency: ");
+      Serial.print(closestStation->frequency);
+      Serial.print(" | Distance: ");
+      Serial.print(distanceToClosestStation);
+      Serial.print(" | Signal Strength: ");
+      Serial.println(closestSignalStrength);
+    }
+    else
+    {
+      Serial.println("No station detected on current wave band.");
+    }
+
+    // Decode Speed
+    Serial.print("Decode Speed: ");
+    Serial.println(morseSpeed == LOW_SPEED ? "Slow" : (morseSpeed == MEDIUM_SPEED ? "Medium" : "Fast"));
+
+    // Station Lock and Morse Code Status
     Serial.println(morsePlaying ? "Morse Code Playing" : "No Morse Code Playing");
+
     Serial.println("--------------------");
     lastDebugTime = currentTime;
   }
