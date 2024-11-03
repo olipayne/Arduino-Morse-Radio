@@ -1,3 +1,12 @@
+## [0.8.3](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.8.2...v0.8.3) (2024-11-03)
+
+
+### Bug Fixes
+
+* ok and new release to see how it looks ([d24a26a](https://github.com/olipayne/Arduino-Morse-Radio/commit/d24a26abf6bd21ee90e239e5a372163199e7b362))
+
+
+
 ## [0.8.2](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.8.1...v0.8.2) (2024-11-03)
 
 
@@ -39,21 +48,6 @@
 ### Features
 
 * tuning calibration ([d1eaa77](https://github.com/olipayne/Arduino-Morse-Radio/commit/d1eaa7707db71b6f95415ee21d621dd499077aad))
-
-
-
-# [0.6.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.5.0...v0.6.0) (2024-11-02)
-
-
-### Bug Fixes
-
-* small things, now it works ([0ff73ec](https://github.com/olipayne/Arduino-Morse-Radio/commit/0ff73ec9d60c43a2b08acb7816a5be48725f1330))
-* wifi working ([14884d0](https://github.com/olipayne/Arduino-Morse-Radio/commit/14884d0ba9e17044c943dbfaccf4e0ce2cba7527))
-
-
-### Features
-
-* rebuild, missing some bits but meh ([5b4f735](https://github.com/olipayne/Arduino-Morse-Radio/commit/5b4f73595340c32a001d3dd4f206e269e03704a0))
 
 
 
