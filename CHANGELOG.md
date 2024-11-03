@@ -1,3 +1,12 @@
+## [0.8.2](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.8.1...v0.8.2) (2024-11-03)
+
+
+### Bug Fixes
+
+* static noise working again ([c607fb7](https://github.com/olipayne/Arduino-Morse-Radio/commit/c607fb77d5b9e0b0998bdf85718fdf68e0b9cd96))
+
+
+
 ## [0.8.1](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.8.0...v0.8.1) (2024-11-03)
 
 
@@ -45,20 +54,6 @@
 ### Features
 
 * rebuild, missing some bits but meh ([5b4f735](https://github.com/olipayne/Arduino-Morse-Radio/commit/5b4f73595340c32a001d3dd4f206e269e03704a0))
-
-
-
-# [0.5.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.4.7...v0.5.0) (2024-11-02)
-
-
-### Features
-
-* oof ([1c1c481](https://github.com/olipayne/Arduino-Morse-Radio/commit/1c1c48110963d06fc78ff2717ea18171bc84335e))
-
-
-### Reverts
-
-* Revert "fix: refactor" ([3d65e51](https://github.com/olipayne/Arduino-Morse-Radio/commit/3d65e513580605bfbe9b156ef50b336015cb2b56))
 
 
 
