@@ -148,6 +148,7 @@ void MorseCode::update()
         // Start next symbol
         config.setMorseToneOn(true);
         audio.playMorseTone();
+        audio.pulseDecodePWM(); // Pulse at start of each symbol
         symbolIndex++;
       }
       lastStateChange = currentTime;
