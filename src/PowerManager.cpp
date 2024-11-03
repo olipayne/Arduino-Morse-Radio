@@ -129,6 +129,20 @@ void PowerManager::checkActivity()
     static unsigned long lastDebounceTime = 0;
     const unsigned long debounceDelay = 100; // 100ms debounce
 
+    static unsigned long lastDisplayTime = 0;   // Track last display time
+    const unsigned long displayInterval = 5000; // 5 seconds
+
+    unsigned long currentTime = millis();
+
+    // Only display battery status every 5 seconds
+    if (currentTime - lastDisplayTime >= displayInterval)
+    {
+#ifdef DEBUG_SERIAL_OUTPUT
+        displayBatteryStatus();
+#endif
+        lastDisplayTime = currentTime;
+    }
+
     if (WiFiManager::getInstance().isEnabled())
     {
         lastActivityTime = millis();
@@ -136,7 +150,7 @@ void PowerManager::checkActivity()
     }
 
     // Add debounce for input checks
-    if (millis() - lastDebounceTime > debounceDelay)
+    if (currentTime - lastDebounceTime > debounceDelay)
     {
         if (checkForInputChanges())
         {
@@ -147,7 +161,6 @@ void PowerManager::checkActivity()
     }
 
     // Check if we've been inactive for too long
-    unsigned long currentTime = millis();
     unsigned long inactiveTime = (currentTime - lastActivityTime) / 1000;
 
     // Print remaining time every minute
@@ -268,4 +281,37 @@ void PowerManager::configurePins()
     gpio_pulldown_dis(static_cast<gpio_num_t>(Pins::SLOW_DECODE));
     gpio_pulldown_dis(static_cast<gpio_num_t>(Pins::MED_DECODE));
     gpio_pulldown_dis(static_cast<gpio_num_t>(Pins::WIFI_BUTTON));
+}
+
+void PowerManager::displayBatteryStatus()
+{
+
+    float voltage = getBatteryVoltage();
+    bool isPluggedIn = ums3.getVbusPresent();
+
+    Serial.printf("Battery voltage: %.2fV\n", voltage);
+
+    ums3.setPixelBrightness(10);
+
+    if (isPluggedIn)
+    {
+        ums3.setPixelBrightness(50);
+    }
+    else
+    {
+        ums3.setPixelBrightness(10);
+    }
+    // Normal battery status display
+    if (voltage >= 4.0)
+    {
+        ums3.setPixelColor(0, 255, 0); // Fully Charged - Green
+    }
+    else if (voltage >= 3.7)
+    {
+        ums3.setPixelColor(255, 255, 0); // Moderately Charged - Yellow
+    }
+    else
+    {
+        ums3.setPixelColor(255, 0, 0); // Low Battery - Red
+    }
 }
