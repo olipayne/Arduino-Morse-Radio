@@ -28,9 +28,13 @@ private:
 
     void configurePWM();
 
-    static constexpr int MORSE_FREQUENCY = 800;  // Fixed 800Hz for morse
+    static constexpr int MORSE_FREQUENCY = 800;  // Fixed 800Hz for Morse code
     static constexpr int DECODE_PWM_CHANNEL = 1; // Separate channel for decode pulses
     static constexpr int PULSE_DURATION_MS = 50; // Duration of decode pulse
+
+    // Updated static frequency range
+    static constexpr int MIN_STATIC_FREQ = 100; // 100 Hz
+    static constexpr int MAX_STATIC_FREQ = 300; // 300 Hz
 
     // State tracking
     int currentVolume = 0;

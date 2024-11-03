@@ -158,6 +158,8 @@ private:
         {
           Serial.printf("Station locked: %s (Signal: %d)\n",
                         station->getName(), signalStrength);
+          // Stop the static noise
+          audio.stop();
         }
 
         morse.startMessage(station->getMessage());
