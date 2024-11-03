@@ -4,3 +4,13 @@ node_modules
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .vscode/ipch
+/.pio/
+/build/
+/node_modules/
+/.env
+*.log
+*.elf
+*.bin
+*.hex
+*.map
+*.d
