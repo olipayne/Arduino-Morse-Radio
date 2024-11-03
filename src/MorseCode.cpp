@@ -1,140 +1,188 @@
+// MorseCode.cpp
 #include "MorseCode.h"
-#include "Config.h"
-#include "AudioManager.h"
 
-bool morsePlaying = false;
-bool morseToneOn = false;
-unsigned int dashDuration = 300;
-unsigned int dotDuration = 100;
-unsigned int partGap = 100;
-unsigned int characterGap = 300;
+// Define the Morse code patterns lookup table
+const char *const MorseCode::MORSE_PATTERNS[] = {
+    ".-",    // A
+    "-...",  // B
+    "-.-.",  // C
+    "-..",   // D
+    ".",     // E
+    "..-.",  // F
+    "--.",   // G
+    "....",  // H
+    "..",    // I
+    ".---",  // J
+    "-.-",   // K
+    ".-..",  // L
+    "--",    // M
+    "-.",    // N
+    "---",   // O
+    ".--.",  // P
+    "--.-",  // Q
+    ".-.",   // R
+    "...",   // S
+    "-",     // T
+    "..-",   // U
+    "...-",  // V
+    ".--",   // W
+    "-..-",  // X
+    "-.--",  // Y
+    "--..",  // Z
+    "-----", // 0
+    ".----", // 1
+    "..---", // 2
+    "...--", // 3
+    "....-", // 4
+    ".....", // 5
+    "-....", // 6
+    "--...", // 7
+    "---..", // 8
+    "----."  // 9
+};
 
-String getMorseCode(char c)
+void MorseCode::begin()
 {
-  switch (toupper(c))
-  {
-  case 'A':
-    return ".-";
-  case 'B':
-    return "-...";
-  case 'C':
-    return "-.-.";
-  case 'D':
-    return "-..";
-  case 'E':
-    return ".";
-  case 'F':
-    return "..-.";
-  case 'G':
-    return "--.";
-  case 'H':
-    return "....";
-  case 'I':
-    return "..";
-  case 'J':
-    return ".---";
-  case 'K':
-    return "-.-";
-  case 'L':
-    return ".-..";
-  case 'M':
-    return "--";
-  case 'N':
-    return "-.";
-  case 'O':
-    return "---";
-  case 'P':
-    return ".--.";
-  case 'Q':
-    return "--.-";
-  case 'R':
-    return ".-.";
-  case 'S':
-    return "...";
-  case 'T':
-    return "-";
-  case 'U':
-    return "..-";
-  case 'V':
-    return "...-";
-  case 'W':
-    return ".--";
-  case 'X':
-    return "-..-";
-  case 'Y':
-    return "-.--";
-  case 'Z':
-    return "--..";
-  case '1':
-    return ".----";
-  case '2':
-    return "..---";
-  case '3':
-    return "...--";
-  case '4':
-    return "....-";
-  case '5':
-    return ".....";
-  case '6':
-    return "-....";
-  case '7':
-    return "--...";
-  case '8':
-    return "---..";
-  case '9':
-    return "----.";
-  case '0':
-    return "-----";
-  default:
-    return "";
-  }
+  stop(); // Ensure we start in a clean state
 }
 
-void playMorseMessage(const String &message)
+String MorseCode::getSymbol(char c) const
 {
+  if (c == ' ')
+    return " ";
+
+  c = toupper(c);
+  if (c >= 'A' && c <= 'Z')
+  {
+    return MORSE_PATTERNS[c - 'A'];
+  }
+  if (c >= '0' && c <= '9')
+  {
+    return MORSE_PATTERNS[26 + (c - '0')];
+  }
+  return ""; // Return empty string for unsupported characters
+}
+
+void MorseCode::playMessage(const String &message)
+{
+  auto &config = ConfigManager::getInstance();
+  auto &audio = AudioManager::getInstance();
+
+  if (message.isEmpty())
+    return;
+
+  config.setMorsePlaying(true);
+  shouldStop = false;
+
   Serial.print("Playing Morse Code Message: ");
   Serial.println(message);
 
-  for (int i = 0; i < message.length(); i++)
+  for (size_t i = 0; i < message.length() && !shouldStop; i++)
   {
-    String morseCode = getMorseCode(message[i]);
+    String morseChar = getSymbol(message[i]);
 
-    for (int j = 0; j < morseCode.length(); j++)
+    if (message[i] == SPACE)
     {
-      bool isDash = (morseCode[j] == '-');
-      int duration = isDash ? dashDuration : dotDuration;
-      Serial.print(isDash ? "Dash " : "Dot ");
-      Serial.print("on GPIO ");
-      Serial.print(SPEAKER_PIN);
-      Serial.print(" for ");
-      Serial.print(duration);
-      Serial.println(" ms");
-
-      // Turn on the speaker (play tone)
-      ledcWriteTone(SPEAKER_CHANNEL, 1000); // Set 1000 Hz tone frequency
-      ledcWrite(SPEAKER_CHANNEL, 128);      // Set duty cycle for volume
-
-      delay(duration);
-
-      // Turn off the speaker between tones
-      ledcWrite(SPEAKER_CHANNEL, 0);
-      delay(partGap);
+      wordGap();
+      continue;
     }
 
-    // Gap between characters
-    delay(characterGap);
+    for (size_t j = 0; j < morseChar.length() && !shouldStop; j++)
+    {
+      playSymbol(morseChar[j]);
+      if (j < morseChar.length() - 1)
+      {
+        symbolGap();
+      }
+    }
+
+    if (i < message.length() - 1 && message[i + 1] != SPACE)
+    {
+      letterGap();
+    }
   }
 
-  Serial.println("Morse Code Message Playback Complete");
+  config.setMorsePlaying(false);
+  config.setMorseToneOn(false);
+  audio.stop();
 }
 
-void stopMorse()
+void MorseCode::playSymbol(char symbol)
 {
-  morsePlaying = false;
+  auto &config = ConfigManager::getInstance();
+  auto &audio = AudioManager::getInstance();
+
+  config.setMorseToneOn(true);
+  audio.playMorseTone();
+
+  if (symbol == DOT)
+  {
+    dotDelay();
+  }
+  else if (symbol == DASH)
+  {
+    dashDelay();
+  }
+
+  config.setMorseToneOn(false);
+  audio.stopMorseTone();
 }
 
-int calculateSignalStrength(int potValue, int targetValue)
+void MorseCode::stop()
 {
-  int difference = abs(potValue - targetValue);
-  return difference <= LEEWAY ? map(difference, 0, LEEWAY, 255, 0) : 0;
+  shouldStop = true;
+  auto &config = ConfigManager::getInstance();
+  auto &audio = AudioManager::getInstance();
+
+  config.setMorsePlaying(false);
+  config.setMorseToneOn(false);
+  audio.stop();
+}
+
+void MorseCode::dotDelay()
+{
+  const auto &timings = ConfigManager::getInstance().getCurrentMorseTimings();
+  delay(timings.dotDuration);
+}
+
+void MorseCode::dashDelay()
+{
+  const auto &timings = ConfigManager::getInstance().getCurrentMorseTimings();
+  delay(timings.dashDuration);
+}
+
+void MorseCode::symbolGap()
+{
+  const auto &timings = ConfigManager::getInstance().getCurrentMorseTimings();
+  delay(timings.symbolGap);
+}
+
+void MorseCode::letterGap()
+{
+  const auto &timings = ConfigManager::getInstance().getCurrentMorseTimings();
+  delay(timings.letterGap);
+}
+
+void MorseCode::wordGap()
+{
+  const auto &timings = ConfigManager::getInstance().getCurrentMorseTimings();
+  delay(timings.wordGap);
+}
+
+void MorseCode::printMessage(const String &message)
+{
+  Serial.print("Message '");
+  Serial.print(message);
+  Serial.print("' in Morse code: ");
+
+  for (size_t i = 0; i < message.length(); i++)
+  {
+    String morseChar = getSymbol(message[i]);
+    Serial.print(morseChar);
+    if (i < message.length() - 1)
+    {
+      Serial.print(" ");
+    }
+  }
+  Serial.println();
 }

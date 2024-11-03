@@ -1,55 +1,115 @@
+// AudioManager.cpp
 #include "AudioManager.h"
-#include "MorseCode.h"
-#include "Config.h"
 
-void setVolume(int volume)
+void AudioManager::begin()
 {
-    speakerDutyCycle = map(volume, 0, 4095, 0, 255); // Map ADC value to PWM duty cycle (0-255)
+    // Configure PWM channels for audio output
+    ledcSetup(Audio::SPEAKER_CHANNEL, Audio::PWM_FREQUENCY, Audio::PWM_RESOLUTION);
+    ledcAttachPin(Pins::SPEAKER, Audio::SPEAKER_CHANNEL);
+
+    // Configure PWM for decode indicator
+    ledcSetup(1, Audio::PWM_FREQUENCY, Audio::PWM_RESOLUTION);
+    ledcAttachPin(Pins::DECODE_PWM, 1);
+
+    // Initialize volume control
+    pinMode(Pins::VOLUME_POT, INPUT);
+    updateVolume();
 }
 
-void handleAudioPlayback()
+void AudioManager::configurePWM()
 {
-    // Read the current volume level from the VOLUME_ADC
-    int volumeADC = analogRead(VOLUME_ADC); // Read the volume potentiometer (pin 18)
-    setVolume(volumeADC);                   // Update speakerDutyCycle based on ADC value
+    ledcSetup(Audio::SPEAKER_CHANNEL, Audio::PWM_FREQUENCY, Audio::PWM_RESOLUTION);
+    ledcAttachPin(Pins::SPEAKER, Audio::SPEAKER_CHANNEL);
+}
 
-    if (morsePlaying)
+void AudioManager::setVolume(int adcValue)
+{
+    auto &config = ConfigManager::getInstance();
+    currentVolume = map(adcValue, 0, Radio::ADC_MAX, 0, 255);
+    config.setSpeakerVolume(currentVolume);
+}
+
+void AudioManager::updateVolume()
+{
+    unsigned long currentTime = millis();
+    if (currentTime - lastVolumeUpdate >= VOLUME_UPDATE_INTERVAL)
     {
-        if (morseToneOn)
+        int volumeRead = analogRead(Pins::VOLUME_POT);
+        if (abs(volumeRead - lastVolumeRead) > 50)
+        { // Apply some hysteresis
+            setVolume(volumeRead);
+            lastVolumeRead = volumeRead;
+        }
+        lastVolumeUpdate = currentTime;
+    }
+}
+
+void AudioManager::handlePlayback()
+{
+    auto &config = ConfigManager::getInstance();
+    updateVolume();
+
+    if (config.isMorsePlaying())
+    {
+        if (config.isMorseToneOn())
         {
-            ledcWriteTone(SPEAKER_CHANNEL, morseFrequency); // Set frequency for Morse tone
-            ledcWrite(SPEAKER_CHANNEL, speakerDutyCycle);   // Apply mapped volume to Morse code
-            pulseDecodePWM();
+            playMorseTone();
+            pulseDecodeLED();
         }
         else
         {
-            ledcWrite(SPEAKER_CHANNEL, 0); // Turn off sound between Morse tones
+            stopMorseTone();
         }
     }
     else
     {
-        // Generate static noise when not locked onto a station
-        int signalStrength = calculateSignalStrength(2000, 1000); // Replace 2000 and 1000 as needed
+        // When not playing Morse code, generate static based on tuning
+        int signalStrength = analogRead(Pins::TUNING_POT); // This will be refined based on station tuning
         playStaticNoise(signalStrength);
     }
 }
 
-void playStaticNoise(int signalStrength)
+void AudioManager::playStaticNoise(int signalStrength)
 {
-    // Adjust static noise frequency and volume based on signal strength and volume setting
-    int noiseFrequency = random(100, 300); // Random frequency between 100Hz and 300Hz
-    ledcWriteTone(SPEAKER_CHANNEL, noiseFrequency);
-    ledcWrite(SPEAKER_CHANNEL, map(signalStrength, 0, 255, 0, speakerDutyCycle)); // Adjusted volume based on signal strength
+    // Generate random frequency for static noise
+    int noiseFrequency = random(Audio::MIN_STATIC_FREQ, Audio::MAX_STATIC_FREQ);
+    ledcWriteTone(Audio::SPEAKER_CHANNEL, noiseFrequency);
+
+    // Scale volume based on signal strength
+    int scaledVolume = map(signalStrength, 0, 255, 0, currentVolume);
+    ledcWrite(Audio::SPEAKER_CHANNEL, scaledVolume);
 }
 
-void stopAudio()
+void AudioManager::playMorseTone()
 {
-    ledcWrite(SPEAKER_CHANNEL, 0); // Stop all audio output
+    auto &config = ConfigManager::getInstance();
+    ledcWriteTone(Audio::SPEAKER_CHANNEL, config.getMorseFrequency());
+    ledcWrite(Audio::SPEAKER_CHANNEL, currentVolume);
 }
 
-void pulseDecodePWM()
+void AudioManager::stopMorseTone()
 {
-    ledcWrite(DECODE_PWM_PIN, 255); // Pulse for decode indication
-    delay(10);
-    ledcWrite(DECODE_PWM_PIN, 0);
+    ledcWrite(Audio::SPEAKER_CHANNEL, 0);
+}
+
+void AudioManager::stop()
+{
+    ledcWrite(Audio::SPEAKER_CHANNEL, 0);
+    auto &config = ConfigManager::getInstance();
+    config.setMorsePlaying(false);
+    config.setMorseToneOn(false);
+}
+
+void AudioManager::pulseDecodeLED()
+{
+    static unsigned long lastPulse = 0;
+    unsigned long currentTime = millis();
+
+    if (currentTime - lastPulse >= 10)
+    { // 10ms pulse width
+        digitalWrite(Pins::DECODE_PWM, HIGH);
+        delay(1); // Very short pulse
+        digitalWrite(Pins::DECODE_PWM, LOW);
+        lastPulse = currentTime;
+    }
 }

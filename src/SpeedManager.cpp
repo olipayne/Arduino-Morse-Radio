@@ -2,16 +2,18 @@
 
 void updatePlaybackSpeed()
 {
-    if (digitalRead(SLOW_DECODE) == LOW)
+    auto &config = ConfigManager::getInstance();
+
+    if (digitalRead(Pins::SLOW_DECODE) == LOW)
     {
-        morseSpeed = LOW_SPEED;
+        config.setMorseSpeed(MorseSpeed::SLOW);
     }
-    else if (digitalRead(MED_DECODE) == LOW)
+    else if (digitalRead(Pins::MED_DECODE) == LOW)
     {
-        morseSpeed = MEDIUM_SPEED;
+        config.setMorseSpeed(MorseSpeed::MEDIUM);
     }
     else
     {
-        morseSpeed = HIGH_SPEED;
+        config.setMorseSpeed(MorseSpeed::FAST);
     }
 }

@@ -1,40 +1,87 @@
 #include "WiFiManager.h"
-#include <WiFi.h>
-#include <WebServer.h>
-#include "Config.h"
-#include "Stations.h"
 
-WebServer server(80);
-bool wifiEnabled = false; // Define Wi-Fi state here
-unsigned long wifiStartTime = 0;
-unsigned long ledFlashStartTime = 0;     // LED flashing timer
-const int LED_FLASH_INTERVAL = 500;      // Flash interval for LED
-const int LED_BUILTIN_PIN = LED_BUILTIN; // Onboard LED pin
+// HTML Templates
+const char *WiFiManager::HTML_HEADER = R"(
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Radio Configuration</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>)";
 
-// Function prototypes
-void handleRoot();       // Prototype for the root handler
-void handleSaveConfig(); // Prototype for the save configuration handler
+const char *WiFiManager::CSS_STYLES = R"(
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .station { background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .wave-band { background: #e0e0e0; padding: 10px; margin: 15px 0; border-radius: 3px; }
+        input[type="number"], input[type="text"] { width: 100%; padding: 8px; margin: 5px 0; box-sizing: border-box; }
+        button { background: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #45a049; }
+        .status { color: #666; font-size: 0.9em; margin-top: 5px; }
+        .error { color: #ff0000; }
+        .success { color: #008000; }
+)";
 
-void initWiFiManager()
+const char *WiFiManager::HTML_FOOTER = R"(
+    </body>
+</html>)";
+
+WiFiManager::WiFiManager()
+    : server(80),
+      wifiEnabled(false),
+      startTime(0),
+      lastLedFlash(0),
+      timeoutDuration(DEFAULT_TIMEOUT),
+      hostname("radio-config")
 {
-  WiFi.mode(WIFI_OFF);
-  pinMode(LED_BUILTIN_PIN, OUTPUT);   // Set LED as output
-  digitalWrite(LED_BUILTIN_PIN, LOW); // Ensure LED is off initially
 }
 
-void startWiFi()
+String WiFiManager::generateHTML(const String &content) const
 {
-  WiFi.mode(WIFI_AP);
-  WiFi.softAP("Radio_" + WiFi.macAddress().substring(6));
-  server.begin();
-  wifiEnabled = true;
-  wifiStartTime = millis();
-  Serial.println("Wi-Fi started");
-  server.on("/", HTTP_GET, handleRoot);
-  server.on("/save", HTTP_POST, handleSaveConfig);
+  String html = HTML_HEADER;
+  html += CSS_STYLES;
+  html += "</style></head><body>";
+  html += content;
+  html += HTML_FOOTER;
+  return html;
 }
 
-void stopWiFi()
+void WiFiManager::begin()
+{
+  pinMode(Pins::WIFI_BUTTON, INPUT_PULLUP);
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, LOW);
+}
+
+void WiFiManager::handle()
+{
+  if (!wifiEnabled)
+    return;
+
+  server.handleClient();
+
+  // Check for timeout
+  if (millis() - startTime > timeoutDuration)
+  {
+    stop();
+    return;
+  }
+
+  updateStatusLED();
+}
+
+void WiFiManager::toggle()
+{
+  if (wifiEnabled)
+  {
+    stop();
+  }
+  else
+  {
+    startAP();
+  }
+}
+
+void WiFiManager::stop()
 {
   if (wifiEnabled)
   {
@@ -42,94 +89,204 @@ void stopWiFi()
     WiFi.softAPdisconnect(true);
     WiFi.mode(WIFI_OFF);
     wifiEnabled = false;
-    digitalWrite(LED_BUILTIN_PIN, LOW); // Turn off LED when Wi-Fi stops
-    Serial.println("Wi-Fi stopped");
+    digitalWrite(LED_BUILTIN, LOW);
+    Serial.println("WiFi stopped");
   }
 }
 
-void toggleWiFi()
+void WiFiManager::startAP()
 {
-  if (wifiEnabled)
+  WiFi.mode(WIFI_AP);
+
+  // Create unique SSID using chip ID
+  String ssid = "Radio_" + String((uint32_t)ESP.getEfuseMac(), HEX);
+
+  // Start AP with generated SSID
+  if (WiFi.softAP(ssid.c_str(), nullptr, AP_CHANNEL, false, MAX_CONNECTIONS))
   {
-    stopWiFi();
+    setupServer();
+    setupMDNS();
+
+    wifiEnabled = true;
+    startTime = millis();
+    Serial.println("WiFi AP started: " + ssid);
+    Serial.print("AP IP address: ");
+    Serial.println(WiFi.softAPIP());
   }
   else
   {
-    startWiFi();
+    Serial.println("Failed to start WiFi AP");
   }
 }
 
-void handleWiFi()
+void WiFiManager::setupServer()
 {
-  if (wifiEnabled)
+  server.on("/", HTTP_GET, [this]()
+            { handleRoot(); });
+  server.on("/save", HTTP_POST, [this]()
+            { handleSaveConfig(); });
+  server.on("/stations", HTTP_GET, [this]()
+            { handleStationConfig(); });
+  server.on("/api/status", HTTP_GET, [this]()
+            { handleAPI(); });
+  server.onNotFound([this]()
+                    { handleNotFound(); });
+  server.begin();
+}
+
+void WiFiManager::setupMDNS()
+{
+  if (MDNS.begin(hostname.c_str()))
   {
-    server.handleClient();
-    if (millis() - wifiStartTime > 120000)
-    {             // Check if 2 minutes have passed
-      stopWiFi(); // Stop Wi-Fi only once
+    MDNS.addService("http", "tcp", 80);
+    Serial.println("MDNS responder started at http://" + hostname + ".local");
+  }
+}
+
+void WiFiManager::handleRoot()
+{
+  server.send(200, "text/html", generateHTML(generateConfigPage()));
+}
+
+void WiFiManager::handleSaveConfig()
+{
+  bool success = true;
+  String message = "Configuration saved successfully";
+
+  auto &stationManager = StationManager::getInstance();
+
+  for (size_t i = 0; i < stationManager.getStationCount(); i++)
+  {
+    String freqKey = "freq_" + String(i);
+    String msgKey = "msg_" + String(i);
+
+    if (server.hasArg(freqKey) && server.hasArg(msgKey))
+    {
+      int frequency = server.arg(freqKey).toInt();
+      String newMessage = server.arg(msgKey);
+
+      if (frequency > 0)
+      {
+        stationManager.updateStation(i, frequency, newMessage);
+      }
+      else
+      {
+        success = false;
+        message = "Invalid frequency value";
+        break;
+      }
     }
   }
+
+  if (success)
+  {
+    stationManager.saveToPreferences();
+  }
+
+  String response = "<div class='" + String(success ? "success" : "error") + "'>" + message + "</div>";
+  server.send(200, "text/html", generateHTML(response + generateConfigPage()));
 }
 
-// Flash the built-in LED while Wi-Fi is active
-void updateWiFiLED()
+String WiFiManager::generateConfigPage() const
+{
+  String html = "<h1>Radio Configuration</h1>";
+  html += "<form method='POST' action='/save'>";
+  html += generateStationTable();
+  html += "<button type='submit'>Save Configuration</button>";
+  html += "</form>";
+  return html;
+}
+
+String WiFiManager::generateStationTable() const
+{
+  String html;
+  auto &stationManager = StationManager::getInstance();
+
+  WaveBand currentBand = WaveBand::LONG_WAVE;
+  bool firstBand = true;
+
+  for (size_t i = 0; i < stationManager.getStationCount(); i++)
+  {
+    const Station *station = stationManager.getStation(i);
+    if (!station)
+      continue;
+
+    if (station->getBand() != currentBand)
+    {
+      if (!firstBand)
+        html += "</div>";
+      currentBand = station->getBand();
+      html += "<div class='wave-band'><h2>" + String(toString(currentBand)) + "</h2>";
+      firstBand = false;
+    }
+
+    html += "<div class='station'>";
+    html += "<h3>" + String(station->getName()) + "</h3>";
+    html += "<label>Frequency:<br><input type='number' name='freq_" + String(i) +
+            "' value='" + String(station->getFrequency()) + "'></label><br>";
+    html += "<label>Message:<br><input type='text' name='msg_" + String(i) +
+            "' value='" + station->getMessage() + "'></label>";
+    html += "</div>";
+  }
+
+  if (!firstBand)
+    html += "</div>"; // Close last wave-band div
+  return html;
+}
+
+void WiFiManager::handleStationConfig()
+{
+  server.send(200, "text/html", generateHTML(generateStationTable()));
+}
+
+void WiFiManager::handleAPI()
+{
+  server.send(200, "application/json", generateStatusJson());
+}
+
+String WiFiManager::generateStatusJson() const
+{
+  String json = "{";
+  json += "\"wifiEnabled\":" + String(wifiEnabled ? "true" : "false") + ",";
+  json += "\"uptime\":" + String((millis() - startTime) / 1000) + ",";
+  json += "\"timeoutIn\":" + String((timeoutDuration - (millis() - startTime)) / 1000);
+  json += "}";
+  return json;
+}
+
+void WiFiManager::handleNotFound()
+{
+  String message = "File Not Found\n\n";
+  message += "URI: " + server.uri() + "\n";
+  message += "Method: " + String(server.method() == HTTP_GET ? "GET" : "POST") + "\n";
+  server.send(404, "text/plain", message);
+}
+
+void WiFiManager::updateStatusLED()
 {
   if (wifiEnabled)
   {
     unsigned long currentTime = millis();
-    if (currentTime - ledFlashStartTime >= LED_FLASH_INTERVAL)
+    if (currentTime - lastLedFlash >= LED_FLASH_INTERVAL)
     {
-      digitalWrite(LED_BUILTIN_PIN, !digitalRead(LED_BUILTIN_PIN)); // Toggle LED state
-      ledFlashStartTime = currentTime;                              // Reset flash timer
+      flashLED();
+      lastLedFlash = currentTime;
     }
-  }
-  else
-  {
-    digitalWrite(LED_BUILTIN_PIN, LOW); // Ensure LED is off when Wi-Fi is inactive
   }
 }
 
-// HTML form to configure station frequencies and messages
-void handleRoot()
+void WiFiManager::flashLED()
 {
-  String html = R"rawliteral(
-<!DOCTYPE html>
-<html>
-<head><title>Radio Configuration</title></head>
-<body>
-  <h1>Station Configuration</h1>
-  <form action="/save" method="POST">
-)rawliteral";
-
-  for (int i = 0; i < numStations; i++)
-  {
-    html += "<h2>" + String(stations[i].name) + " (" + String(stations[i].band == LONG_WAVE ? "Long Wave" : (stations[i].band == MEDIUM_WAVE ? "Medium Wave" : "Short Wave")) + ")</h2>";
-    html += "Frequency: <input type='number' name='freq" + String(i) + "' value='" + String(stations[i].frequency) + "'><br>";
-    html += "Message: <input type='text' name='msg" + String(i) + "' value='" + stations[i].message + "'><br><br>";
-  }
-
-  html += "<input type='submit' value='Save Configurations'>";
-  html += "</form></body></html>";
-
-  server.send(200, "text/html", html);
+  static bool ledState = false;
+  ledState = !ledState;
+  digitalWrite(LED_BUILTIN, ledState);
 }
 
-// Save configurations from the web form
-void handleSaveConfig()
+void WiFiManager::setHostname(const String &name)
 {
-  for (int i = 0; i < numStations; i++)
+  hostname = name;
+  if (wifiEnabled)
   {
-    if (server.hasArg("freq" + String(i)))
-    {
-      stations[i].frequency = server.arg("freq" + String(i)).toInt();
-    }
-    if (server.hasArg("msg" + String(i)))
-    {
-      stations[i].message = server.arg("msg" + String(i));
-    }
+    setupMDNS(); // Restart MDNS with new hostname
   }
-
-  // Provide feedback and redirect back to the root page
-  String html = "<html><body><h2>Configurations Saved!</h2><a href='/'>Go Back</a></body></html>";
-  server.send(200, "text/html", html);
 }
