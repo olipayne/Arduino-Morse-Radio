@@ -3,6 +3,7 @@
 #include <UMS3.h>
 
 #include "Config.h"
+#include "PowerManager.h"
 #include "AudioManager.h"
 #include "MorseCode.h"
 #include "StationManager.h"
@@ -18,25 +19,47 @@ public:
     Serial.begin(115200);
     Serial.println("\nTeam Building Radio Starting...");
 
-    // Initialize all subsystems
     initializeSubsystems();
-    setupDebugOutput();
   }
 
   void loop()
   {
-    handleWiFiButton();
-    handleTuning();
-    updateManagers();
-    outputDebugInfo();
+    static unsigned long lastSystemUpdate = 0;
+    static unsigned long lastBatteryCheck = 0;
+    const unsigned long SYSTEM_UPDATE_INTERVAL = 20;    // 20ms system update interval
+    const unsigned long BATTERY_CHECK_INTERVAL = 60000; // Check battery every minute
 
-    // Small delay to prevent overwhelming the CPU
-    delay(10);
+    unsigned long currentTime = millis();
+
+    // Battery management
+    if (currentTime - lastBatteryCheck >= BATTERY_CHECK_INTERVAL)
+    {
+      handleBatteryStatus();
+      lastBatteryCheck = currentTime;
+    }
+
+    // Main system update
+    if (currentTime - lastSystemUpdate >= SYSTEM_UPDATE_INTERVAL)
+    {
+      handleWiFiButton();
+      handleTuning();
+      updateManagers();
+      outputDebugInfo();
+      lastSystemUpdate = currentTime;
+    }
+
+    // Check for inactivity
+    PowerManager::getInstance().checkActivity();
+
+    delay(10); // Small delay to prevent overwhelming the CPU
   }
 
 private:
   void initializeSubsystems()
   {
+    // Initialize power management first
+    PowerManager::getInstance().begin();
+
     // Initialize ConfigManager first as other systems depend on it
     ConfigManager::getInstance().begin();
 
@@ -49,6 +72,28 @@ private:
     SpeedManager::getInstance().begin();
 
     Serial.println("All subsystems initialized");
+  }
+
+  void handleBatteryStatus()
+  {
+    auto &power = PowerManager::getInstance();
+    float voltage = power.getBatteryVoltage();
+
+    if (power.isLowBattery())
+    {
+      // Flash LED pattern to indicate low battery
+      for (int i = 0; i < 3; i++)
+      {
+        digitalWrite(LED_BUILTIN, HIGH);
+        delay(100);
+        digitalWrite(LED_BUILTIN, LOW);
+        delay(100);
+      }
+      // Switch to low power mode
+      power.setCpuLowSpeed();
+    }
+
+    Serial.printf("Battery Voltage: %.2fV\n", voltage);
   }
 
   void handleWiFiButton()
