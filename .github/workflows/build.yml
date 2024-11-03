@@ -69,6 +69,6 @@ jobs:
       - name: Create Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG_NAME: ${{ github.sha }}
+          TAG_NAME: "v1.0-${{ github.run_number }}"
           BODY: "Release for commit ${{ github.sha }}"
         run: gh release create "$TAG_NAME" --notes "$BODY" ./artifacts/firmware-${{ github.sha }}-production.bin ./artifacts/firmware-${{ github.sha }}-debug.bin
