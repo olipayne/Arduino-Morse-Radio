@@ -108,10 +108,9 @@ private:
         {
           Serial.printf("Station locked: %s (Signal: %d)\n",
                         station->getName(), signalStrength);
-          stationLockTime = millis();
         }
 
-        morse.playMessage(station->getMessage());
+        morse.startMessage(station->getMessage());
         lastStation = station;
       }
     }
@@ -125,6 +124,9 @@ private:
       }
       audio.playStaticNoise(signalStrength);
     }
+
+    // Update morse code state
+    morse.update();
   }
 
   void updateManagers()

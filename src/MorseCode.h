@@ -1,4 +1,3 @@
-// MorseCode.h
 #ifndef MORSE_CODE_H
 #define MORSE_CODE_H
 
@@ -15,52 +14,41 @@ public:
         return instance;
     }
 
-    // Core functions
     void begin();
-    void playMessage(const String &message);
+    void update(); // Call this in the main loop
+    void startMessage(const String &message);
     void stop();
 
-    // Settings
     void setSpeed(MorseSpeed speed)
     {
         ConfigManager::getInstance().setMorseSpeed(speed);
     }
 
-    // Status
     bool isPlaying() const
     {
         return ConfigManager::getInstance().isMorsePlaying();
     }
-
-    // Debug
-    void printMessage(const String &message); // Prints Morse code pattern to Serial
 
 private:
     MorseCode() = default;
     MorseCode(const MorseCode &) = delete;
     MorseCode &operator=(const MorseCode &) = delete;
 
-    // Morse code conversion
     String getSymbol(char c) const;
-    void playSymbol(char symbol);
 
-    // Timing helpers
-    void dotDelay();
-    void dashDelay();
-    void symbolGap();
-    void letterGap();
-    void wordGap();
+    // Message state
+    String currentMessage;
+    size_t messageIndex = 0; // Current character in message
+    size_t symbolIndex = 0;  // Current symbol in character
+    String currentMorseChar; // Current character's morse code
 
-    // Internal state tracking
-    unsigned long lastToneStart = 0;
-    bool shouldStop = false;
+    // Timing state
+    unsigned long lastStateChange = 0;
+    unsigned long tuneInStartTime = 0;
+    bool inTuneInDelay = false;
 
     // Constants
-    static constexpr char DOT = '.';
-    static constexpr char DASH = '-';
-    static constexpr char SPACE = ' ';
-
-    // Lookup table for Morse code patterns
+    static constexpr unsigned long TUNE_IN_DELAY = 1000; // 1 second delay before starting
     static const char *const MORSE_PATTERNS[];
 };
 

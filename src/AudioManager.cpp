@@ -1,42 +1,35 @@
-// AudioManager.cpp
 #include "AudioManager.h"
 
 void AudioManager::begin()
 {
-    // Configure PWM channels for audio output
-    ledcSetup(Audio::SPEAKER_CHANNEL, Audio::PWM_FREQUENCY, Audio::PWM_RESOLUTION);
-    ledcAttachPin(Pins::SPEAKER, Audio::SPEAKER_CHANNEL);
-
-    // Configure PWM for decode indicator
-    ledcSetup(1, Audio::PWM_FREQUENCY, Audio::PWM_RESOLUTION);
-    ledcAttachPin(Pins::DECODE_PWM, 1);
-
-    // Initialize volume control
-    pinMode(Pins::VOLUME_POT, INPUT);
-    updateVolume();
+    configurePWM();
 }
 
 void AudioManager::configurePWM()
 {
-    ledcSetup(Audio::SPEAKER_CHANNEL, Audio::PWM_FREQUENCY, Audio::PWM_RESOLUTION);
+    // Configure PWM for speaker
+    ledcSetup(Audio::SPEAKER_CHANNEL, MORSE_FREQUENCY, 8); // 800Hz, 8-bit resolution
     ledcAttachPin(Pins::SPEAKER, Audio::SPEAKER_CHANNEL);
+
+    // Configure decode indicator
+    ledcSetup(1, 5000, 8);
+    ledcAttachPin(Pins::DECODE_PWM, 1);
 }
 
 void AudioManager::setVolume(int adcValue)
 {
-    auto &config = ConfigManager::getInstance();
-    currentVolume = map(adcValue, 0, Radio::ADC_MAX, 0, 255);
-    config.setSpeakerVolume(currentVolume);
+    currentVolume = map(adcValue, 0, Radio::ADC_MAX, 0, 255); // Map to 8-bit
 }
 
-void AudioManager::updateVolume()
+void AudioManager::handlePlayback()
 {
+    // Update volume periodically
     unsigned long currentTime = millis();
     if (currentTime - lastVolumeUpdate >= VOLUME_UPDATE_INTERVAL)
     {
         int volumeRead = analogRead(Pins::VOLUME_POT);
         if (abs(volumeRead - lastVolumeRead) > 50)
-        { // Apply some hysteresis
+        { // Apply hysteresis
             setVolume(volumeRead);
             lastVolumeRead = volumeRead;
         }
@@ -44,46 +37,10 @@ void AudioManager::updateVolume()
     }
 }
 
-void AudioManager::handlePlayback()
-{
-    auto &config = ConfigManager::getInstance();
-    updateVolume();
-
-    if (config.isMorsePlaying())
-    {
-        if (config.isMorseToneOn())
-        {
-            playMorseTone();
-            pulseDecodeLED();
-        }
-        else
-        {
-            stopMorseTone();
-        }
-    }
-    else
-    {
-        // When not playing Morse code, generate static based on tuning
-        int signalStrength = analogRead(Pins::TUNING_POT); // This will be refined based on station tuning
-        playStaticNoise(signalStrength);
-    }
-}
-
-void AudioManager::playStaticNoise(int signalStrength)
-{
-    // Generate random frequency for static noise
-    int noiseFrequency = random(Audio::MIN_STATIC_FREQ, Audio::MAX_STATIC_FREQ);
-    ledcWriteTone(Audio::SPEAKER_CHANNEL, noiseFrequency);
-
-    // Scale volume based on signal strength
-    int scaledVolume = map(signalStrength, 0, 255, 0, currentVolume);
-    ledcWrite(Audio::SPEAKER_CHANNEL, scaledVolume);
-}
-
 void AudioManager::playMorseTone()
 {
-    auto &config = ConfigManager::getInstance();
-    ledcWriteTone(Audio::SPEAKER_CHANNEL, config.getMorseFrequency());
+    // Always set 800Hz before playing the tone
+    ledcWriteTone(Audio::SPEAKER_CHANNEL, MORSE_FREQUENCY);
     ledcWrite(Audio::SPEAKER_CHANNEL, currentVolume);
 }
 
@@ -92,24 +49,17 @@ void AudioManager::stopMorseTone()
     ledcWrite(Audio::SPEAKER_CHANNEL, 0);
 }
 
+void AudioManager::playStaticNoise(int signalStrength)
+{
+    // Generate random noise with filtered frequency range
+    int noiseFrequency = random(Audio::MIN_STATIC_FREQ, Audio::MAX_STATIC_FREQ);
+    int scaledVolume = map(signalStrength, 0, 255, 0, currentVolume);
+
+    ledcWriteTone(Audio::SPEAKER_CHANNEL, noiseFrequency);
+    ledcWrite(Audio::SPEAKER_CHANNEL, scaledVolume);
+}
+
 void AudioManager::stop()
 {
     ledcWrite(Audio::SPEAKER_CHANNEL, 0);
-    auto &config = ConfigManager::getInstance();
-    config.setMorsePlaying(false);
-    config.setMorseToneOn(false);
-}
-
-void AudioManager::pulseDecodeLED()
-{
-    static unsigned long lastPulse = 0;
-    unsigned long currentTime = millis();
-
-    if (currentTime - lastPulse >= 10)
-    { // 10ms pulse width
-        digitalWrite(Pins::DECODE_PWM, HIGH);
-        delay(1); // Very short pulse
-        digitalWrite(Pins::DECODE_PWM, LOW);
-        lastPulse = currentTime;
-    }
 }

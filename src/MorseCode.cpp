@@ -1,7 +1,5 @@
-// MorseCode.cpp
 #include "MorseCode.h"
 
-// Define the Morse code patterns lookup table
 const char *const MorseCode::MORSE_PATTERNS[] = {
     ".-",    // A
     "-...",  // B
@@ -43,7 +41,133 @@ const char *const MorseCode::MORSE_PATTERNS[] = {
 
 void MorseCode::begin()
 {
-  stop(); // Ensure we start in a clean state
+  stop();
+}
+
+void MorseCode::startMessage(const String &message)
+{
+  currentMessage = message;
+  messageIndex = 0;
+  symbolIndex = 0;
+  inTuneInDelay = true;
+  tuneInStartTime = millis();
+
+  auto &config = ConfigManager::getInstance();
+  config.setMorsePlaying(true);
+  config.setMorseToneOn(false);
+
+  Serial.print("Starting Morse Message: ");
+  Serial.println(message);
+}
+
+void MorseCode::update()
+{
+  auto &config = ConfigManager::getInstance();
+  auto &audio = AudioManager::getInstance();
+
+  if (!config.isMorsePlaying())
+    return;
+
+  unsigned long currentTime = millis();
+
+  // Handle tune-in delay
+  if (inTuneInDelay)
+  {
+    if (currentTime - tuneInStartTime >= TUNE_IN_DELAY)
+    {
+      inTuneInDelay = false;
+      lastStateChange = currentTime;
+    }
+    return;
+  }
+
+  // Get current timing configuration
+  const auto &timings = config.getCurrentMorseTimings();
+
+  // If we need to start a new character
+  if (symbolIndex == 0 || currentMorseChar.isEmpty())
+  {
+    if (messageIndex >= currentMessage.length())
+    {
+      // Message complete, start over
+      messageIndex = 0;
+      lastStateChange = currentTime;
+      return;
+    }
+
+    // Get next character's morse code
+    currentMorseChar = getSymbol(currentMessage[messageIndex]);
+    if (currentMorseChar.isEmpty())
+    {
+      // Skip invalid characters
+      messageIndex++;
+      return;
+    }
+  }
+
+  // Handle spaces between words
+  if (currentMessage[messageIndex] == ' ')
+  {
+    if (currentTime - lastStateChange >= timings.wordGap)
+    {
+      messageIndex++;
+      symbolIndex = 0;
+      lastStateChange = currentTime;
+    }
+    return;
+  }
+
+  // Get the current symbol (dot or dash)
+  char currentSymbol = currentMorseChar[symbolIndex];
+  bool isSymbolOn = config.isMorseToneOn();
+  unsigned long symbolDuration = (currentSymbol == '-') ? timings.dashDuration : timings.dotDuration;
+  unsigned long gapDuration = (symbolIndex == currentMorseChar.length() - 1) ? timings.letterGap : timings.symbolGap;
+
+  // Toggle the morse tone on/off based on timing
+  if (isSymbolOn)
+  {
+    if (currentTime - lastStateChange >= symbolDuration)
+    {
+      config.setMorseToneOn(false);
+      audio.stopMorseTone();
+      lastStateChange = currentTime;
+    }
+  }
+  else
+  {
+    if (currentTime - lastStateChange >= gapDuration)
+    {
+      if (symbolIndex >= currentMorseChar.length())
+      {
+        // Move to next character
+        messageIndex++;
+        symbolIndex = 0;
+      }
+      else
+      {
+        // Start next symbol
+        config.setMorseToneOn(true);
+        audio.playMorseTone();
+        symbolIndex++;
+      }
+      lastStateChange = currentTime;
+    }
+  }
+}
+
+void MorseCode::stop()
+{
+  auto &config = ConfigManager::getInstance();
+  auto &audio = AudioManager::getInstance();
+
+  config.setMorsePlaying(false);
+  config.setMorseToneOn(false);
+  audio.stopMorseTone();
+
+  messageIndex = 0;
+  symbolIndex = 0;
+  currentMorseChar.clear();
+  inTuneInDelay = false;
 }
 
 String MorseCode::getSymbol(char c) const
@@ -61,128 +185,4 @@ String MorseCode::getSymbol(char c) const
     return MORSE_PATTERNS[26 + (c - '0')];
   }
   return ""; // Return empty string for unsupported characters
-}
-
-void MorseCode::playMessage(const String &message)
-{
-  auto &config = ConfigManager::getInstance();
-  auto &audio = AudioManager::getInstance();
-
-  if (message.isEmpty())
-    return;
-
-  config.setMorsePlaying(true);
-  shouldStop = false;
-
-  Serial.print("Playing Morse Code Message: ");
-  Serial.println(message);
-
-  for (size_t i = 0; i < message.length() && !shouldStop; i++)
-  {
-    String morseChar = getSymbol(message[i]);
-
-    if (message[i] == SPACE)
-    {
-      wordGap();
-      continue;
-    }
-
-    for (size_t j = 0; j < morseChar.length() && !shouldStop; j++)
-    {
-      playSymbol(morseChar[j]);
-      if (j < morseChar.length() - 1)
-      {
-        symbolGap();
-      }
-    }
-
-    if (i < message.length() - 1 && message[i + 1] != SPACE)
-    {
-      letterGap();
-    }
-  }
-
-  config.setMorsePlaying(false);
-  config.setMorseToneOn(false);
-  audio.stop();
-}
-
-void MorseCode::playSymbol(char symbol)
-{
-  auto &config = ConfigManager::getInstance();
-  auto &audio = AudioManager::getInstance();
-
-  config.setMorseToneOn(true);
-  audio.playMorseTone();
-
-  if (symbol == DOT)
-  {
-    dotDelay();
-  }
-  else if (symbol == DASH)
-  {
-    dashDelay();
-  }
-
-  config.setMorseToneOn(false);
-  audio.stopMorseTone();
-}
-
-void MorseCode::stop()
-{
-  shouldStop = true;
-  auto &config = ConfigManager::getInstance();
-  auto &audio = AudioManager::getInstance();
-
-  config.setMorsePlaying(false);
-  config.setMorseToneOn(false);
-  audio.stop();
-}
-
-void MorseCode::dotDelay()
-{
-  const auto &timings = ConfigManager::getInstance().getCurrentMorseTimings();
-  delay(timings.dotDuration);
-}
-
-void MorseCode::dashDelay()
-{
-  const auto &timings = ConfigManager::getInstance().getCurrentMorseTimings();
-  delay(timings.dashDuration);
-}
-
-void MorseCode::symbolGap()
-{
-  const auto &timings = ConfigManager::getInstance().getCurrentMorseTimings();
-  delay(timings.symbolGap);
-}
-
-void MorseCode::letterGap()
-{
-  const auto &timings = ConfigManager::getInstance().getCurrentMorseTimings();
-  delay(timings.letterGap);
-}
-
-void MorseCode::wordGap()
-{
-  const auto &timings = ConfigManager::getInstance().getCurrentMorseTimings();
-  delay(timings.wordGap);
-}
-
-void MorseCode::printMessage(const String &message)
-{
-  Serial.print("Message '");
-  Serial.print(message);
-  Serial.print("' in Morse code: ");
-
-  for (size_t i = 0; i < message.length(); i++)
-  {
-    String morseChar = getSymbol(message[i]);
-    Serial.print(morseChar);
-    if (i < message.length() - 1)
-    {
-      Serial.print(" ");
-    }
-  }
-  Serial.println();
 }
