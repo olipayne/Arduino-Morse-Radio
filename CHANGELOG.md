@@ -1,3 +1,13 @@
+## [0.8.9](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.8.8...v0.8.9) (2024-11-03)
+
+
+### Bug Fixes
+
+* kill the power to the amp when sleeping ([198aa37](https://github.com/olipayne/Arduino-Morse-Radio/commit/198aa3715e3587ed225e8a2cf5393b948878a91b))
+* use the neopixel to display battery in debug mode ([fa22b1c](https://github.com/olipayne/Arduino-Morse-Radio/commit/fa22b1c583008cf3a663f89bcaca38dd5c0736f6))
+
+
+
 ## [0.8.8](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.8.7...v0.8.8) (2024-11-03)
 
 
@@ -35,15 +45,6 @@
 ### Bug Fixes
 
 * remove dead code and wrap all serial out in debug flag ([395fd75](https://github.com/olipayne/Arduino-Morse-Radio/commit/395fd7595b722b0adb9992b48ac90e495c6cf273))
-
-
-
-## [0.8.4](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.8.3...v0.8.4) (2024-11-03)
-
-
-### Bug Fixes
-
-* changelog first ([5682dd3](https://github.com/olipayne/Arduino-Morse-Radio/commit/5682dd3a8a85dfb6acf5ba5220ab8b6953e31405))
 
 
 
