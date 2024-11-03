@@ -6,7 +6,6 @@
 String getMorseCode(char c);
 void playMorseMessage(const String &message);
 void stopMorse();
-void playStaticNoise(int signalStrength);
 int calculateSignalStrength(int potValue, int targetValue);
 
 extern bool morsePlaying;

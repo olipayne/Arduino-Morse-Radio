@@ -133,13 +133,6 @@ void stopMorse()
   morsePlaying = false;
 }
 
-void playStaticNoise(int signalStrength)
-{
-  int noiseFrequency = random(100, 300);
-  ledcWriteTone(SPEAKER_CHANNEL, noiseFrequency);
-  ledcWrite(SPEAKER_CHANNEL, signalStrength > 0 ? speakerDutyCycle : 0);
-}
-
 int calculateSignalStrength(int potValue, int targetValue)
 {
   int difference = abs(potValue - targetValue);

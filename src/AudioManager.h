@@ -7,5 +7,6 @@ void setVolume(int volume);
 void handleAudioPlayback();
 void stopAudio();
 void pulseDecodePWM();
+void playStaticNoise(int signalStrength);
 
 #endif
