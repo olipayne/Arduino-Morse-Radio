@@ -1,3 +1,12 @@
+## [0.8.4](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.8.3...v0.8.4) (2024-11-03)
+
+
+### Bug Fixes
+
+* changelog first ([5682dd3](https://github.com/olipayne/Arduino-Morse-Radio/commit/5682dd3a8a85dfb6acf5ba5220ab8b6953e31405))
+
+
+
 ## [0.8.3](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.8.2...v0.8.3) (2024-11-03)
 
 
@@ -32,22 +41,6 @@
 ### Features
 
 * sleep stuff, WIP ([96e5327](https://github.com/olipayne/Arduino-Morse-Radio/commit/96e53274d75646367840b254ed3317aad9db97dd))
-
-
-
-# [0.7.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.6.0...v0.7.0) (2024-11-03)
-
-
-### Bug Fixes
-
-* audio good with refactor, finally ([ddb2088](https://github.com/olipayne/Arduino-Morse-Radio/commit/ddb2088841e086022d4ac71bf7eb1c6c198be740))
-* pulse ([8bd4398](https://github.com/olipayne/Arduino-Morse-Radio/commit/8bd4398b2516103cf23294b75ef5f0389c6d8a1b))
-* speed adjustments ([f50dfb9](https://github.com/olipayne/Arduino-Morse-Radio/commit/f50dfb96fb2c1f33541d903635be7eb4705e2952))
-
-
-### Features
-
-* tuning calibration ([d1eaa77](https://github.com/olipayne/Arduino-Morse-Radio/commit/d1eaa7707db71b6f95415ee21d621dd499077aad))
 
 
 
