@@ -1,3 +1,12 @@
+## [0.8.6](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.8.5...v0.8.6) (2024-11-03)
+
+
+### Bug Fixes
+
+* parallelize ([baa33e1](https://github.com/olipayne/Arduino-Morse-Radio/commit/baa33e17857284635edbf03f6e90cb928dc61ba0))
+
+
+
 ## [0.8.5](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.8.4...v0.8.5) (2024-11-03)
 
 
@@ -31,16 +40,6 @@
 ### Bug Fixes
 
 * static noise working again ([c607fb7](https://github.com/olipayne/Arduino-Morse-Radio/commit/c607fb77d5b9e0b0998bdf85718fdf68e0b9cd96))
-
-
-
-## [0.8.1](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.8.0...v0.8.1) (2024-11-03)
-
-
-### Bug Fixes
-
-* light sleep better ([e67e5c8](https://github.com/olipayne/Arduino-Morse-Radio/commit/e67e5c81b42be566ca25e55a2caaf548d130b6b7))
-* light sleep better ([4d64948](https://github.com/olipayne/Arduino-Morse-Radio/commit/4d64948790a681ce33c25ccf243e5e269dad73da))
 
 
 
