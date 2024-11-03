@@ -7,6 +7,9 @@ void PowerManager::begin()
     // Initialize FeatherS3 specific features
     ums3.begin();
 
+    // Enable the 3.3V 1 power supply
+    ums3.setLDO2Power(true);
+
     // Configure pins with explicit pull-ups and set pin modes
     configurePins();
 
@@ -202,12 +205,20 @@ void PowerManager::enterLightSleep()
 
     // Prepare for light sleep
     Serial.flush(); // Ensure all serial output is sent
+
+    // Disable the 3.3V 1 power supply
+    ums3.setLDO2Power(false);
+
+    // Enter light sleep
     esp_light_sleep_start();
 
     // Execution resumes here after wake-up
 #ifdef DEBUG_SERIAL_OUTPUT
     Serial.println("Woke up from light sleep");
 #endif
+
+    // Re-enable the 3.3V 1 power supply
+    ums3.setLDO2Power(true);
 
     // Reinitialize any peripherals if necessary
     lastActivityTime = millis();
