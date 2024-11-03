@@ -53,10 +53,14 @@ jobs:
           ~/.platformio/packages/tool-esptoolpy/esptool.py --chip esp32s3 merge_bin --output .pio/build/debug/merged-flash.bin --flash_mode dio --flash_size=keep 0x0 .pio/build/debug/bootloader.bin 0x8000 .pio/build/debug/partitions.bin 0x10000 .pio/build/debug/firmware.bin
           mv .pio/build/debug/merged-flash.bin .pio/build/debug/firmware-${VERSION}-debug.bin
 
+  release:
+    runs-on: ubuntu-latest
+    needs: build
+    if: ${{ needs.build.outputs.skipped == 'false' }}
+    steps:
       - name: Create release
-        run: gh release create "$TAG_NAME" --notes "$BODY" .pio/build/production/firmware-${{ steps.changelog.outputs.tag }}-production.bin .pio/build/debug/firmware-${{ steps.changelog.outputs.tag }}-debug.bin
-        if: ${{ steps.changelog.outputs.skipped == 'false' }}
+        run: gh release create "$TAG_NAME" --notes "$BODY" .pio/build/production/firmware-${{ needs.build.outputs.tag }}-production.bin .pio/build/debug/firmware-${{ needs.build.outputs.tag }}-debug.bin
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG_NAME: ${{ steps.changelog.outputs.tag }}
-          BODY: ${{ steps.changelog.outputs.clean_changelog }}
+          TAG_NAME: ${{ needs.build.outputs.tag }}
+          BODY: ${{ needs.build.outputs.clean_changelog }}
