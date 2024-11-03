@@ -2,6 +2,8 @@
 
 void PowerManager::begin()
 {
+    btStop();
+
     // Initialize FeatherS3 specific features
     ums3.begin();
 
@@ -191,8 +193,10 @@ void PowerManager::enterLightSleep()
 
     // Execution resumes here after wake-up
     Serial.println("Woke up from light sleep");
+
     // Reinitialize any peripherals if necessary
     lastActivityTime = millis();
+    setCpuFrequencyMhz(80);
 }
 
 float PowerManager::getBatteryVoltage()

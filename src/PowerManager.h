@@ -24,9 +24,6 @@ public:
     bool isLowBattery();
     void checkActivity();
 
-    void setCpuHighSpeed() { setCpuFrequencyMhz(240); }
-    void setCpuLowSpeed() { setCpuFrequencyMhz(80); }
-
     int getCurrentCpuFreq() const { return getCpuFrequencyMhz(); }
 
 private:

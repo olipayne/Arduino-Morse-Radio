@@ -17,8 +17,14 @@ public:
   void begin()
   {
     Serial.begin(115200);
-    Serial.println("\nTeam Building Radio Starting...");
+    Serial.println("\nRadio Starting...");
 
+    setCpuFrequencyMhz(80);
+
+    // Verify the CPU frequency
+    Serial.print("CPU Frequency set to ");
+    Serial.print(getCpuFrequencyMhz());
+    Serial.println(" MHz");
     initializeSubsystems();
   }
 
@@ -89,8 +95,6 @@ private:
         digitalWrite(LED_BUILTIN, LOW);
         delay(100);
       }
-      // Switch to low power mode
-      power.setCpuLowSpeed();
     }
 
     Serial.printf("Battery Voltage: %.2fV\n", voltage);
