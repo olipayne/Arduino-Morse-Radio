@@ -30,11 +30,7 @@ void AudioManager::handlePlayback()
     if (currentTime - lastVolumeUpdate >= VOLUME_UPDATE_INTERVAL)
     {
         int volumeRead = analogRead(Pins::VOLUME_POT);
-        if (abs(volumeRead - lastVolumeRead) > 50)
-        { // Apply hysteresis
-            setVolume(volumeRead);
-            lastVolumeRead = volumeRead;
-        }
+        setVolume(volumeRead);
         lastVolumeUpdate = currentTime;
     }
 }
