@@ -1,3 +1,12 @@
+## [0.8.10](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.8.9...v0.8.10) (2024-11-17)
+
+
+### Bug Fixes
+
+* debug every 5 secs, and \n\r properly for javascript to be happy ([1585dca](https://github.com/olipayne/Arduino-Morse-Radio/commit/1585dca3054ff438ab0ca8e7a2b9a8fb82c7fc2c))
+
+
+
 ## [0.8.9](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.8.8...v0.8.9) (2024-11-03)
 
 
@@ -36,15 +45,6 @@
 ### Bug Fixes
 
 * parallelize ([baa33e1](https://github.com/olipayne/Arduino-Morse-Radio/commit/baa33e17857284635edbf03f6e90cb928dc61ba0))
-
-
-
-## [0.8.5](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.8.4...v0.8.5) (2024-11-03)
-
-
-### Bug Fixes
-
-* remove dead code and wrap all serial out in debug flag ([395fd75](https://github.com/olipayne/Arduino-Morse-Radio/commit/395fd7595b722b0adb9992b48ac90e495c6cf273))
 
 
 
