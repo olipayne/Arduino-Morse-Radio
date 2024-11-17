@@ -163,12 +163,14 @@ void PowerManager::checkActivity()
     // Check if we've been inactive for too long
     unsigned long inactiveTime = (currentTime - lastActivityTime) / 1000;
 
-    // Print remaining time every minute
-    if (inactiveTime > 0 && inactiveTime % 10 == 0)
+    // Print remaining time every minute, but only print it once, not every time it loops in a single second
+    static unsigned long lastPrintTime = 0;
+    if (inactiveTime > 0 && inactiveTime % 60 == 0 && currentTime - lastPrintTime >= 50000)
     {
         unsigned long timeToSleep = (INACTIVITY_TIMEOUT - (currentTime - lastActivityTime)) / 1000;
         Serial.printf("Inactive for %lu seconds. Sleep in %lu seconds...\n\r",
                       inactiveTime, timeToSleep);
+        lastPrintTime = currentTime;
     }
 
     if (currentTime - lastActivityTime >= INACTIVITY_TIMEOUT)
