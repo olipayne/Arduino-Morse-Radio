@@ -63,7 +63,7 @@ namespace Audio
 namespace Timing
 {
   constexpr unsigned long DEBOUNCE_DELAY = 500;     // ms
-  constexpr unsigned long DEBUG_INTERVAL = 1000;    // ms
+  constexpr unsigned long DEBUG_INTERVAL = 5000;    // ms
   constexpr unsigned long WIFI_TIMEOUT = 120000;    // 2 minutes
   constexpr unsigned long LED_FLASH_INTERVAL = 500; // ms
 }

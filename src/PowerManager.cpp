@@ -53,7 +53,7 @@ bool PowerManager::checkForInputChanges()
     {
         activity = true;
 #ifdef DEBUG_SERIAL_OUTPUT
-        Serial.printf("Tuning change: %d -> %d\n", lastTuningValue, currentTuning);
+        Serial.printf("Tuning change: %d -> %d\n\r", lastTuningValue, currentTuning);
 #endif
     }
 
@@ -61,7 +61,7 @@ bool PowerManager::checkForInputChanges()
     {
         activity = true;
 #ifdef DEBUG_SERIAL_OUTPUT
-        Serial.printf("Volume change: %d -> %d\n", lastVolumeValue, currentVolume);
+        Serial.printf("Volume change: %d -> %d\n\r", lastVolumeValue, currentVolume);
 #endif
     }
 
@@ -167,7 +167,7 @@ void PowerManager::checkActivity()
     if (inactiveTime > 0 && inactiveTime % 10 == 0)
     {
         unsigned long timeToSleep = (INACTIVITY_TIMEOUT - (currentTime - lastActivityTime)) / 1000;
-        Serial.printf("Inactive for %lu seconds. Sleep in %lu seconds...\n",
+        Serial.printf("Inactive for %lu seconds. Sleep in %lu seconds...\n\r",
                       inactiveTime, timeToSleep);
     }
 
@@ -211,7 +211,7 @@ void PowerManager::enterLightSleep()
         if (result != ESP_OK)
         {
 #ifdef DEBUG_SERIAL_OUTPUT
-            Serial.printf("Failed to configure wakeup on pin %d: %s\n", pin, esp_err_to_name(result));
+            Serial.printf("Failed to configure wakeup on pin %d: %s\n\r", pin, esp_err_to_name(result));
 #endif
         }
     }
@@ -289,7 +289,7 @@ void PowerManager::displayBatteryStatus()
     float voltage = getBatteryVoltage();
     bool isPluggedIn = ums3.getVbusPresent();
 
-    Serial.printf("Battery voltage: %.2fV\n", voltage);
+    Serial.printf("Battery voltage: %.2fV\n\r", voltage);
 
     ums3.setPixelBrightness(10);
 

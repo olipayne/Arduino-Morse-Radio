@@ -165,7 +165,7 @@ private:
         if (station != lastStation)
         {
 #ifdef DEBUG_SERIAL_OUTPUT
-          Serial.printf("Station locked: %s (Signal: %d)\n",
+          Serial.printf("Station locked: %s (Signal: %d)\n\r",
                         station->getName(), signalStrength);
 #endif
           // Stop the static noise
@@ -221,25 +221,25 @@ private:
   {
     auto &config = ConfigManager::getInstance();
 
-    Serial.println("\n=== System Status ===");
+    Serial.println("\n\r=== System Status ===");
 
     // Wave Band Status
-    Serial.printf("Wave Band: %s\n", toString(config.getWaveBand()));
+    Serial.printf("Wave Band: %s\n\r", toString(config.getWaveBand()));
     // Tuning Status
     int tuningValue = analogRead(Pins::TUNING_POT);
     int volumeValue = analogRead(Pins::VOLUME_POT);
-    Serial.printf("Tuning: %d, Volume: %d\n", tuningValue, volumeValue);
+    Serial.printf("Tuning: %d, Volume: %d\n\r", tuningValue, volumeValue);
 
     // Morse Status
-    Serial.printf("Morse Playing: %s, Speed: %s\n",
+    Serial.printf("Morse Playing: %s, Speed: %s\n\r",
                   config.isMorsePlaying() ? "Yes" : "No",
                   toString(config.getMorseSpeed()));
 
     // WiFi Status
-    Serial.printf("WiFi Enabled: %s\n",
+    Serial.printf("WiFi Enabled: %s\n\r",
                   WiFiManager::getInstance().isEnabled() ? "Yes" : "No");
 
-    Serial.println("==================\n");
+    Serial.println("==================\n\r");
   }
 
   unsigned long lastDebugOutput;
