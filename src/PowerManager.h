@@ -40,7 +40,7 @@ private:
     UMS3 ums3;                                             // FeatherS3 helper
     static constexpr float LOW_BATTERY_THRESHOLD = 3.4f;   // Volts
     static constexpr uint32_t INACTIVITY_TIMEOUT = 300000; // 5 minutes
-    static constexpr int POTENTIOMETER_THRESHOLD = 80;     // Minimum change to count as activity
+    static constexpr int POTENTIOMETER_THRESHOLD = 120;    // Minimum change to count as activity
 
     // Last known values for activity detection
     int lastTuningValue = 0;
