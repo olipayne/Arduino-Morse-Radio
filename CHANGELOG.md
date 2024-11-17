@@ -1,3 +1,12 @@
+## [0.8.11](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.8.10...v0.8.11) (2024-11-17)
+
+
+### Bug Fixes
+
+* spam less sleep debug data every time the second is matching ([8ebb150](https://github.com/olipayne/Arduino-Morse-Radio/commit/8ebb1507e212acc8d205ffa78142c0dd21c03a72))
+
+
+
 ## [0.8.10](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.8.9...v0.8.10) (2024-11-17)
 
 
@@ -36,15 +45,6 @@
 ### Bug Fixes
 
 * parallelize ([6a4fcaf](https://github.com/olipayne/Arduino-Morse-Radio/commit/6a4fcafeb30b62f781d83a0c3d22248ec2ef80f2))
-
-
-
-## [0.8.6](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.8.5...v0.8.6) (2024-11-03)
-
-
-### Bug Fixes
-
-* parallelize ([baa33e1](https://github.com/olipayne/Arduino-Morse-Radio/commit/baa33e17857284635edbf03f6e90cb928dc61ba0))
 
 
 
