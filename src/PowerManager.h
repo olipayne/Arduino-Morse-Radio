@@ -23,6 +23,7 @@ public:
     float getBatteryVoltage();
     bool isLowBattery();
     void checkActivity();
+    void checkPowerSwitch(); // New method to check power switch state
 
     int getCurrentCpuFreq() const { return getCpuFrequencyMhz(); }
 
@@ -33,6 +34,7 @@ private:
 
     void configureADC();
     void enterLightSleep();
+    void enterDeepSleep(); // New method for deep sleep
     bool checkForInputChanges();
     void updatePinStates();
     void displayBatteryStatus();

@@ -13,6 +13,9 @@ void PowerManager::begin()
     // Configure pins with explicit pull-ups and set pin modes
     configurePins();
 
+    // Check power switch state immediately
+    checkPowerSwitch();
+
     // Configure ADC for power efficiency
     configureADC();
 
@@ -22,6 +25,33 @@ void PowerManager::begin()
 
     // Initialize digital pin states with debounce
     updatePinStates();
+}
+
+void PowerManager::checkPowerSwitch()
+{
+    // If power switch is pulled low (switched off)
+    if (digitalRead(Pins::POWER_SWITCH) == LOW)
+    {
+        // Disable the 3.3V 1 power supply
+        ums3.setLDO2Power(false);
+
+        // Enter deep sleep
+        enterDeepSleep();
+    }
+}
+
+void PowerManager::enterDeepSleep()
+{
+#ifdef DEBUG_SERIAL_OUTPUT
+    Serial.println("Entering deep sleep mode...");
+#endif
+    delay(100); // Allow serial to flush
+
+    // Configure wake-up on power switch high (when switch is turned back on)
+    esp_sleep_enable_ext0_wakeup(static_cast<gpio_num_t>(Pins::POWER_SWITCH), HIGH);
+
+    // Enter deep sleep
+    esp_deep_sleep_start();
 }
 
 void PowerManager::configureADC()
@@ -43,6 +73,9 @@ void PowerManager::updatePinStates()
 
 bool PowerManager::checkForInputChanges()
 {
+    // First check power switch state
+    checkPowerSwitch();
+
     bool activity = false;
 
     // Check potentiometers
@@ -126,6 +159,9 @@ bool PowerManager::checkForInputChanges()
 
 void PowerManager::checkActivity()
 {
+    // First check power switch state
+    checkPowerSwitch();
+
     static unsigned long lastDebounceTime = 0;
     const unsigned long debounceDelay = 100; // 100ms debounce
 
@@ -253,6 +289,12 @@ bool PowerManager::isLowBattery()
 
 void PowerManager::configurePins()
 {
+    // Configure power switch pin
+    pinMode(Pins::POWER_SWITCH, INPUT_PULLUP);
+    gpio_set_direction(static_cast<gpio_num_t>(Pins::POWER_SWITCH), GPIO_MODE_INPUT);
+    gpio_pullup_en(static_cast<gpio_num_t>(Pins::POWER_SWITCH));
+    gpio_pulldown_dis(static_cast<gpio_num_t>(Pins::POWER_SWITCH));
+
     // Configure input pins
     pinMode(Pins::LW_BAND_SWITCH, INPUT_PULLUP);
     pinMode(Pins::MW_BAND_SWITCH, INPUT_PULLUP);
@@ -287,7 +329,6 @@ void PowerManager::configurePins()
 
 void PowerManager::displayBatteryStatus()
 {
-
     float voltage = getBatteryVoltage();
     bool isPluggedIn = ums3.getVbusPresent();
 
