@@ -16,18 +16,15 @@ class RadioSystem
 public:
   void begin()
   {
-#ifdef DEBUG_SERIAL_OUTPUT
-    Serial.begin(115200);
-    Serial.println("\nRadio Starting...");
-#endif
+    if constexpr (Log::enabled)
+    {
+      Serial.begin(115200);
+    }
+    Log::println("Radio Starting...");
     setCpuFrequencyMhz(80);
 
     // Verify the CPU frequency
-#ifdef DEBUG_SERIAL_OUTPUT
-    Serial.print("CPU Frequency set to ");
-    Serial.print(getCpuFrequencyMhz());
-    Serial.println(" MHz");
-#endif
+    Log::println("CPU Frequency set to ", getCpuFrequencyMhz(), " MHz");
     initializeSubsystems();
   }
 
@@ -53,9 +50,7 @@ public:
       handleWiFiButton();
       handleTuning();
       updateManagers();
-#ifdef DEBUG_SERIAL_OUTPUT
       outputDebugInfo();
-#endif
       lastSystemUpdate = currentTime;
     }
 
@@ -81,9 +76,7 @@ private:
     WiFiManager::getInstance().begin();
     MorseCode::getInstance().begin();
     SpeedManager::getInstance().begin();
-#ifdef DEBUG_SERIAL_OUTPUT
-    Serial.println("All subsystems initialized");
-#endif
+    Log::println("All subsystems initialized");
   }
 
   void handleBatteryStatus()
@@ -103,9 +96,7 @@ private:
       }
     }
 
-#ifdef DEBUG_SERIAL_OUTPUT
-    Serial.printf("Battery Voltage: %.2fV\n", voltage);
-#endif
+    Log::println("Battery Voltage: ", voltage, "V");
   }
 
   void handleWiFiButton()
@@ -164,10 +155,7 @@ private:
         // New station found or changed
         if (station != lastStation)
         {
-#ifdef DEBUG_SERIAL_OUTPUT
-          Serial.printf("Station locked: %s (Signal: %d)\n\r",
-                        station->getName(), signalStrength);
-#endif
+          Log::println("Station locked: ", station->getName(), " (Signal: ", signalStrength, ")");
           // Stop the static noise
           audio.stop();
         }
@@ -180,9 +168,7 @@ private:
     {
       if (config.isMorsePlaying())
       {
-#ifdef DEBUG_SERIAL_OUTPUT
-        Serial.println("Lost station lock");
-#endif
+        Log::println("Lost station lock");
         morse.stop();
         lastStation = nullptr;
       }
@@ -221,25 +207,23 @@ private:
   {
     auto &config = ConfigManager::getInstance();
 
-    Serial.println("\n\r=== System Status ===");
+    Log::println("\n\r=== System Status ===");
 
     // Wave Band Status
-    Serial.printf("Wave Band: %s\n\r", toString(config.getWaveBand()));
+    Log::println("Wave Band: ", toString(config.getWaveBand()));
+
     // Tuning Status
     int tuningValue = analogRead(Pins::TUNING_POT);
     int volumeValue = analogRead(Pins::VOLUME_POT);
-    Serial.printf("Tuning: %d, Volume: %d\n\r", tuningValue, volumeValue);
+    Log::println("Tuning: ", tuningValue, ", Volume: ", volumeValue);
 
     // Morse Status
-    Serial.printf("Morse Playing: %s, Speed: %s\n\r",
-                  config.isMorsePlaying() ? "Yes" : "No",
-                  toString(config.getMorseSpeed()));
+    Log::println("Morse Playing: ", config.isMorsePlaying() ? "Yes" : "No", ", Speed: ", toString(config.getMorseSpeed()));
 
     // WiFi Status
-    Serial.printf("WiFi Enabled: %s\n\r",
-                  WiFiManager::getInstance().isEnabled() ? "Yes" : "No");
+    Log::println("WiFi Enabled: ", WiFiManager::getInstance().isEnabled() ? "Yes" : "No");
 
-    Serial.println("==================\n\r");
+    Log::println("==================\n\r");
   }
 
   unsigned long lastDebugOutput;

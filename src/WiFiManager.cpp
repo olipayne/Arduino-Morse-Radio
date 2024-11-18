@@ -1,3 +1,4 @@
+#include "Config.h"
 #include "WiFiManager.h"
 
 const char *WiFiManager::HTML_HEADER = R"(
@@ -119,275 +120,266 @@ const char *WiFiManager::JAVASCRIPT_CODE = R"(
 
 void WiFiManager::begin()
 {
-  pinMode(Pins::WIFI_BUTTON, INPUT_PULLUP);
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, LOW);
+    pinMode(Pins::WIFI_BUTTON, INPUT_PULLUP);
+    pinMode(LED_BUILTIN, OUTPUT);
+    digitalWrite(LED_BUILTIN, LOW);
 }
 
 void WiFiManager::toggle()
 {
-  if (wifiEnabled)
-  {
-    stop();
-  }
-  else
-  {
-    startAP();
-  }
+    if (wifiEnabled)
+    {
+        stop();
+    }
+    else
+    {
+        startAP();
+    }
 }
 
 void WiFiManager::stop()
 {
-  if (wifiEnabled)
-  {
-    server.stop();
-    WiFi.softAPdisconnect(true);
-    WiFi.mode(WIFI_OFF);
-    wifiEnabled = false;
-    digitalWrite(LED_BUILTIN, LOW);
-#ifdef DEBUG_SERIAL_OUTPUT
-    Serial.println("WiFi stopped");
-#endif
-  }
+    if (wifiEnabled)
+    {
+        server.stop();
+        WiFi.softAPdisconnect(true);
+        WiFi.mode(WIFI_OFF);
+        wifiEnabled = false;
+        digitalWrite(LED_BUILTIN, LOW);
+        Log::println("WiFi stopped");
+    }
 }
 
 void WiFiManager::startAP()
 {
-  WiFi.mode(WIFI_AP);
+    WiFi.mode(WIFI_AP);
 
-  String ssid = "Radio_" + String((uint32_t)ESP.getEfuseMac(), HEX);
+    String ssid = "Radio_" + String((uint32_t)ESP.getEfuseMac(), HEX);
 
-  if (WiFi.softAP(ssid.c_str(), nullptr, AP_CHANNEL, false, MAX_CONNECTIONS))
-  {
-    setupServer();
-    setupMDNS();
+    if (WiFi.softAP(ssid.c_str(), nullptr, AP_CHANNEL, false, MAX_CONNECTIONS))
+    {
+        setupServer();
+        setupMDNS();
 
-    wifiEnabled = true;
-    startTime = millis();
+        wifiEnabled = true;
+        startTime = millis();
 
-#ifdef DEBUG_SERIAL_OUTPUT
-    Serial.println("WiFi AP started: " + ssid);
-    Serial.print("AP IP address: ");
-    Serial.println(WiFi.softAPIP());
-#endif
-  }
-  else
-  {
-#ifdef DEBUG_SERIAL_OUTPUT
-    Serial.println("Failed to start WiFi AP");
-#endif
-  }
+        Log::println("WiFi AP started: ", ssid.c_str());
+        Log::println("AP IP address: ", WiFi.softAPIP());
+    }
+    else
+    {
+        Log::println("Failed to start WiFi AP");
+    }
 }
 
 void WiFiManager::handle()
 {
-  if (!wifiEnabled)
-    return;
+    if (!wifiEnabled)
+        return;
 
-  server.handleClient();
+    server.handleClient();
 
-  if (millis() - startTime > DEFAULT_TIMEOUT)
-  {
-    stop();
-    return;
-  }
+    if (millis() - startTime > DEFAULT_TIMEOUT)
+    {
+        stop();
+        return;
+    }
 
-  updateStatusLED();
+    updateStatusLED();
 }
 
 void WiFiManager::setupServer()
 {
-  server.on("/", HTTP_GET, [this]()
-            { handleRoot(); });
-  server.on("/save", HTTP_POST, [this]()
-            { handleSaveConfig(); });
-  server.on("/tuning", HTTP_GET, [this]()
-            { handleGetTuningValue(); });
-  server.on("/stations", HTTP_GET, [this]()
-            { handleStationConfig(); });
-  server.on("/api/status", HTTP_GET, [this]()
-            { handleAPI(); });
-  server.onNotFound([this]()
-                    { handleNotFound(); });
-  server.begin();
+    server.on("/", HTTP_GET, [this]()
+              { handleRoot(); });
+    server.on("/save", HTTP_POST, [this]()
+              { handleSaveConfig(); });
+    server.on("/tuning", HTTP_GET, [this]()
+              { handleGetTuningValue(); });
+    server.on("/stations", HTTP_GET, [this]()
+              { handleStationConfig(); });
+    server.on("/api/status", HTTP_GET, [this]()
+              { handleAPI(); });
+    server.onNotFound([this]()
+                      { handleNotFound(); });
+    server.begin();
 }
 
 void WiFiManager::setupMDNS()
 {
-  if (MDNS.begin(hostname.c_str()))
-  {
-    MDNS.addService("http", "tcp", 80);
-#ifdef DEBUG_SERIAL_OUTPUT
-    Serial.println("MDNS responder started at http://" + hostname + ".local");
-#endif
-  }
+    if (MDNS.begin(hostname.c_str()))
+    {
+        MDNS.addService("http", "tcp", 80);
+        Log::println("MDNS responder started at http://", hostname.c_str(), ".local");
+    }
 }
 
 void WiFiManager::handleRoot()
 {
-  server.send(200, "text/html", generateHTML(generateConfigPage()));
+    server.send(200, "text/html", generateHTML(generateConfigPage()));
 }
 
 void WiFiManager::handleGetTuningValue()
 {
-  int tuningValue = analogRead(Pins::TUNING_POT);
-  String response = "{\"value\":" + String(tuningValue) + "}";
-  server.send(200, "application/json", response);
+    int tuningValue = analogRead(Pins::TUNING_POT);
+    String response = "{\"value\":" + String(tuningValue) + "}";
+    server.send(200, "application/json", response);
 }
 
 void WiFiManager::handleSaveConfig()
 {
-  bool success = true;
-  String message = "Configuration saved successfully";
+    bool success = true;
+    String message = "Configuration saved successfully";
 
-  auto &stationManager = StationManager::getInstance();
+    auto &stationManager = StationManager::getInstance();
 
-  for (size_t i = 0; i < stationManager.getStationCount(); i++)
-  {
-    String freqKey = "freq_" + String(i);
-    String msgKey = "msg_" + String(i);
-
-    if (server.hasArg(freqKey) && server.hasArg(msgKey))
+    for (size_t i = 0; i < stationManager.getStationCount(); i++)
     {
-      int frequency = server.arg(freqKey).toInt();
-      String newMessage = server.arg(msgKey);
+        String freqKey = "freq_" + String(i);
+        String msgKey = "msg_" + String(i);
 
-      if (frequency > 0)
-      {
-        stationManager.updateStation(i, frequency, newMessage);
-      }
-      else
-      {
-        success = false;
-        message = "Invalid frequency value";
-        break;
-      }
+        if (server.hasArg(freqKey) && server.hasArg(msgKey))
+        {
+            int frequency = server.arg(freqKey).toInt();
+            String newMessage = server.arg(msgKey);
+
+            if (frequency > 0)
+            {
+                stationManager.updateStation(i, frequency, newMessage);
+            }
+            else
+            {
+                success = false;
+                message = "Invalid frequency value";
+                break;
+            }
+        }
     }
-  }
 
-  if (success)
-  {
-    stationManager.saveToPreferences();
-  }
+    if (success)
+    {
+        stationManager.saveToPreferences();
+    }
 
-  String response = "<div class='" + String(success ? "success" : "error") + "'>" +
-                    message + "</div>";
-  server.send(200, "text/html", generateHTML(response + generateConfigPage()));
+    String response = "<div class='" + String(success ? "success" : "error") + "'>" +
+                      message + "</div>";
+    server.send(200, "text/html", generateHTML(response + generateConfigPage()));
 }
 
 String WiFiManager::generateConfigPage() const
 {
-  String html = "<h1>Radio Configuration</h1>";
-  html += "<form method='POST' action='/save'>";
-  html += generateStationTable();
-  html += "<button type='submit'>Save Configuration</button>";
-  html += "</form>";
-  return html;
+    String html = "<h1>Radio Configuration</h1>";
+    html += "<form method='POST' action='/save'>";
+    html += generateStationTable();
+    html += "<button type='submit'>Save Configuration</button>";
+    html += "</form>";
+    return html;
 }
 
 String WiFiManager::generateStationTable() const
 {
-  String html;
-  auto &stationManager = StationManager::getInstance();
+    String html;
+    auto &stationManager = StationManager::getInstance();
 
-  html += "<div class='status'>Current Tuning Value: <span id='currentTuning'>-</span></div>";
+    html += "<div class='status'>Current Tuning Value: <span id='currentTuning'>-</span></div>";
 
-  WaveBand currentBand = WaveBand::LONG_WAVE;
-  bool firstBand = true;
+    WaveBand currentBand = WaveBand::LONG_WAVE;
+    bool firstBand = true;
 
-  for (size_t i = 0; i < stationManager.getStationCount(); i++)
-  {
-    const Station *station = stationManager.getStation(i);
-    if (!station)
-      continue;
-
-    if (station->getBand() != currentBand)
+    for (size_t i = 0; i < stationManager.getStationCount(); i++)
     {
-      if (!firstBand)
+        const Station *station = stationManager.getStation(i);
+        if (!station)
+            continue;
+
+        if (station->getBand() != currentBand)
+        {
+            if (!firstBand)
+                html += "</div>";
+            currentBand = station->getBand();
+            html += "<div class='wave-band'><h2>" + String(toString(currentBand)) + "</h2>";
+            firstBand = false;
+        }
+
+        html += "<div class='station'>";
+        html += "<h3>" + String(station->getName()) + "</h3>";
+
+        html += "<div class='freq-group'>";
+        html += "<input type='number' id='freq_" + String(i) + "' name='freq_" + String(i) +
+                "' value='" + String(station->getFrequency()) + "'>";
+        html += "<button type='button' class='tune-button' " +
+                String("onclick='setFrequency(\"freq_") + String(i) + "\")'>Set Current</button>";
         html += "</div>";
-      currentBand = station->getBand();
-      html += "<div class='wave-band'><h2>" + String(toString(currentBand)) + "</h2>";
-      firstBand = false;
+
+        html += "<label>Message:<br><input type='text' name='msg_" + String(i) +
+                "' value='" + station->getMessage() + "'></label>";
+        html += "</div>";
     }
 
-    html += "<div class='station'>";
-    html += "<h3>" + String(station->getName()) + "</h3>";
-
-    html += "<div class='freq-group'>";
-    html += "<input type='number' id='freq_" + String(i) + "' name='freq_" + String(i) +
-            "' value='" + String(station->getFrequency()) + "'>";
-    html += "<button type='button' class='tune-button' " +
-            String("onclick='setFrequency(\"freq_") + String(i) + "\")'>Set Current</button>";
-    html += "</div>";
-
-    html += "<label>Message:<br><input type='text' name='msg_" + String(i) +
-            "' value='" + station->getMessage() + "'></label>";
-    html += "</div>";
-  }
-
-  if (!firstBand)
-    html += "</div>";
-  return html;
+    if (!firstBand)
+        html += "</div>";
+    return html;
 }
 
 String WiFiManager::generateStatusJson() const
 {
-  String json = "{";
-  json += "\"wifiEnabled\":" + String(wifiEnabled ? "true" : "false") + ",";
-  json += "\"uptime\":" + String((millis() - startTime) / 1000) + ",";
-  json += "\"timeoutIn\":" + String((DEFAULT_TIMEOUT - (millis() - startTime)) / 1000);
-  json += "}";
-  return json;
+    String json = "{";
+    json += "\"wifiEnabled\":" + String(wifiEnabled ? "true" : "false") + ",";
+    json += "\"uptime\":" + String((millis() - startTime) / 1000) + ",";
+    json += "\"timeoutIn\":" + String((DEFAULT_TIMEOUT - (millis() - startTime)) / 1000);
+    json += "}";
+    return json;
 }
 
 void WiFiManager::handleNotFound()
 {
-  String message = "File Not Found\n\n";
-  message += "URI: " + server.uri() + "\n";
-  message += "Method: " + String(server.method() == HTTP_GET ? "GET" : "POST") + "\n";
-  server.send(404, "text/plain", message);
+    String message = "File Not Found\n\n";
+    message += "URI: " + server.uri() + "\n";
+    message += "Method: " + String(server.method() == HTTP_GET ? "GET" : "POST") + "\n";
+    server.send(404, "text/plain", message);
 }
 
 void WiFiManager::handleStationConfig()
 {
-  server.send(200, "text/html", generateHTML(generateStationTable()));
+    server.send(200, "text/html", generateHTML(generateStationTable()));
 }
 
 void WiFiManager::handleAPI()
 {
-  server.send(200, "application/json", generateStatusJson());
+    server.send(200, "application/json", generateStatusJson());
 }
 
 void WiFiManager::updateStatusLED()
 {
-  if (wifiEnabled)
-  {
-    unsigned long currentTime = millis();
-    if (currentTime - lastLedFlash >= LED_FLASH_INTERVAL)
+    if (wifiEnabled)
     {
-      flashLED();
-      lastLedFlash = currentTime;
+        unsigned long currentTime = millis();
+        if (currentTime - lastLedFlash >= LED_FLASH_INTERVAL)
+        {
+            flashLED();
+            lastLedFlash = currentTime;
+        }
     }
-  }
 }
 
 void WiFiManager::flashLED()
 {
-  static bool ledState = false;
-  ledState = !ledState;
-  digitalWrite(LED_BUILTIN, ledState);
+    static bool ledState = false;
+    ledState = !ledState;
+    digitalWrite(LED_BUILTIN, ledState);
 }
 
 String WiFiManager::generateHTML(const String &content) const
 {
-  String html = String(HTML_HEADER);
-  html += CSS_STYLES;
-  html += "</style>";
-  html += "<script>";
-  html += JAVASCRIPT_CODE;
-  html += "</script>";
-  html += "</head><body>";
-  html += content;
-  html += HTML_FOOTER;
-  return html;
+    String html = String(HTML_HEADER);
+    html += CSS_STYLES;
+    html += "</style>";
+    html += "<script>";
+    html += JAVASCRIPT_CODE;
+    html += "</script>";
+    html += "</head><body>";
+    html += content;
+    html += HTML_FOOTER;
+    return html;
 }

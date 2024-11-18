@@ -56,10 +56,7 @@ void MorseCode::startMessage(const String &message)
   config.setMorsePlaying(true);
   config.setMorseToneOn(false);
 
-#ifdef DEBUG_SERIAL_OUTPUT
-  Serial.print("Starting Morse Message: ");
-  Serial.println(message);
-#endif
+  Log::println("Starting Morse Message: ", message);
 }
 
 void MorseCode::update()
