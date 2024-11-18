@@ -4,102 +4,33 @@
 #include <Arduino.h>
 #include <Preferences.h>
 
-// Debug logging system that compiles out in production
-namespace Log
-{
-// Compile-time constant to enable/disable logging
-#if defined(DEBUG_SERIAL_OUTPUT)
-  static constexpr bool enabled = true;
-#else
-  static constexpr bool enabled = false;
-#endif
-
-  // Helper function to convert anything to a String
-  template <typename T>
-  static String toString(const T &arg)
-  {
-    return String(arg);
-  }
-
-  // Specialization for const char*
-  static String toString(const char *arg)
-  {
-    return String(arg);
-  }
-
-  // Specialization for String
-  static String toString(const String &arg)
-  {
-    return arg;
-  }
-
-  // Specialization for IPAddress
-  static String toString(const IPAddress &arg)
-  {
-    return arg.toString();
-  }
-
-  // Single argument println
-  template <typename T>
-  static inline void println(const T &arg)
-  {
-    if constexpr (enabled)
-    {
-      Serial.println(toString(arg));
-      delay(100);
-    }
-  }
-
-  // Two argument println
-  template <typename T1, typename T2>
-  static inline void println(const T1 &arg1, const T2 &arg2)
-  {
-    if constexpr (enabled)
-    {
-      Serial.println(toString(arg1) + toString(arg2));
-      delay(100);
-    }
-  }
-
-  // Three argument println
-  template <typename T1, typename T2, typename T3>
-  static inline void println(const T1 &arg1, const T2 &arg2, const T3 &arg3)
-  {
-    if constexpr (enabled)
-    {
-      Serial.println(toString(arg1) + toString(arg2) + toString(arg3));
-      delay(100);
-    }
-  }
-}
-
 // Pin Configuration Namespace
 namespace Pins
 {
   // Digital Input Pins
-  constexpr uint8_t POWER_SWITCH = 14;
-  constexpr uint8_t LW_BAND_SWITCH = 12;
-  constexpr uint8_t MW_BAND_SWITCH = 6;
-  constexpr uint8_t SLOW_DECODE = 5;
-  constexpr uint8_t MED_DECODE = 11;
-  constexpr uint8_t AUDIO_SWITCH = 10;
-  constexpr uint8_t WIFI_BUTTON = 0;
+  constexpr int POWER_SWITCH = 14;
+  constexpr int LW_BAND_SWITCH = 12;
+  constexpr int MW_BAND_SWITCH = 6;
+  constexpr int SLOW_DECODE = 5;
+  constexpr int MED_DECODE = 11;
+  constexpr int AUDIO_SWITCH = 10;
+  constexpr int WIFI_BUTTON = 0;
 
   // Analog Input Pins
-  constexpr uint8_t TUNING_POT = 17;
-  constexpr uint8_t VOLUME_POT = 18;
+  constexpr int TUNING_POT = 17;
+  constexpr int VOLUME_POT = 18;
 
   // Output Pins
-  constexpr uint8_t BACKLIGHT = 33;
-  constexpr uint8_t POWER_LED = 35;
-  constexpr uint8_t LW_LED = 36;
-  constexpr uint8_t MW_LED = 37;
-  constexpr uint8_t SW_LED = 38;
-  constexpr uint8_t LOCK_LED = 43;
-  constexpr uint8_t CARRIER_PWM = 7;
-  constexpr uint8_t DECODE_PWM = 3;
-  constexpr uint8_t MORSE_LEDS = 44;
-  constexpr uint8_t SPEAKER = 1;
+  constexpr int BACKLIGHT = 33;
+  constexpr int POWER_LED = 35;
+  constexpr int LW_LED = 36;
+  constexpr int MW_LED = 37;
+  constexpr int SW_LED = 38;
+  constexpr int LOCK_LED = 43;
+  constexpr int CARRIER_PWM = 7;
+  constexpr int DECODE_PWM = 3;
+  constexpr int MORSE_LEDS = 44;
+  constexpr int SPEAKER = 1;
 }
 
 // Audio Configuration Namespace

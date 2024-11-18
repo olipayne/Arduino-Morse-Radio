@@ -29,8 +29,8 @@ void PowerManager::begin()
 
 void PowerManager::checkPowerSwitch()
 {
-    // If power switch is pulled high (switched on)
-    if (digitalRead(Pins::POWER_SWITCH) == HIGH)
+    // If power switch is pulled low (switched off)
+    if (digitalRead(Pins::POWER_SWITCH) == LOW)
     {
         // Disable the 3.3V 1 power supply
         ums3.setLDO2Power(false);
@@ -42,10 +42,13 @@ void PowerManager::checkPowerSwitch()
 
 void PowerManager::enterDeepSleep()
 {
-    Log::println("Entering deep sleep mode...");
+#ifdef DEBUG_SERIAL_OUTPUT
+    Serial.println("Entering deep sleep mode...");
+#endif
+    delay(100); // Allow serial to flush
 
     // Configure wake-up on power switch high (when switch is turned back on)
-    esp_sleep_enable_ext0_wakeup(static_cast<gpio_num_t>(Pins::POWER_SWITCH), LOW);
+    esp_sleep_enable_ext0_wakeup(static_cast<gpio_num_t>(Pins::POWER_SWITCH), HIGH);
 
     // Enter deep sleep
     esp_deep_sleep_start();
@@ -82,13 +85,17 @@ bool PowerManager::checkForInputChanges()
     if (abs(currentTuning - lastTuningValue) > POTENTIOMETER_THRESHOLD)
     {
         activity = true;
-        Log::println("Tuning change: ", lastTuningValue, " -> ", currentTuning);
+#ifdef DEBUG_SERIAL_OUTPUT
+        Serial.printf("Tuning change: %d -> %d\n\r", lastTuningValue, currentTuning);
+#endif
     }
 
     if (abs(currentVolume - lastVolumeValue) > POTENTIOMETER_THRESHOLD)
     {
         activity = true;
-        Log::println("Volume change: ", lastVolumeValue, " -> ", currentVolume);
+#ifdef DEBUG_SERIAL_OUTPUT
+        Serial.printf("Volume change: %d -> %d\n\r", lastVolumeValue, currentVolume);
+#endif
     }
 
     // Check digital inputs for state changes
@@ -101,31 +108,41 @@ bool PowerManager::checkForInputChanges()
     if (currentLWState != lastLWState)
     {
         activity = true;
-        Log::println("LW switch changed");
+#ifdef DEBUG_SERIAL_OUTPUT
+        Serial.println("LW switch changed");
+#endif
     }
 
     if (currentMWState != lastMWState)
     {
         activity = true;
-        Log::println("MW switch changed");
+#ifdef DEBUG_SERIAL_OUTPUT
+        Serial.println("MW switch changed");
+#endif
     }
 
     if (currentSlowState != lastSlowState)
     {
         activity = true;
-        Log::println("Slow decode changed");
+#ifdef DEBUG_SERIAL_OUTPUT
+        Serial.println("Slow decode changed");
+#endif
     }
 
     if (currentMedState != lastMedState)
     {
         activity = true;
-        Log::println("Med decode changed");
+#ifdef DEBUG_SERIAL_OUTPUT
+        Serial.println("Med decode changed");
+#endif
     }
 
     if (currentWiFiState != lastWiFiState)
     {
         activity = true;
-        Log::println("WiFi button changed");
+#ifdef DEBUG_SERIAL_OUTPUT
+        Serial.println("WiFi button changed");
+#endif
     }
 
     // Update stored states
@@ -156,7 +173,9 @@ void PowerManager::checkActivity()
     // Only display battery status every 5 seconds
     if (currentTime - lastDisplayTime >= displayInterval)
     {
+#ifdef DEBUG_SERIAL_OUTPUT
         displayBatteryStatus();
+#endif
         lastDisplayTime = currentTime;
     }
 
@@ -185,20 +204,27 @@ void PowerManager::checkActivity()
     if (inactiveTime > 0 && inactiveTime % 60 == 0 && currentTime - lastPrintTime >= 50000)
     {
         unsigned long timeToSleep = (INACTIVITY_TIMEOUT - (currentTime - lastActivityTime)) / 1000;
-        Log::println("Inactive for ", inactiveTime, " seconds. Sleep in ", timeToSleep, " seconds...");
+        Serial.printf("Inactive for %lu seconds. Sleep in %lu seconds...\n\r",
+                      inactiveTime, timeToSleep);
         lastPrintTime = currentTime;
     }
 
     if (currentTime - lastActivityTime >= INACTIVITY_TIMEOUT)
     {
-        Log::println("No activity detected for some time, entering light sleep...");
+#ifdef DEBUG_SERIAL_OUTPUT
+        Serial.println("No activity detected for some time, entering light sleep...");
+#endif
+        delay(100);
         enterLightSleep();
     }
 }
 
 void PowerManager::enterLightSleep()
 {
-    Log::println("Preparing for light sleep...");
+#ifdef DEBUG_SERIAL_OUTPUT
+    Serial.println("Preparing for light sleep...");
+#endif
+    delay(100);
 
     // Enable GPIO wakeup
     esp_sleep_enable_gpio_wakeup();
@@ -222,7 +248,9 @@ void PowerManager::enterLightSleep()
         esp_err_t result = gpio_wakeup_enable(pin, wakeupMode);
         if (result != ESP_OK)
         {
-            Log::println("Failed to configure wakeup on pin ", static_cast<int>(pin), ": ", esp_err_to_name(result));
+#ifdef DEBUG_SERIAL_OUTPUT
+            Serial.printf("Failed to configure wakeup on pin %d: %s\n\r", pin, esp_err_to_name(result));
+#endif
         }
     }
 
@@ -236,7 +264,9 @@ void PowerManager::enterLightSleep()
     esp_light_sleep_start();
 
     // Execution resumes here after wake-up
-    Log::println("Woke up from light sleep");
+#ifdef DEBUG_SERIAL_OUTPUT
+    Serial.println("Woke up from light sleep");
+#endif
 
     // Re-enable the 3.3V 1 power supply
     ums3.setLDO2Power(true);
@@ -302,7 +332,7 @@ void PowerManager::displayBatteryStatus()
     float voltage = getBatteryVoltage();
     bool isPluggedIn = ums3.getVbusPresent();
 
-    Log::println("Battery voltage: ", voltage, "V");
+    Serial.printf("Battery voltage: %.2fV\n\r", voltage);
 
     ums3.setPixelBrightness(10);
 
