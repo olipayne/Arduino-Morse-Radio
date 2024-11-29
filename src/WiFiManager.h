@@ -7,6 +7,7 @@
 #include <ESPmDNS.h>
 #include "Config.h"
 #include "StationManager.h"
+#include "PowerManager.h"
 
 class WiFiManager
 {

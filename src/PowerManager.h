@@ -23,7 +23,8 @@ public:
     float getBatteryVoltage();
     bool isLowBattery();
     void checkActivity();
-    void checkPowerSwitch(); // New method to check power switch state
+    void checkPowerSwitch();                              // New method to check power switch state
+    bool isUSBPowered() { return ums3.getVbusPresent(); } // Removed const qualifier
 
     int getCurrentCpuFreq() const { return getCpuFrequencyMhz(); }
 

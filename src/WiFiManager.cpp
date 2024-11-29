@@ -186,7 +186,9 @@ void WiFiManager::handle()
 
   server.handleClient();
 
-  if (millis() - startTime > DEFAULT_TIMEOUT)
+  // Only check timeout when running on battery power
+  if (!PowerManager::getInstance().isUSBPowered() &&
+      millis() - startTime > DEFAULT_TIMEOUT)
   {
     stop();
     return;
