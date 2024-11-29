@@ -1,3 +1,12 @@
+# [0.10.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.9.0...v0.10.0) (2024-11-29)
+
+
+### Features
+
+* dont disable wifi when plugged in ([e84a2df](https://github.com/olipayne/Arduino-Morse-Radio/commit/e84a2dfbe7bf18212eaaf75d9c3231dddb95ba1e))
+
+
+
 # [0.9.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.8.12...v0.9.0) (2024-11-17)
 
 
@@ -36,16 +45,6 @@
 ### Bug Fixes
 
 * debug every 5 secs, and \n\r properly for javascript to be happy ([1585dca](https://github.com/olipayne/Arduino-Morse-Radio/commit/1585dca3054ff438ab0ca8e7a2b9a8fb82c7fc2c))
-
-
-
-## [0.8.9](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.8.8...v0.8.9) (2024-11-03)
-
-
-### Bug Fixes
-
-* kill the power to the amp when sleeping ([198aa37](https://github.com/olipayne/Arduino-Morse-Radio/commit/198aa3715e3587ed225e8a2cf5393b948878a91b))
-* use the neopixel to display battery in debug mode ([fa22b1c](https://github.com/olipayne/Arduino-Morse-Radio/commit/fa22b1c583008cf3a663f89bcaca38dd5c0736f6))
 
 
 
