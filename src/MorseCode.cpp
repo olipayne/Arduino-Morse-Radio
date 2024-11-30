@@ -46,6 +46,9 @@ void MorseCode::begin()
 
 void MorseCode::startMessage(const String &message)
 {
+  // First ensure everything is stopped
+  stop();
+
   currentMessage = message;
   messageIndex = 0;
   symbolIndex = 0;
@@ -75,6 +78,10 @@ void MorseCode::update()
   // Handle tune-in delay
   if (inTuneInDelay)
   {
+    // Ensure audio is off during tune-in delay
+    config.setMorseToneOn(false);
+    audio.stopMorseTone();
+
     if (currentTime - tuneInStartTime >= TUNE_IN_DELAY)
     {
       inTuneInDelay = false;
@@ -91,9 +98,8 @@ void MorseCode::update()
   {
     if (messageIndex >= currentMessage.length())
     {
-      // Message complete, start over
-      messageIndex = 0;
-      lastStateChange = currentTime;
+      // Message complete, stop playing
+      stop();
       return;
     }
 
@@ -110,6 +116,10 @@ void MorseCode::update()
   // Handle spaces between words
   if (currentMessage[messageIndex] == ' ')
   {
+    // Ensure tone is off during word gaps
+    config.setMorseToneOn(false);
+    audio.stopMorseTone();
+
     if (currentTime - lastStateChange >= timings.wordGap)
     {
       messageIndex++;

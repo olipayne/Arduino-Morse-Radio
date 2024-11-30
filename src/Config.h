@@ -71,8 +71,8 @@ namespace Timing
 // Radio Configuration Namespace
 namespace Radio
 {
-  constexpr int TUNING_LEEWAY = 100; // Tolerance for tuning
-  constexpr int ADC_MAX = 4095;      // Maximum ADC value
+  constexpr int TUNING_LEEWAY = 50; // Tolerance for tuning
+  constexpr int ADC_MAX = 4095;     // Maximum ADC value
 }
 
 // Enums with string support
