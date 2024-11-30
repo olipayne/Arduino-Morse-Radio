@@ -1,3 +1,12 @@
+## [0.10.1](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.10.0...v0.10.1) (2024-11-30)
+
+
+### Bug Fixes
+
+* morse code fix ([1e88db4](https://github.com/olipayne/Arduino-Morse-Radio/commit/1e88db43c92f70b3079d247372b3214bd9383008))
+
+
+
 # [0.10.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.9.0...v0.10.0) (2024-11-29)
 
 
@@ -36,15 +45,6 @@
 ### Bug Fixes
 
 * spam less sleep debug data every time the second is matching ([8ebb150](https://github.com/olipayne/Arduino-Morse-Radio/commit/8ebb1507e212acc8d205ffa78142c0dd21c03a72))
-
-
-
-## [0.8.10](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.8.9...v0.8.10) (2024-11-17)
-
-
-### Bug Fixes
-
-* debug every 5 secs, and \n\r properly for javascript to be happy ([1585dca](https://github.com/olipayne/Arduino-Morse-Radio/commit/1585dca3054ff438ab0ca8e7a2b9a8fb82c7fc2c))
 
 
 
