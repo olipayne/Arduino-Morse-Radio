@@ -1,3 +1,12 @@
+## [0.10.2](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.10.1...v0.10.2) (2024-12-01)
+
+
+### Bug Fixes
+
+* morse code and voltmeter on decode speed working ([661b0a1](https://github.com/olipayne/Arduino-Morse-Radio/commit/661b0a13eb04c3ff1657e367a8cbed401ddd0b9e))
+
+
+
 ## [0.10.1](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.10.0...v0.10.1) (2024-11-30)
 
 
@@ -36,15 +45,6 @@
 ### Bug Fixes
 
 * potentiometer threshold raised so less spammy ([5b4f59c](https://github.com/olipayne/Arduino-Morse-Radio/commit/5b4f59c34c18b26189c9e40ddc0fa1f8d9e0d390))
-
-
-
-## [0.8.11](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.8.10...v0.8.11) (2024-11-17)
-
-
-### Bug Fixes
-
-* spam less sleep debug data every time the second is matching ([8ebb150](https://github.com/olipayne/Arduino-Morse-Radio/commit/8ebb1507e212acc8d205ffa78142c0dd21c03a72))
 
 
 
