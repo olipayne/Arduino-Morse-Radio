@@ -11,11 +11,6 @@ void AudioManager::configurePWM()
     // Configure PWM for speaker with max static frequency
     ledcSetup(Audio::SPEAKER_CHANNEL, MAX_STATIC_FREQ, 8); // Use MAX_STATIC_FREQ
     ledcAttachPin(Pins::SPEAKER, Audio::SPEAKER_CHANNEL);
-
-    // Configure decode PWM
-    ledcSetup(DECODE_PWM_CHANNEL, 5000, 8); // 5kHz, 8-bit for decode pulses
-    ledcAttachPin(Pins::DECODE_PWM, DECODE_PWM_CHANNEL);
-    ledcWrite(DECODE_PWM_CHANNEL, 0); // Start with output off
 }
 
 void AudioManager::setVolume(int adcValue)
@@ -61,12 +56,4 @@ void AudioManager::playStaticNoise(int signalStrength)
 void AudioManager::stop()
 {
     ledcWrite(Audio::SPEAKER_CHANNEL, 0);
-}
-
-void AudioManager::pulseDecodePWM()
-{
-    // Set the decode PWM pin to full on
-    ledcWrite(DECODE_PWM_CHANNEL, 255);
-    delay(10); // Very short pulse
-    ledcWrite(DECODE_PWM_CHANNEL, 0);
 }

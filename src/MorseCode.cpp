@@ -46,7 +46,6 @@ void MorseCode::begin()
 
 void MorseCode::startMessage(const String &message)
 {
-  // First ensure everything is stopped
   stop();
 
   currentMessage = message;
@@ -78,7 +77,6 @@ void MorseCode::update()
   // Handle tune-in delay
   if (inTuneInDelay)
   {
-    // Ensure audio is off during tune-in delay
     config.setMorseToneOn(false);
     audio.stopMorseTone();
 
@@ -90,7 +88,6 @@ void MorseCode::update()
     return;
   }
 
-  // Get current timing configuration
   const auto &timings = config.getCurrentMorseTimings();
 
   // If we need to start a new character
@@ -98,7 +95,6 @@ void MorseCode::update()
   {
     if (messageIndex >= currentMessage.length())
     {
-      // Message complete, stop playing
       stop();
       return;
     }
@@ -107,7 +103,6 @@ void MorseCode::update()
     currentMorseChar = getSymbol(currentMessage[messageIndex]);
     if (currentMorseChar.isEmpty())
     {
-      // Skip invalid characters
       messageIndex++;
       return;
     }
@@ -116,7 +111,6 @@ void MorseCode::update()
   // Handle spaces between words
   if (currentMessage[messageIndex] == ' ')
   {
-    // Ensure tone is off during word gaps
     config.setMorseToneOn(false);
     audio.stopMorseTone();
 
@@ -133,7 +127,19 @@ void MorseCode::update()
   char currentSymbol = currentMorseChar[symbolIndex];
   bool isSymbolOn = config.isMorseToneOn();
   unsigned long symbolDuration = (currentSymbol == '-') ? timings.dashDuration : timings.dotDuration;
-  unsigned long gapDuration = (symbolIndex == currentMorseChar.length() - 1) ? timings.letterGap : timings.symbolGap;
+
+  // Determine the appropriate gap duration
+  unsigned long gapDuration;
+  if (symbolIndex == currentMorseChar.length() - 1)
+  {
+    // Last symbol in character - use letter gap
+    gapDuration = timings.letterGap;
+  }
+  else
+  {
+    // Between symbols - use symbol gap
+    gapDuration = timings.symbolGap;
+  }
 
   // Toggle the morse tone on/off based on timing
   if (isSymbolOn)
@@ -160,7 +166,6 @@ void MorseCode::update()
         // Start next symbol
         config.setMorseToneOn(true);
         audio.playMorseTone();
-        audio.pulseDecodePWM(); // Pulse at start of each symbol
         symbolIndex++;
       }
       lastStateChange = currentTime;
