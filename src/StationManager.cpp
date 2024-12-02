@@ -44,6 +44,23 @@ bool Station::isInRange(int tuningValue) const
     return abs(scaledTuning - frequency) <= Radio::TUNING_LEEWAY;
 }
 
+int Station::getSignalStrength(int tuningValue) const
+{
+    int scaledTuning = map(tuningValue, 0, Radio::ADC_MAX, 0, 4000);
+    int distance = abs(scaledTuning - frequency);
+
+    // If outside tuning leeway, return 0
+    if (distance > Radio::TUNING_LEEWAY)
+    {
+        return 0;
+    }
+
+    // Calculate strength based on proximity to center frequency
+    // The closer to the center frequency, the higher the strength
+    // Maximum strength (255) when perfectly tuned, decreasing linearly to 0 at the edges
+    return map(Radio::TUNING_LEEWAY - distance, 0, Radio::TUNING_LEEWAY, 0, LEDConfig::MAX_BRIGHTNESS);
+}
+
 // StationManager implementation
 void StationManager::begin()
 {
@@ -71,12 +88,6 @@ void StationManager::updateLockLED(bool locked)
     {
         isStationLocked = locked;
         digitalWrite(Pins::LOCK_LED, locked ? HIGH : LOW);
-        ledcWrite(PWMChannels::CARRIER, locked ? 255 : 0);
-
-#ifdef DEBUG_SERIAL_OUTPUT
-        Serial.printf("Lock status changed: %s\n", locked ? "LOCKED" : "UNLOCKED");
-        Serial.printf("CARRIER_PWM value: %d\n", locked ? 255 : 0);
-#endif
     }
 }
 
@@ -96,6 +107,7 @@ Station *StationManager::findClosestStation(int tuningValue, WaveBand band, int 
 {
     Station *closest = nullptr;
     bool stationLocked = false;
+    signalStrength = 0;
 
     // Check all stations in the current band
     for (auto &station : stations)
@@ -107,6 +119,7 @@ Station *StationManager::findClosestStation(int tuningValue, WaveBand band, int 
             {
                 closest = &station;
                 stationLocked = true;
+                signalStrength = station.getSignalStrength(tuningValue);
                 break;
             }
             // If not in range but closest so far, track it
@@ -117,11 +130,18 @@ Station *StationManager::findClosestStation(int tuningValue, WaveBand band, int 
         }
     }
 
-    // Update both indicators based on lock status
+    // Update lock LED based on lock status
     updateLockLED(stationLocked);
 
-    // Set signal strength based on lock status
-    signalStrength = stationLocked ? 255 : 0;
+    // Update carrier PWM based on signal strength
+    ledcWrite(PWMChannels::CARRIER, signalStrength);
+
+#ifdef DEBUG_SERIAL_OUTPUT
+    if (stationLocked)
+    {
+        Serial.printf("Station locked: %s, Signal strength: %d\n", closest->getName(), signalStrength);
+    }
+#endif
 
     return closest;
 }
