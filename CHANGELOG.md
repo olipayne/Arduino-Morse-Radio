@@ -1,3 +1,12 @@
+## [0.12.5](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.12.4...v0.12.5) (2024-12-02)
+
+
+### Bug Fixes
+
+* voltmeter ([b28ccb4](https://github.com/olipayne/Arduino-Morse-Radio/commit/b28ccb4adf0c34d1dfff545b7c3174f020049442))
+
+
+
 ## [0.12.4](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.12.3...v0.12.4) (2024-12-02)
 
 
@@ -31,15 +40,6 @@
 ### Bug Fixes
 
 * signal strength ([e5fdc1a](https://github.com/olipayne/Arduino-Morse-Radio/commit/e5fdc1a99cc282323b3798d004923c92d94f6bb8))
-
-
-
-# [0.12.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.11.2...v0.12.0) (2024-12-02)
-
-
-### Features
-
-* decode voltemeter functionality ([d8e1301](https://github.com/olipayne/Arduino-Morse-Radio/commit/d8e130109182741b92d16ca45a2bdc1dc717065e))
 
 
 
