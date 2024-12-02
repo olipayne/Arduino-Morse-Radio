@@ -1,3 +1,12 @@
+# [0.12.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.11.2...v0.12.0) (2024-12-02)
+
+
+### Features
+
+* decode voltemeter functionality ([d8e1301](https://github.com/olipayne/Arduino-Morse-Radio/commit/d8e130109182741b92d16ca45a2bdc1dc717065e))
+
+
+
 ## [0.11.2](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.11.1...v0.11.2) (2024-12-02)
 
 
@@ -32,15 +41,6 @@
 ### Bug Fixes
 
 * pwm channels being overwritten ([0c3897d](https://github.com/olipayne/Arduino-Morse-Radio/commit/0c3897da75a9bf70d9d17908bbb19e24de1843a4))
-
-
-
-## [0.10.2](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.10.1...v0.10.2) (2024-12-01)
-
-
-### Bug Fixes
-
-* morse code and voltmeter on decode speed working ([661b0a1](https://github.com/olipayne/Arduino-Morse-Radio/commit/661b0a13eb04c3ff1657e367a8cbed401ddd0b9e))
 
 
 
