@@ -52,7 +52,7 @@ int Station::getSignalStrength(int tuningValue) const
 
     // When perfectly tuned (difference = 0), signal is max (255)
     // As difference approaches TUNING_LEEWAY, signal approaches 0
-    return map(difference, Radio::TUNING_LEEWAY, 0, 0, LEDConfig::MAX_BRIGHTNESS);
+    return map(difference, Radio::TUNING_LEEWAY, 0, 0, 255);
 }
 
 bool Station::isInRange(int tuningValue) const
@@ -64,13 +64,12 @@ bool Station::isInRange(int tuningValue) const
 // StationManager implementation
 void StationManager::begin()
 {
-    // Initialize LOCK_LED PWM
-    ledcSetup(PWMChannels::LOCK_LED, LEDConfig::PWM_FREQUENCY, LEDConfig::PWM_RESOLUTION);
-    ledcAttachPin(Pins::LOCK_LED, PWMChannels::LOCK_LED);
-    updateLockLED(false); // Start with LED off
+    // Initialize LOCK_LED as digital output
+    pinMode(Pins::LOCK_LED, OUTPUT);
+    digitalWrite(Pins::LOCK_LED, LOW); // Start with LED off
 
-    // Initialize CARRIER_PWM
-    ledcSetup(PWMChannels::CARRIER_PWM, LEDConfig::PWM_FREQUENCY, LEDConfig::PWM_RESOLUTION);
+    // Initialize CARRIER_PWM with 5kHz frequency and 8-bit resolution
+    ledcSetup(PWMChannels::CARRIER_PWM, 5000, 8);
     ledcAttachPin(Pins::CARRIER_PWM, PWMChannels::CARRIER_PWM);
     ledcWrite(PWMChannels::CARRIER_PWM, 0); // Start with no signal
 
@@ -83,7 +82,7 @@ void StationManager::updateLockLED(bool locked)
     if (locked != isStationLocked)
     {
         isStationLocked = locked;
-        ledcWrite(PWMChannels::LOCK_LED, locked ? LEDConfig::MAX_BRIGHTNESS : LEDConfig::MIN_BRIGHTNESS);
+        digitalWrite(Pins::LOCK_LED, locked ? HIGH : LOW);
     }
 }
 
@@ -105,21 +104,40 @@ Station *StationManager::findClosestStation(int tuningValue, WaveBand band, int 
     signalStrength = 0;
     bool stationLocked = false;
 
+    // First, check if any station is in range
     for (auto &station : stations)
     {
-        if (station.getBand() == band)
+        if (station.getBand() == band && station.isInRange(tuningValue))
         {
             int strength = station.getSignalStrength(tuningValue);
             if (strength > signalStrength)
             {
                 signalStrength = strength;
                 closest = &station;
-                stationLocked = station.isInRange(tuningValue);
+                stationLocked = true;
             }
         }
     }
 
-    // Update lock LED based on whether we're in range of the station
+    // If no station is in range, find the one with the strongest signal
+    if (!stationLocked)
+    {
+        signalStrength = 0; // Reset signal strength
+        for (auto &station : stations)
+        {
+            if (station.getBand() == band)
+            {
+                int strength = station.getSignalStrength(tuningValue);
+                if (strength > signalStrength)
+                {
+                    signalStrength = strength;
+                    closest = &station;
+                }
+            }
+        }
+    }
+
+    // Always update lock LED status
     updateLockLED(stationLocked);
 
     // Update carrier PWM to show signal strength (0-255)
