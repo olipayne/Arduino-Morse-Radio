@@ -1,3 +1,12 @@
+## [0.12.3](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.12.2...v0.12.3) (2024-12-02)
+
+
+### Bug Fixes
+
+* lock led working ([fac8232](https://github.com/olipayne/Arduino-Morse-Radio/commit/fac82320e3540fc51332677a07ded03f56e107b1))
+
+
+
 ## [0.12.2](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.12.1...v0.12.2) (2024-12-02)
 
 
@@ -31,15 +40,6 @@
 ### Bug Fixes
 
 * morse_leds binary ([0263f61](https://github.com/olipayne/Arduino-Morse-Radio/commit/0263f61774758f596dd3b50c970cfada32855584))
-
-
-
-## [0.11.1](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.11.0...v0.11.1) (2024-12-02)
-
-
-### Bug Fixes
-
-* small reference fixes ([c82c0f1](https://github.com/olipayne/Arduino-Morse-Radio/commit/c82c0f13fc3179c98e915f89ea60878f9da4e211))
 
 
 
