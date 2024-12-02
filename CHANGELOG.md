@@ -1,3 +1,12 @@
+## [0.12.6](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.12.5...v0.12.6) (2024-12-02)
+
+
+### Bug Fixes
+
+* voltmeter properly PWMing now ([6028ee0](https://github.com/olipayne/Arduino-Morse-Radio/commit/6028ee00e0670a9dd4cca99c70ab56c7dd635ad5))
+
+
+
 ## [0.12.5](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.12.4...v0.12.5) (2024-12-02)
 
 
@@ -31,15 +40,6 @@
 ### Bug Fixes
 
 * signal strength ([a4460bd](https://github.com/olipayne/Arduino-Morse-Radio/commit/a4460bd481ff1dca21b877866e6b2c6998294372))
-
-
-
-## [0.12.1](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.12.0...v0.12.1) (2024-12-02)
-
-
-### Bug Fixes
-
-* signal strength ([e5fdc1a](https://github.com/olipayne/Arduino-Morse-Radio/commit/e5fdc1a99cc282323b3798d004923c92d94f6bb8))
 
 
 
