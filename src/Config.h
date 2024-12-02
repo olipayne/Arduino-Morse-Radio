@@ -36,16 +36,17 @@ namespace Pins
 // PWM Channel Assignments
 namespace PWMChannels
 {
-  constexpr uint8_t AUDIO = 0;      // Reserved for audio output
-  constexpr uint8_t DECODE = 1;     // Reserved for decode signal
-  constexpr uint8_t SPEED = 2;      // Reserved for speed control
-  constexpr uint8_t LW_LED = 3;     // Long Wave LED control
-  constexpr uint8_t MW_LED = 4;     // Medium Wave LED control
-  constexpr uint8_t SW_LED = 5;     // Short Wave LED control
-  constexpr uint8_t BACKLIGHT = 6;  // LCD backlight control
-  constexpr uint8_t POWER_LED = 7;  // Power LED control
-  constexpr uint8_t LOCK_LED = 8;   // Station lock indicator
-  constexpr uint8_t MORSE_LEDS = 9; // Morse code indicator LEDs
+  constexpr uint8_t AUDIO = 0;        // Reserved for audio output
+  constexpr uint8_t DECODE = 1;       // Reserved for decode signal
+  constexpr uint8_t SPEED = 2;        // Reserved for speed control
+  constexpr uint8_t LW_LED = 3;       // Long Wave LED control
+  constexpr uint8_t MW_LED = 4;       // Medium Wave LED control
+  constexpr uint8_t SW_LED = 5;       // Short Wave LED control
+  constexpr uint8_t BACKLIGHT = 6;    // LCD backlight control
+  constexpr uint8_t POWER_LED = 7;    // Power LED control
+  constexpr uint8_t LOCK_LED = 8;     // Station lock indicator
+  constexpr uint8_t MORSE_LEDS = 9;   // Morse code indicator LEDs
+  constexpr uint8_t CARRIER_PWM = 10; // Signal strength indicator
 }
 
 // LED Configuration Namespace

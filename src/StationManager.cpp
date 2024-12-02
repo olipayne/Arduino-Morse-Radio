@@ -57,6 +57,11 @@ void StationManager::begin()
     ledcAttachPin(Pins::LOCK_LED, PWMChannels::LOCK_LED);
     updateLockLED(false); // Start with LED off
 
+    // Initialize CARRIER_PWM
+    ledcSetup(PWMChannels::CARRIER_PWM, LEDConfig::PWM_FREQUENCY, LEDConfig::PWM_RESOLUTION);
+    ledcAttachPin(Pins::CARRIER_PWM, PWMChannels::CARRIER_PWM);
+    ledcWrite(PWMChannels::CARRIER_PWM, 0); // Start with no signal
+
     initializeDefaultStations();
     loadFromPreferences();
 }
@@ -102,6 +107,9 @@ Station *StationManager::findClosestStation(int tuningValue, WaveBand band, int 
 
     // Update lock LED based on signal strength
     updateLockLED(signalStrength > 0);
+
+    // Update carrier PWM to show signal strength (0-255)
+    ledcWrite(PWMChannels::CARRIER_PWM, signalStrength);
 
     return closest;
 }
