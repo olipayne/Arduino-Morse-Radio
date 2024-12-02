@@ -1,3 +1,12 @@
+## [0.12.4](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.12.3...v0.12.4) (2024-12-02)
+
+
+### Bug Fixes
+
+* temp fix binary mode for the voltmeter ([583006a](https://github.com/olipayne/Arduino-Morse-Radio/commit/583006af48c956d0be75e0ba5afc44bd6241f315))
+
+
+
 ## [0.12.3](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.12.2...v0.12.3) (2024-12-02)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * decode voltemeter functionality ([d8e1301](https://github.com/olipayne/Arduino-Morse-Radio/commit/d8e130109182741b92d16ca45a2bdc1dc717065e))
-
-
-
-## [0.11.2](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.11.1...v0.11.2) (2024-12-02)
-
-
-### Bug Fixes
-
-* morse_leds binary ([0263f61](https://github.com/olipayne/Arduino-Morse-Radio/commit/0263f61774758f596dd3b50c970cfada32855584))
 
 
 
