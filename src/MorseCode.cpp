@@ -41,9 +41,8 @@ const char *const MorseCode::MORSE_PATTERNS[] = {
 
 void MorseCode::begin()
 {
-  // Initialize MORSE_LEDS PWM
-  ledcSetup(PWMChannels::MORSE_LEDS, LEDConfig::PWM_FREQUENCY, LEDConfig::PWM_RESOLUTION);
-  ledcAttachPin(Pins::MORSE_LEDS, PWMChannels::MORSE_LEDS);
+  // Initialize MORSE_LEDS as digital output
+  pinMode(Pins::MORSE_LEDS, OUTPUT);
   updateMorseLEDs(false);
   stop();
 }
@@ -200,7 +199,7 @@ void MorseCode::stop()
 
 void MorseCode::updateMorseLEDs(bool on)
 {
-  ledcWrite(PWMChannels::MORSE_LEDS, on ? LEDConfig::MAX_BRIGHTNESS : LEDConfig::MIN_BRIGHTNESS);
+  digitalWrite(Pins::MORSE_LEDS, on ? HIGH : LOW);
 }
 
 String MorseCode::getSymbol(char c) const
