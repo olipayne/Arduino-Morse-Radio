@@ -47,11 +47,19 @@ bool Station::isInRange(int tuningValue) const
 // StationManager implementation
 void StationManager::begin()
 {
-    // Initialize both LEDs as digital outputs
+    // Initialize LOCK_LED as digital output
     pinMode(Pins::LOCK_LED, OUTPUT);
-    pinMode(Pins::CARRIER_PWM, OUTPUT);
     digitalWrite(Pins::LOCK_LED, LOW);
-    digitalWrite(Pins::CARRIER_PWM, LOW);
+    isStationLocked = false;
+
+    // Initialize CARRIER_PWM using PWM
+    ledcSetup(PWMChannels::CARRIER, LEDConfig::PWM_FREQUENCY, LEDConfig::PWM_RESOLUTION);
+    ledcAttachPin(Pins::CARRIER_PWM, PWMChannels::CARRIER);
+    ledcWrite(PWMChannels::CARRIER, 0);
+
+#ifdef DEBUG_SERIAL_OUTPUT
+    Serial.println("StationManager initialized");
+#endif
 
     initializeDefaultStations();
     loadFromPreferences();
@@ -63,7 +71,12 @@ void StationManager::updateLockLED(bool locked)
     {
         isStationLocked = locked;
         digitalWrite(Pins::LOCK_LED, locked ? HIGH : LOW);
-        digitalWrite(Pins::CARRIER_PWM, locked ? HIGH : LOW);
+        ledcWrite(PWMChannels::CARRIER, locked ? 255 : 0);
+
+#ifdef DEBUG_SERIAL_OUTPUT
+        Serial.printf("Lock status changed: %s\n", locked ? "LOCKED" : "UNLOCKED");
+        Serial.printf("CARRIER_PWM value: %d\n", locked ? 255 : 0);
+#endif
     }
 }
 
@@ -104,7 +117,7 @@ Station *StationManager::findClosestStation(int tuningValue, WaveBand band, int 
         }
     }
 
-    // Update both LEDs based on lock status
+    // Update both indicators based on lock status
     updateLockLED(stationLocked);
 
     // Set signal strength based on lock status

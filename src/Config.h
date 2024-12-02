@@ -13,7 +13,6 @@ namespace Pins
   constexpr int MW_BAND_SWITCH = 6;
   constexpr int SLOW_DECODE = 5;
   constexpr int MED_DECODE = 11;
-  constexpr int AUDIO_SWITCH = 10;
   constexpr int WIFI_BUTTON = 0;
 
   // Analog Input Pins
@@ -26,8 +25,8 @@ namespace Pins
   constexpr int LW_LED = 36;
   constexpr int MW_LED = 37;
   constexpr int SW_LED = 38;
-  constexpr int LOCK_LED = 43;
-  constexpr int CARRIER_PWM = 7;
+  constexpr int LOCK_LED = 7;
+  constexpr int CARRIER_PWM = 10;
   constexpr int DECODE_PWM = 3;
   constexpr int MORSE_LEDS = 44;
   constexpr int SPEAKER = 1;
@@ -36,17 +35,9 @@ namespace Pins
 // PWM Channel Assignments
 namespace PWMChannels
 {
-  constexpr uint8_t AUDIO = 0;        // Reserved for audio output
-  constexpr uint8_t DECODE = 1;       // Reserved for decode signal
-  constexpr uint8_t SPEED = 2;        // Reserved for speed control
-  constexpr uint8_t LW_LED = 3;       // Long Wave LED control
-  constexpr uint8_t MW_LED = 4;       // Medium Wave LED control
-  constexpr uint8_t SW_LED = 5;       // Short Wave LED control
-  constexpr uint8_t BACKLIGHT = 6;    // LCD backlight control
-  constexpr uint8_t POWER_LED = 7;    // Power LED control
-  constexpr uint8_t LOCK_LED = 8;     // Station lock indicator
-  constexpr uint8_t MORSE_LEDS = 9;   // Morse code indicator LEDs
-  constexpr uint8_t CARRIER_PWM = 10; // Signal strength indicator
+  constexpr uint8_t AUDIO = 0;   // Audio output
+  constexpr uint8_t DECODE = 1;  // Decode speed control
+  constexpr uint8_t CARRIER = 2; // Signal strength indicator
 }
 
 // LED Configuration Namespace

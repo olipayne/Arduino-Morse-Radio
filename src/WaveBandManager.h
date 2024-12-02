@@ -30,7 +30,6 @@ private:
 
     // Pin initialization
     void initializePins();
-    void initializeLEDs();
 
     // LED state tracking
     void turnOffAllBandLEDs();
@@ -38,14 +37,12 @@ private:
 
     // Internal state
     uint8_t ledBrightness = LEDConfig::MAX_BRIGHTNESS;
-    bool ledsInitialized = false;
 
     // LED to Band mapping
     struct BandLED
     {
         WaveBand band;
         uint8_t pin;
-        uint8_t pwmChannel;
     };
 
     static const BandLED BAND_LEDS[];

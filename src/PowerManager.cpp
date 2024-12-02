@@ -13,12 +13,6 @@ void PowerManager::begin()
     // Configure pins with explicit pull-ups and set pin modes
     configurePins();
 
-    // Setup PWM for power indicators
-    ledcSetup(PWMChannels::BACKLIGHT, LEDConfig::PWM_FREQUENCY, LEDConfig::PWM_RESOLUTION);
-    ledcSetup(PWMChannels::POWER_LED, LEDConfig::PWM_FREQUENCY, LEDConfig::PWM_RESOLUTION);
-    ledcAttachPin(Pins::BACKLIGHT, PWMChannels::BACKLIGHT);
-    ledcAttachPin(Pins::POWER_LED, PWMChannels::POWER_LED);
-
     // Check power switch state immediately and update indicators
     bool powerOn = (digitalRead(Pins::POWER_SWITCH) == HIGH);
     updatePowerIndicators(powerOn);
@@ -52,16 +46,8 @@ void PowerManager::checkPowerSwitch()
 
 void PowerManager::updatePowerIndicators(bool powerOn)
 {
-    if (powerOn)
-    {
-        ledcWrite(PWMChannels::BACKLIGHT, LEDConfig::MAX_BRIGHTNESS);
-        ledcWrite(PWMChannels::POWER_LED, LEDConfig::MAX_BRIGHTNESS);
-    }
-    else
-    {
-        ledcWrite(PWMChannels::BACKLIGHT, LEDConfig::MIN_BRIGHTNESS);
-        ledcWrite(PWMChannels::POWER_LED, LEDConfig::MIN_BRIGHTNESS);
-    }
+    digitalWrite(Pins::BACKLIGHT, powerOn ? HIGH : LOW);
+    digitalWrite(Pins::POWER_LED, powerOn ? HIGH : LOW);
 }
 
 void PowerManager::enterDeepSleep()
@@ -339,6 +325,8 @@ void PowerManager::configurePins()
     // Configure output pins
     pinMode(Pins::BACKLIGHT, OUTPUT);
     pinMode(Pins::POWER_LED, OUTPUT);
+    digitalWrite(Pins::BACKLIGHT, LOW);
+    digitalWrite(Pins::POWER_LED, LOW);
 
     // Small delay to let pins settle
     delay(10);

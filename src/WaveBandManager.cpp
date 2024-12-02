@@ -1,15 +1,14 @@
 #include "WaveBandManager.h"
 
-// Define the LED mapping with their respective PWM channels
+// Define the LED mapping
 const WaveBandManager::BandLED WaveBandManager::BAND_LEDS[] = {
-    {WaveBand::LONG_WAVE, Pins::LW_LED, PWMChannels::LW_LED},
-    {WaveBand::MEDIUM_WAVE, Pins::MW_LED, PWMChannels::MW_LED},
-    {WaveBand::SHORT_WAVE, Pins::SW_LED, PWMChannels::SW_LED}};
+    {WaveBand::LONG_WAVE, Pins::LW_LED},
+    {WaveBand::MEDIUM_WAVE, Pins::MW_LED},
+    {WaveBand::SHORT_WAVE, Pins::SW_LED}};
 
 void WaveBandManager::begin()
 {
     initializePins();
-    initializeLEDs();
     update(); // Initial update
 }
 
@@ -19,25 +18,11 @@ void WaveBandManager::initializePins()
     pinMode(Pins::LW_BAND_SWITCH, INPUT_PULLUP);
     pinMode(Pins::MW_BAND_SWITCH, INPUT_PULLUP);
 
-    // Initialize LED pins
+    // Initialize LED pins as digital outputs
     for (size_t i = 0; i < NUM_BANDS; i++)
     {
         pinMode(BAND_LEDS[i].pin, OUTPUT);
         digitalWrite(BAND_LEDS[i].pin, LOW);
-    }
-}
-
-void WaveBandManager::initializeLEDs()
-{
-    if (!ledsInitialized)
-    {
-        // Set up PWM for LED control using dedicated channels
-        for (size_t i = 0; i < NUM_BANDS; i++)
-        {
-            ledcSetup(BAND_LEDS[i].pwmChannel, LEDConfig::PWM_FREQUENCY, LEDConfig::PWM_RESOLUTION);
-            ledcAttachPin(BAND_LEDS[i].pin, BAND_LEDS[i].pwmChannel);
-        }
-        ledsInitialized = true;
     }
 }
 
@@ -88,7 +73,7 @@ void WaveBandManager::turnOffAllBandLEDs()
 {
     for (size_t i = 0; i < NUM_BANDS; i++)
     {
-        ledcWrite(BAND_LEDS[i].pwmChannel, LEDConfig::MIN_BRIGHTNESS);
+        digitalWrite(BAND_LEDS[i].pin, LOW);
     }
 }
 
@@ -98,7 +83,7 @@ void WaveBandManager::updateBandLED(WaveBand band)
     {
         if (BAND_LEDS[i].band == band)
         {
-            ledcWrite(BAND_LEDS[i].pwmChannel, ledBrightness);
+            digitalWrite(BAND_LEDS[i].pin, HIGH);
             break;
         }
     }
@@ -106,7 +91,7 @@ void WaveBandManager::updateBandLED(WaveBand band)
 
 void WaveBandManager::setLEDBrightness(uint8_t brightness)
 {
-    // Constrain brightness to valid range
-    ledBrightness = constrain(brightness, LEDConfig::MIN_BRIGHTNESS, LEDConfig::MAX_BRIGHTNESS);
-    updateLEDs(); // Update LEDs with new brightness
+    // No brightness control in digital mode
+    // Just update LEDs to maintain current state
+    updateLEDs();
 }
