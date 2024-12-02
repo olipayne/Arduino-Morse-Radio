@@ -1,10 +1,10 @@
 #include "WaveBandManager.h"
 
-// Define the LED mapping
+// Define the LED mapping with their respective PWM channels
 const WaveBandManager::BandLED WaveBandManager::BAND_LEDS[] = {
-    {WaveBand::LONG_WAVE, Pins::LW_LED},
-    {WaveBand::MEDIUM_WAVE, Pins::MW_LED},
-    {WaveBand::SHORT_WAVE, Pins::SW_LED}};
+    {WaveBand::LONG_WAVE, Pins::LW_LED, PWMChannels::LW_LED},
+    {WaveBand::MEDIUM_WAVE, Pins::MW_LED, PWMChannels::MW_LED},
+    {WaveBand::SHORT_WAVE, Pins::SW_LED, PWMChannels::SW_LED}};
 
 void WaveBandManager::begin()
 {
@@ -31,11 +31,11 @@ void WaveBandManager::initializeLEDs()
 {
     if (!ledsInitialized)
     {
-        // Set up PWM for LED control
+        // Set up PWM for LED control using dedicated channels
         for (size_t i = 0; i < NUM_BANDS; i++)
         {
-            ledcSetup(LED_PWM_CHANNEL + i, LED_PWM_FREQ, LED_PWM_RESOLUTION);
-            ledcAttachPin(BAND_LEDS[i].pin, LED_PWM_CHANNEL + i);
+            ledcSetup(BAND_LEDS[i].pwmChannel, LED_PWM_FREQ, LED_PWM_RESOLUTION);
+            ledcAttachPin(BAND_LEDS[i].pin, BAND_LEDS[i].pwmChannel);
         }
         ledsInitialized = true;
     }
@@ -88,7 +88,7 @@ void WaveBandManager::turnOffAllBandLEDs()
 {
     for (size_t i = 0; i < NUM_BANDS; i++)
     {
-        ledcWrite(LED_PWM_CHANNEL + i, 0);
+        ledcWrite(BAND_LEDS[i].pwmChannel, 0);
     }
 }
 
@@ -98,7 +98,7 @@ void WaveBandManager::updateBandLED(WaveBand band)
     {
         if (BAND_LEDS[i].band == band)
         {
-            ledcWrite(LED_PWM_CHANNEL + i, ledBrightness);
+            ledcWrite(BAND_LEDS[i].pwmChannel, ledBrightness);
             break;
         }
     }

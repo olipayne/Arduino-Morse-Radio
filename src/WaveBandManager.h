@@ -43,15 +43,15 @@ private:
     // Constants for LED control
     static constexpr uint8_t LED_MIN_BRIGHTNESS = 10;
     static constexpr uint8_t LED_MAX_BRIGHTNESS = 255;
-    static constexpr uint8_t LED_PWM_CHANNEL = 2; // Use different channel from audio
     static constexpr uint8_t LED_PWM_RESOLUTION = 8;
     static constexpr uint32_t LED_PWM_FREQ = 5000;
 
-    // LED to Band mapping
+    // LED to Band mapping with PWM channels
     struct BandLED
     {
         WaveBand band;
         uint8_t pin;
+        uint8_t pwmChannel; // Added PWM channel to the struct
     };
 
     static const BandLED BAND_LEDS[];
