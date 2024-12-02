@@ -40,13 +40,23 @@ const size_t StationManager::DEFAULT_STATION_COUNT = sizeof(DEFAULT_STATIONS) / 
 // Station implementation
 int Station::getSignalStrength(int tuningValue) const
 {
-    int difference = abs(tuningValue - frequency);
-    return difference <= Radio::TUNING_LEEWAY ? map(difference, 0, Radio::TUNING_LEEWAY, 255, 0) : 0;
+    // Scale tuning value from ADC range (0-4095) to station frequency range (0-4000)
+    int scaledTuning = map(tuningValue, 0, Radio::ADC_MAX, 0, 4000);
+    int difference = abs(scaledTuning - frequency);
+
+    // If within tuning leeway, calculate signal strength
+    if (difference <= Radio::TUNING_LEEWAY)
+    {
+        // Map difference to PWM range (0-255), with closer tuning giving higher values
+        return map(difference, Radio::TUNING_LEEWAY, 0, 0, LEDConfig::MAX_BRIGHTNESS);
+    }
+    return 0;
 }
 
 bool Station::isInRange(int tuningValue) const
 {
-    return abs(tuningValue - frequency) <= Radio::TUNING_LEEWAY;
+    int scaledTuning = map(tuningValue, 0, Radio::ADC_MAX, 0, 4000);
+    return abs(scaledTuning - frequency) <= Radio::TUNING_LEEWAY;
 }
 
 // StationManager implementation
