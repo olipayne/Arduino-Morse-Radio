@@ -35,6 +35,7 @@ private:
     MorseCode &operator=(const MorseCode &) = delete;
 
     String getSymbol(char c) const;
+    void updateMorseLEDs(bool on);
 
     // Message state
     String currentMessage;

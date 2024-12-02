@@ -41,6 +41,10 @@ const char *const MorseCode::MORSE_PATTERNS[] = {
 
 void MorseCode::begin()
 {
+  // Initialize MORSE_LEDS PWM
+  ledcSetup(PWMChannels::MORSE_LEDS, LEDConfig::PWM_FREQUENCY, LEDConfig::PWM_RESOLUTION);
+  ledcAttachPin(Pins::MORSE_LEDS, PWMChannels::MORSE_LEDS);
+  updateMorseLEDs(false);
   stop();
 }
 
@@ -57,6 +61,7 @@ void MorseCode::startMessage(const String &message)
   auto &config = ConfigManager::getInstance();
   config.setMorsePlaying(true);
   config.setMorseToneOn(false);
+  updateMorseLEDs(false);
 
 #ifdef DEBUG_SERIAL_OUTPUT
   Serial.print("Starting Morse Message: ");
@@ -79,6 +84,7 @@ void MorseCode::update()
   {
     config.setMorseToneOn(false);
     audio.stopMorseTone();
+    updateMorseLEDs(false);
 
     if (currentTime - tuneInStartTime >= TUNE_IN_DELAY)
     {
@@ -113,6 +119,7 @@ void MorseCode::update()
   {
     config.setMorseToneOn(false);
     audio.stopMorseTone();
+    updateMorseLEDs(false);
 
     if (currentTime - lastStateChange >= timings.wordGap)
     {
@@ -141,13 +148,14 @@ void MorseCode::update()
     gapDuration = timings.symbolGap;
   }
 
-  // Toggle the morse tone on/off based on timing
+  // Toggle the morse tone and LEDs on/off based on timing
   if (isSymbolOn)
   {
     if (currentTime - lastStateChange >= symbolDuration)
     {
       config.setMorseToneOn(false);
       audio.stopMorseTone();
+      updateMorseLEDs(false);
       lastStateChange = currentTime;
     }
   }
@@ -166,6 +174,7 @@ void MorseCode::update()
         // Start next symbol
         config.setMorseToneOn(true);
         audio.playMorseTone();
+        updateMorseLEDs(true);
         symbolIndex++;
       }
       lastStateChange = currentTime;
@@ -181,11 +190,17 @@ void MorseCode::stop()
   config.setMorsePlaying(false);
   config.setMorseToneOn(false);
   audio.stopMorseTone();
+  updateMorseLEDs(false);
 
   messageIndex = 0;
   symbolIndex = 0;
   currentMorseChar.clear();
   inTuneInDelay = false;
+}
+
+void MorseCode::updateMorseLEDs(bool on)
+{
+  ledcWrite(PWMChannels::MORSE_LEDS, on ? LEDConfig::MAX_BRIGHTNESS : LEDConfig::MIN_BRIGHTNESS);
 }
 
 String MorseCode::getSymbol(char c) const

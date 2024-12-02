@@ -69,8 +69,12 @@ private:
   // Helper methods
   void initializeDefaultStations();
   String generatePreferenceKey(const char *prefix, size_t index) const;
+  void updateLockLED(bool locked);
 
   std::vector<Station> stations;
+
+  // LED control
+  bool isStationLocked = false;
 
   // Default station definitions
   struct StationDefaults

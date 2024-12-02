@@ -52,8 +52,22 @@ bool Station::isInRange(int tuningValue) const
 // StationManager implementation
 void StationManager::begin()
 {
+    // Initialize LOCK_LED PWM
+    ledcSetup(PWMChannels::LOCK_LED, LEDConfig::PWM_FREQUENCY, LEDConfig::PWM_RESOLUTION);
+    ledcAttachPin(Pins::LOCK_LED, PWMChannels::LOCK_LED);
+    updateLockLED(false); // Start with LED off
+
     initializeDefaultStations();
     loadFromPreferences();
+}
+
+void StationManager::updateLockLED(bool locked)
+{
+    if (locked != isStationLocked)
+    {
+        isStationLocked = locked;
+        ledcWrite(PWMChannels::LOCK_LED, locked ? LEDConfig::MAX_BRIGHTNESS : LEDConfig::MIN_BRIGHTNESS);
+    }
 }
 
 void StationManager::initializeDefaultStations()
@@ -85,6 +99,9 @@ Station *StationManager::findClosestStation(int tuningValue, WaveBand band, int 
             }
         }
     }
+
+    // Update lock LED based on signal strength
+    updateLockLED(signalStrength > 0);
 
     return closest;
 }

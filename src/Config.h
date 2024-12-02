@@ -36,16 +36,25 @@ namespace Pins
 // PWM Channel Assignments
 namespace PWMChannels
 {
-  constexpr uint8_t AUDIO = 0;     // Reserved for audio output
-  constexpr uint8_t DECODE = 1;    // Reserved for decode signal
-  constexpr uint8_t SPEED = 2;     // Reserved for speed control
-  constexpr uint8_t LW_LED = 3;    // Long Wave LED control
-  constexpr uint8_t MW_LED = 4;    // Medium Wave LED control
-  constexpr uint8_t SW_LED = 5;    // Short Wave LED control
-  constexpr uint8_t BACKLIGHT = 6; // LCD backlight control
-  constexpr uint8_t POWER_LED = 7; // Power LED control
-  // Add more channel assignments here as needed
-  // ESP32 typically supports up to 16 channels (0-15)
+  constexpr uint8_t AUDIO = 0;      // Reserved for audio output
+  constexpr uint8_t DECODE = 1;     // Reserved for decode signal
+  constexpr uint8_t SPEED = 2;      // Reserved for speed control
+  constexpr uint8_t LW_LED = 3;     // Long Wave LED control
+  constexpr uint8_t MW_LED = 4;     // Medium Wave LED control
+  constexpr uint8_t SW_LED = 5;     // Short Wave LED control
+  constexpr uint8_t BACKLIGHT = 6;  // LCD backlight control
+  constexpr uint8_t POWER_LED = 7;  // Power LED control
+  constexpr uint8_t LOCK_LED = 8;   // Station lock indicator
+  constexpr uint8_t MORSE_LEDS = 9; // Morse code indicator LEDs
+}
+
+// LED Configuration Namespace
+namespace LEDConfig
+{
+  constexpr uint8_t PWM_RESOLUTION = 8;
+  constexpr uint32_t PWM_FREQUENCY = 5000;
+  constexpr uint8_t MAX_BRIGHTNESS = 255;
+  constexpr uint8_t MIN_BRIGHTNESS = 0;
 }
 
 // Audio Configuration Namespace
