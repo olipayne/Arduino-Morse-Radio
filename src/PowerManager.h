@@ -1,14 +1,10 @@
-#ifndef POWER_MANAGER_H
-#define POWER_MANAGER_H
+#ifndef POWERMANAGER_H
+#define POWERMANAGER_H
 
 #include <Arduino.h>
-#include <esp_sleep.h>
-#include <driver/adc.h>
-#include <esp_adc_cal.h>
-#include <WiFi.h>
+#include <UMS3.h>
 #include "Config.h"
 #include "WiFiManager.h"
-#include <UMS3.h>
 
 class PowerManager
 {
@@ -20,48 +16,46 @@ public:
     }
 
     void begin();
+    void checkPowerSwitch();
+    void checkActivity();
     float getBatteryVoltage();
     bool isLowBattery();
-    void checkActivity();
-    void checkPowerSwitch();                              // New method to check power switch state
-    bool isUSBPowered() { return ums3.getVbusPresent(); } // Removed const qualifier
-
-    int getCurrentCpuFreq() const { return getCpuFrequencyMhz(); }
+    bool isUSBPowered() { return ums3.getVbusPresent(); } // Added method to check USB power
 
 private:
-    PowerManager() : ums3(UMS3()) {}
+    PowerManager() = default;
     PowerManager(const PowerManager &) = delete;
     PowerManager &operator=(const PowerManager &) = delete;
 
+    void configurePins();
     void configureADC();
-    void enterLightSleep();
-    void enterDeepSleep(); // New method for deep sleep
-    bool checkForInputChanges();
     void updatePinStates();
+    bool checkForInputChanges();
+    void enterDeepSleep();
+    void enterLightSleep();
     void displayBatteryStatus();
+    void updatePowerIndicators(bool powerOn);
 
-    UMS3 ums3;                                             // FeatherS3 helper
-    static constexpr float LOW_BATTERY_THRESHOLD = 3.4f;   // Volts
-    static constexpr uint32_t INACTIVITY_TIMEOUT = 300000; // 5 minutes
-    static constexpr int POTENTIOMETER_THRESHOLD = 120;    // Minimum change to count as activity
+    // Constants
+    static constexpr float LOW_BATTERY_THRESHOLD = 3.5;
+    static constexpr unsigned long INACTIVITY_TIMEOUT = 300000; // 5 minutes
+    static constexpr int POTENTIOMETER_THRESHOLD = 100;
+    static constexpr uint8_t LED_PWM_RESOLUTION = 8;
+    static constexpr uint32_t LED_PWM_FREQ = 5000;
+    static constexpr uint8_t LED_BRIGHTNESS = 255;
 
-    // Last known values for activity detection
+    // State tracking
+    unsigned long lastActivityTime = 0;
     int lastTuningValue = 0;
     int lastVolumeValue = 0;
-
-    // Last known states of digital inputs
     bool lastLWState = false;
     bool lastMWState = false;
     bool lastSlowState = false;
     bool lastMedState = false;
     bool lastWiFiState = false;
 
-    unsigned long lastActivityTime = 0;
-
-    // Check if we just woke from deep sleep
-    bool checkWakeupCause();
-    void printWakeupCause();
-    void configurePins(); // New pin configuration function
+    // UMS3 instance
+    UMS3 ums3;
 };
 
 #endif

@@ -36,12 +36,14 @@ namespace Pins
 // PWM Channel Assignments
 namespace PWMChannels
 {
-  constexpr uint8_t AUDIO = 0;  // Reserved for audio output
-  constexpr uint8_t DECODE = 1; // Reserved for decode signal
-  constexpr uint8_t SPEED = 2;  // Reserved for speed control
-  constexpr uint8_t LW_LED = 3; // Long Wave LED control
-  constexpr uint8_t MW_LED = 4; // Medium Wave LED control
-  constexpr uint8_t SW_LED = 5; // Short Wave LED control
+  constexpr uint8_t AUDIO = 0;     // Reserved for audio output
+  constexpr uint8_t DECODE = 1;    // Reserved for decode signal
+  constexpr uint8_t SPEED = 2;     // Reserved for speed control
+  constexpr uint8_t LW_LED = 3;    // Long Wave LED control
+  constexpr uint8_t MW_LED = 4;    // Medium Wave LED control
+  constexpr uint8_t SW_LED = 5;    // Short Wave LED control
+  constexpr uint8_t BACKLIGHT = 6; // LCD backlight control
+  constexpr uint8_t POWER_LED = 7; // Power LED control
   // Add more channel assignments here as needed
   // ESP32 typically supports up to 16 channels (0-15)
 }

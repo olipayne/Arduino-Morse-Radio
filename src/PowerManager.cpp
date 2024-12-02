@@ -13,8 +13,15 @@ void PowerManager::begin()
     // Configure pins with explicit pull-ups and set pin modes
     configurePins();
 
-    // Check power switch state immediately
-    checkPowerSwitch();
+    // Setup PWM for power indicators
+    ledcSetup(PWMChannels::BACKLIGHT, LED_PWM_FREQ, LED_PWM_RESOLUTION);
+    ledcSetup(PWMChannels::POWER_LED, LED_PWM_FREQ, LED_PWM_RESOLUTION);
+    ledcAttachPin(Pins::BACKLIGHT, PWMChannels::BACKLIGHT);
+    ledcAttachPin(Pins::POWER_LED, PWMChannels::POWER_LED);
+
+    // Check power switch state immediately and update indicators
+    bool powerOn = (digitalRead(Pins::POWER_SWITCH) == HIGH);
+    updatePowerIndicators(powerOn);
 
     // Configure ADC for power efficiency
     configureADC();
@@ -29,8 +36,11 @@ void PowerManager::begin()
 
 void PowerManager::checkPowerSwitch()
 {
+    bool powerOn = (digitalRead(Pins::POWER_SWITCH) == HIGH);
+    updatePowerIndicators(powerOn);
+
     // If power switch is pulled low (switched off)
-    if (digitalRead(Pins::POWER_SWITCH) == LOW)
+    if (!powerOn)
     {
         // Disable the 3.3V 1 power supply
         ums3.setLDO2Power(false);
@@ -40,11 +50,28 @@ void PowerManager::checkPowerSwitch()
     }
 }
 
+void PowerManager::updatePowerIndicators(bool powerOn)
+{
+    if (powerOn)
+    {
+        ledcWrite(PWMChannels::BACKLIGHT, LED_BRIGHTNESS);
+        ledcWrite(PWMChannels::POWER_LED, LED_BRIGHTNESS);
+    }
+    else
+    {
+        ledcWrite(PWMChannels::BACKLIGHT, 0);
+        ledcWrite(PWMChannels::POWER_LED, 0);
+    }
+}
+
 void PowerManager::enterDeepSleep()
 {
 #ifdef DEBUG_SERIAL_OUTPUT
     Serial.println("Entering deep sleep mode...");
 #endif
+    // Turn off power indicators
+    updatePowerIndicators(false);
+
     delay(100); // Allow serial to flush
 
     // Configure wake-up on power switch high (when switch is turned back on)
@@ -224,6 +251,9 @@ void PowerManager::enterLightSleep()
 #ifdef DEBUG_SERIAL_OUTPUT
     Serial.println("Preparing for light sleep...");
 #endif
+    // Turn off power indicators
+    updatePowerIndicators(false);
+
     delay(100);
 
     // Enable GPIO wakeup
@@ -271,6 +301,10 @@ void PowerManager::enterLightSleep()
     // Re-enable the 3.3V 1 power supply
     ums3.setLDO2Power(true);
 
+    // Restore power indicators based on power switch state
+    bool powerOn = (digitalRead(Pins::POWER_SWITCH) == HIGH);
+    updatePowerIndicators(powerOn);
+
     // Reinitialize any peripherals if necessary
     lastActivityTime = millis();
     setCpuFrequencyMhz(80);
@@ -301,6 +335,10 @@ void PowerManager::configurePins()
     pinMode(Pins::SLOW_DECODE, INPUT_PULLUP);
     pinMode(Pins::MED_DECODE, INPUT_PULLUP);
     pinMode(Pins::WIFI_BUTTON, INPUT_PULLUP);
+
+    // Configure output pins
+    pinMode(Pins::BACKLIGHT, OUTPUT);
+    pinMode(Pins::POWER_LED, OUTPUT);
 
     // Small delay to let pins settle
     delay(10);
