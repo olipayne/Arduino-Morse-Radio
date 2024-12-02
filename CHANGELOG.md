@@ -1,3 +1,12 @@
+## [0.11.2](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.11.1...v0.11.2) (2024-12-02)
+
+
+### Bug Fixes
+
+* morse_leds binary ([0263f61](https://github.com/olipayne/Arduino-Morse-Radio/commit/0263f61774758f596dd3b50c970cfada32855584))
+
+
+
 ## [0.11.1](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.11.0...v0.11.1) (2024-12-02)
 
 
@@ -32,15 +41,6 @@
 ### Bug Fixes
 
 * morse code and voltmeter on decode speed working ([661b0a1](https://github.com/olipayne/Arduino-Morse-Radio/commit/661b0a13eb04c3ff1657e367a8cbed401ddd0b9e))
-
-
-
-## [0.10.1](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.10.0...v0.10.1) (2024-11-30)
-
-
-### Bug Fixes
-
-* morse code fix ([1e88db4](https://github.com/olipayne/Arduino-Morse-Radio/commit/1e88db43c92f70b3079d247372b3214bd9383008))
 
 
 
