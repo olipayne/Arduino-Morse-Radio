@@ -44,13 +44,15 @@ int Station::getSignalStrength(int tuningValue) const
     int scaledTuning = map(tuningValue, 0, Radio::ADC_MAX, 0, 4000);
     int difference = abs(scaledTuning - frequency);
 
-    // If within tuning leeway, calculate signal strength
-    if (difference <= Radio::TUNING_LEEWAY)
+    // If not in range, no signal
+    if (difference > Radio::TUNING_LEEWAY)
     {
-        // Map difference to PWM range (0-255), with closer tuning giving higher values
-        return map(difference, Radio::TUNING_LEEWAY, 0, 0, LEDConfig::MAX_BRIGHTNESS);
+        return 0;
     }
-    return 0;
+
+    // When perfectly tuned (difference = 0), signal is max (255)
+    // As difference approaches TUNING_LEEWAY, signal approaches 0
+    return map(difference, Radio::TUNING_LEEWAY, 0, 0, LEDConfig::MAX_BRIGHTNESS);
 }
 
 bool Station::isInRange(int tuningValue) const
@@ -101,6 +103,7 @@ Station *StationManager::findClosestStation(int tuningValue, WaveBand band, int 
 {
     Station *closest = nullptr;
     signalStrength = 0;
+    bool stationLocked = false;
 
     for (auto &station : stations)
     {
@@ -111,12 +114,13 @@ Station *StationManager::findClosestStation(int tuningValue, WaveBand band, int 
             {
                 signalStrength = strength;
                 closest = &station;
+                stationLocked = station.isInRange(tuningValue);
             }
         }
     }
 
-    // Update lock LED based on signal strength
-    updateLockLED(signalStrength > 0);
+    // Update lock LED based on whether we're in range of the station
+    updateLockLED(stationLocked);
 
     // Update carrier PWM to show signal strength (0-255)
     ledcWrite(PWMChannels::CARRIER_PWM, signalStrength);
