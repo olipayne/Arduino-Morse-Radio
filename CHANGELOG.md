@@ -1,3 +1,12 @@
+## [0.10.3](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.10.2...v0.10.3) (2024-12-02)
+
+
+### Bug Fixes
+
+* pwm channels being overwritten ([0c3897d](https://github.com/olipayne/Arduino-Morse-Radio/commit/0c3897da75a9bf70d9d17908bbb19e24de1843a4))
+
+
+
 ## [0.10.2](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.10.1...v0.10.2) (2024-12-01)
 
 
@@ -36,15 +45,6 @@
 ### Features
 
 * power switch working, deep sleep when off ([c3fc46f](https://github.com/olipayne/Arduino-Morse-Radio/commit/c3fc46f110e2800f23f97cfa55b5618d38764dd1))
-
-
-
-## [0.8.12](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.8.11...v0.8.12) (2024-11-17)
-
-
-### Bug Fixes
-
-* potentiometer threshold raised so less spammy ([5b4f59c](https://github.com/olipayne/Arduino-Morse-Radio/commit/5b4f59c34c18b26189c9e40ddc0fa1f8d9e0d390))
 
 
 
