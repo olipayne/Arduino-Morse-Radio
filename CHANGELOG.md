@@ -1,3 +1,12 @@
+## [0.11.1](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.11.0...v0.11.1) (2024-12-02)
+
+
+### Bug Fixes
+
+* small reference fixes ([c82c0f1](https://github.com/olipayne/Arduino-Morse-Radio/commit/c82c0f13fc3179c98e915f89ea60878f9da4e211))
+
+
+
 # [0.11.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.10.3...v0.11.0) (2024-12-02)
 
 
@@ -32,15 +41,6 @@
 ### Bug Fixes
 
 * morse code fix ([1e88db4](https://github.com/olipayne/Arduino-Morse-Radio/commit/1e88db43c92f70b3079d247372b3214bd9383008))
-
-
-
-# [0.10.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.9.0...v0.10.0) (2024-11-29)
-
-
-### Features
-
-* dont disable wifi when plugged in ([e84a2df](https://github.com/olipayne/Arduino-Morse-Radio/commit/e84a2dfbe7bf18212eaaf75d9c3231dddb95ba1e))
 
 
 
