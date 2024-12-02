@@ -34,7 +34,7 @@ void WaveBandManager::initializeLEDs()
         // Set up PWM for LED control using dedicated channels
         for (size_t i = 0; i < NUM_BANDS; i++)
         {
-            ledcSetup(BAND_LEDS[i].pwmChannel, LED_PWM_FREQ, LED_PWM_RESOLUTION);
+            ledcSetup(BAND_LEDS[i].pwmChannel, LEDConfig::PWM_FREQUENCY, LEDConfig::PWM_RESOLUTION);
             ledcAttachPin(BAND_LEDS[i].pin, BAND_LEDS[i].pwmChannel);
         }
         ledsInitialized = true;
@@ -88,7 +88,7 @@ void WaveBandManager::turnOffAllBandLEDs()
 {
     for (size_t i = 0; i < NUM_BANDS; i++)
     {
-        ledcWrite(BAND_LEDS[i].pwmChannel, 0);
+        ledcWrite(BAND_LEDS[i].pwmChannel, LEDConfig::MIN_BRIGHTNESS);
     }
 }
 
@@ -107,6 +107,6 @@ void WaveBandManager::updateBandLED(WaveBand band)
 void WaveBandManager::setLEDBrightness(uint8_t brightness)
 {
     // Constrain brightness to valid range
-    ledBrightness = constrain(brightness, LED_MIN_BRIGHTNESS, LED_MAX_BRIGHTNESS);
+    ledBrightness = constrain(brightness, LEDConfig::MIN_BRIGHTNESS, LEDConfig::MAX_BRIGHTNESS);
     updateLEDs(); // Update LEDs with new brightness
 }

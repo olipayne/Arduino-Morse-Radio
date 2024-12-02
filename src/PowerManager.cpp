@@ -14,8 +14,8 @@ void PowerManager::begin()
     configurePins();
 
     // Setup PWM for power indicators
-    ledcSetup(PWMChannels::BACKLIGHT, LED_PWM_FREQ, LED_PWM_RESOLUTION);
-    ledcSetup(PWMChannels::POWER_LED, LED_PWM_FREQ, LED_PWM_RESOLUTION);
+    ledcSetup(PWMChannels::BACKLIGHT, LEDConfig::PWM_FREQUENCY, LEDConfig::PWM_RESOLUTION);
+    ledcSetup(PWMChannels::POWER_LED, LEDConfig::PWM_FREQUENCY, LEDConfig::PWM_RESOLUTION);
     ledcAttachPin(Pins::BACKLIGHT, PWMChannels::BACKLIGHT);
     ledcAttachPin(Pins::POWER_LED, PWMChannels::POWER_LED);
 
@@ -54,13 +54,13 @@ void PowerManager::updatePowerIndicators(bool powerOn)
 {
     if (powerOn)
     {
-        ledcWrite(PWMChannels::BACKLIGHT, LED_BRIGHTNESS);
-        ledcWrite(PWMChannels::POWER_LED, LED_BRIGHTNESS);
+        ledcWrite(PWMChannels::BACKLIGHT, LEDConfig::MAX_BRIGHTNESS);
+        ledcWrite(PWMChannels::POWER_LED, LEDConfig::MAX_BRIGHTNESS);
     }
     else
     {
-        ledcWrite(PWMChannels::BACKLIGHT, 0);
-        ledcWrite(PWMChannels::POWER_LED, 0);
+        ledcWrite(PWMChannels::BACKLIGHT, LEDConfig::MIN_BRIGHTNESS);
+        ledcWrite(PWMChannels::POWER_LED, LEDConfig::MIN_BRIGHTNESS);
     }
 }
 

@@ -37,21 +37,15 @@ private:
     void updateBandLED(WaveBand band);
 
     // Internal state
-    uint8_t ledBrightness = 255;
+    uint8_t ledBrightness = LEDConfig::MAX_BRIGHTNESS;
     bool ledsInitialized = false;
 
-    // Constants for LED control
-    static constexpr uint8_t LED_MIN_BRIGHTNESS = 10;
-    static constexpr uint8_t LED_MAX_BRIGHTNESS = 255;
-    static constexpr uint8_t LED_PWM_RESOLUTION = 8;
-    static constexpr uint32_t LED_PWM_FREQ = 5000;
-
-    // LED to Band mapping with PWM channels
+    // LED to Band mapping
     struct BandLED
     {
         WaveBand band;
         uint8_t pin;
-        uint8_t pwmChannel; // Added PWM channel to the struct
+        uint8_t pwmChannel;
     };
 
     static const BandLED BAND_LEDS[];

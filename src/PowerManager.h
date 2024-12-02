@@ -20,7 +20,7 @@ public:
     void checkActivity();
     float getBatteryVoltage();
     bool isLowBattery();
-    bool isUSBPowered() { return ums3.getVbusPresent(); } // Added method to check USB power
+    bool isUSBPowered() { return ums3.getVbusPresent(); }
 
 private:
     PowerManager() = default;
@@ -40,9 +40,6 @@ private:
     static constexpr float LOW_BATTERY_THRESHOLD = 3.5;
     static constexpr unsigned long INACTIVITY_TIMEOUT = 300000; // 5 minutes
     static constexpr int POTENTIOMETER_THRESHOLD = 100;
-    static constexpr uint8_t LED_PWM_RESOLUTION = 8;
-    static constexpr uint32_t LED_PWM_FREQ = 5000;
-    static constexpr uint8_t LED_BRIGHTNESS = 255;
 
     // State tracking
     unsigned long lastActivityTime = 0;
