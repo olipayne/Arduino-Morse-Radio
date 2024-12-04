@@ -164,10 +164,6 @@ private:
         // New station found or changed
         if (station != lastStation)
         {
-#ifdef DEBUG_SERIAL_OUTPUT
-          Serial.printf("Station locked: %s (Signal: %d)\n\r",
-                        station->getName(), signalStrength);
-#endif
           // Stop the static noise
           audio.stop();
         }
@@ -180,9 +176,6 @@ private:
     {
       if (config.isMorsePlaying())
       {
-#ifdef DEBUG_SERIAL_OUTPUT
-        Serial.println("Lost station lock");
-#endif
         morse.stop();
         lastStation = nullptr;
       }

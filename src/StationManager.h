@@ -73,8 +73,10 @@ private:
 
   std::vector<Station> stations;
 
-  // LED control
+  // LED control and status tracking
   bool isStationLocked = false;
+  bool previousLockState = false;
+  unsigned long lastLockPrintTime = 0;
 
   // Default station definitions
   struct StationDefaults

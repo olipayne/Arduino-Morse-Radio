@@ -35,16 +35,16 @@ namespace Pins
 // PWM Channel Assignments
 namespace PWMChannels
 {
-  constexpr uint8_t AUDIO = 6;   // Audio output
-  constexpr uint8_t DECODE = 7;  // Decode speed control
-  constexpr uint8_t CARRIER = 8; // Signal strength indicator
+  constexpr uint8_t AUDIO = 1;   // Audio output
+  constexpr uint8_t DECODE = 2;  // Decode speed control
+  constexpr uint8_t CARRIER = 3; // Signal strength indicator
 }
 
 // LED Configuration Namespace
 namespace LEDConfig
 {
   constexpr uint8_t PWM_RESOLUTION = 8;
-  constexpr uint32_t PWM_FREQUENCY = 5000;
+  constexpr uint32_t PWM_FREQUENCY = 200;
   constexpr uint8_t MAX_BRIGHTNESS = 255;
   constexpr uint8_t MIN_BRIGHTNESS = 0;
 }

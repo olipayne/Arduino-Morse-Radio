@@ -68,6 +68,8 @@ void StationManager::begin()
     pinMode(Pins::LOCK_LED, OUTPUT);
     digitalWrite(Pins::LOCK_LED, LOW);
     isStationLocked = false;
+    previousLockState = false;
+    lastLockPrintTime = 0;
 
     // Initialize CARRIER_PWM using PWM
     ledcSetup(PWMChannels::CARRIER, LEDConfig::PWM_FREQUENCY, LEDConfig::PWM_RESOLUTION);
@@ -137,10 +139,22 @@ Station *StationManager::findClosestStation(int tuningValue, WaveBand band, int 
     ledcWrite(PWMChannels::CARRIER, signalStrength);
 
 #ifdef DEBUG_SERIAL_OUTPUT
-    if (stationLocked)
+    unsigned long currentTime = millis();
+    bool lockStateChanged = (stationLocked != previousLockState);
+    bool timeToUpdate = (currentTime - lastLockPrintTime >= 5000);
+
+    if (stationLocked && (lockStateChanged || timeToUpdate))
     {
         Serial.printf("Station locked: %s, Signal strength: %d\n", closest->getName(), signalStrength);
+        lastLockPrintTime = currentTime;
     }
+    else if (!stationLocked && lockStateChanged)
+    {
+        Serial.println("Station unlocked");
+        lastLockPrintTime = currentTime;
+    }
+
+    previousLockState = stationLocked;
 #endif
 
     return closest;
