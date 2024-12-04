@@ -1,3 +1,12 @@
+## [0.13.1](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.13.0...v0.13.1) (2024-12-04)
+
+
+### Bug Fixes
+
+* refactor bits to chop it up a bit ([5645c82](https://github.com/olipayne/Arduino-Morse-Radio/commit/5645c8222534a555ab7e0a57cbc60e289f7bddcc))
+
+
+
 # [0.13.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.12.6...v0.13.0) (2024-12-04)
 
 
@@ -37,15 +46,6 @@
 ### Bug Fixes
 
 * temp fix binary mode for the voltmeter ([583006a](https://github.com/olipayne/Arduino-Morse-Radio/commit/583006af48c956d0be75e0ba5afc44bd6241f315))
-
-
-
-## [0.12.3](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.12.2...v0.12.3) (2024-12-02)
-
-
-### Bug Fixes
-
-* lock led working ([fac8232](https://github.com/olipayne/Arduino-Morse-Radio/commit/fac82320e3540fc51332677a07ded03f56e107b1))
 
 
 
