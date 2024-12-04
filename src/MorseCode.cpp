@@ -89,6 +89,17 @@ void MorseCode::update()
     {
       inTuneInDelay = false;
       lastStateChange = currentTime;
+      // Start with first symbol ON
+      if (messageIndex < currentMessage.length() && currentMessage[messageIndex] != ' ')
+      {
+        currentMorseChar = getSymbol(currentMessage[messageIndex]);
+        if (!currentMorseChar.isEmpty())
+        {
+          config.setMorseToneOn(true);
+          audio.playMorseTone();
+          updateMorseLEDs(true);
+        }
+      }
     }
     return;
   }
@@ -125,6 +136,17 @@ void MorseCode::update()
       messageIndex++;
       symbolIndex = 0;
       lastStateChange = currentTime;
+      // Start next character with symbol ON
+      if (messageIndex < currentMessage.length())
+      {
+        currentMorseChar = getSymbol(currentMessage[messageIndex]);
+        if (!currentMorseChar.isEmpty())
+        {
+          config.setMorseToneOn(true);
+          audio.playMorseTone();
+          updateMorseLEDs(true);
+        }
+      }
     }
     return;
   }
@@ -147,7 +169,7 @@ void MorseCode::update()
     gapDuration = timings.symbolGap;
   }
 
-  // Toggle the morse tone and LEDs on/off based on timing
+  // Toggle the morse tone and LEDs based on timing
   if (isSymbolOn)
   {
     if (currentTime - lastStateChange >= symbolDuration)
@@ -162,19 +184,30 @@ void MorseCode::update()
   {
     if (currentTime - lastStateChange >= gapDuration)
     {
+      symbolIndex++;
       if (symbolIndex >= currentMorseChar.length())
       {
         // Move to next character
         messageIndex++;
         symbolIndex = 0;
+        // Start next character with symbol ON if available
+        if (messageIndex < currentMessage.length() && currentMessage[messageIndex] != ' ')
+        {
+          currentMorseChar = getSymbol(currentMessage[messageIndex]);
+          if (!currentMorseChar.isEmpty())
+          {
+            config.setMorseToneOn(true);
+            audio.playMorseTone();
+            updateMorseLEDs(true);
+          }
+        }
       }
       else
       {
-        // Start next symbol
+        // Start next symbol ON
         config.setMorseToneOn(true);
         audio.playMorseTone();
         updateMorseLEDs(true);
-        symbolIndex++;
       }
       lastStateChange = currentTime;
     }
