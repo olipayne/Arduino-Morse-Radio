@@ -1,3 +1,18 @@
+# [0.13.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.12.6...v0.13.0) (2024-12-04)
+
+
+### Bug Fixes
+
+* morse code now actually plays correctly lol ([3c2b1ee](https://github.com/olipayne/Arduino-Morse-Radio/commit/3c2b1eef6aeece895b781308ece27c0441e07f27))
+* remove pwm channel interference(IDK) ([715d879](https://github.com/olipayne/Arduino-Morse-Radio/commit/715d879b0c7a0ae48b0121754ba996340feaef6c))
+
+
+### Features
+
+* useless debugging removed and UMS3 v2 bump ([c7e1093](https://github.com/olipayne/Arduino-Morse-Radio/commit/c7e10939def0741a66b52028cf9b77414c88f468))
+
+
+
 ## [0.12.6](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.12.5...v0.12.6) (2024-12-02)
 
 
@@ -31,15 +46,6 @@
 ### Bug Fixes
 
 * lock led working ([fac8232](https://github.com/olipayne/Arduino-Morse-Radio/commit/fac82320e3540fc51332677a07ded03f56e107b1))
-
-
-
-## [0.12.2](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.12.1...v0.12.2) (2024-12-02)
-
-
-### Bug Fixes
-
-* signal strength ([a4460bd](https://github.com/olipayne/Arduino-Morse-Radio/commit/a4460bd481ff1dca21b877866e6b2c6998294372))
 
 
 
