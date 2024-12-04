@@ -20,7 +20,7 @@ public:
     Serial.begin(115200);
     Serial.println("\nRadio Starting...");
 #endif
-    // setCpuFrequencyMhz(80);
+    setCpuFrequencyMhz(80);
 
     // Verify the CPU frequency
 #ifdef DEBUG_SERIAL_OUTPUT
