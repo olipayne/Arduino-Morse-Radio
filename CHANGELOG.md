@@ -1,3 +1,12 @@
+# [0.14.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.13.4...v0.14.0) (2024-12-05)
+
+
+### Features
+
+* nicer web ui, json, ajax all the things ([fb3a2b9](https://github.com/olipayne/Arduino-Morse-Radio/commit/fb3a2b9c87a5f40fee652720f18fe09b19e66d78))
+
+
+
 ## [0.13.4](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.13.3...v0.13.4) (2024-12-04)
 
 
@@ -32,21 +41,6 @@
 ### Bug Fixes
 
 * refactor bits to chop it up a bit ([5645c82](https://github.com/olipayne/Arduino-Morse-Radio/commit/5645c8222534a555ab7e0a57cbc60e289f7bddcc))
-
-
-
-# [0.13.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.12.6...v0.13.0) (2024-12-04)
-
-
-### Bug Fixes
-
-* morse code now actually plays correctly lol ([3c2b1ee](https://github.com/olipayne/Arduino-Morse-Radio/commit/3c2b1eef6aeece895b781308ece27c0441e07f27))
-* remove pwm channel interference(IDK) ([715d879](https://github.com/olipayne/Arduino-Morse-Radio/commit/715d879b0c7a0ae48b0121754ba996340feaef6c))
-
-
-### Features
-
-* useless debugging removed and UMS3 v2 bump ([c7e1093](https://github.com/olipayne/Arduino-Morse-Radio/commit/c7e10939def0741a66b52028cf9b77414c88f468))
 
 
 
