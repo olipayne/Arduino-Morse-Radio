@@ -1,6 +1,8 @@
 #include "WiFiManager.h"
+#include <ArduinoJson.h>
 
-const char *WiFiManager::HTML_HEADER = R"(
+// Define static members
+const char* WiFiManager::HTML_HEADER = R"(
 <!DOCTYPE html>
 <html>
 <head>
@@ -8,13 +10,15 @@ const char *WiFiManager::HTML_HEADER = R"(
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>)";
 
-const char *WiFiManager::CSS_STYLES = R"(
+const char* WiFiManager::CSS_STYLES = R"(
     body { 
         font-family: Arial, sans-serif; 
         max-width: 800px; 
         margin: 0 auto; 
         padding: 20px;
         background-color: #f0f0f0;
+        padding-bottom: 80px;
+        padding-top: 70px;
     }
     .station { 
         background: #ffffff; 
@@ -24,66 +28,155 @@ const char *WiFiManager::CSS_STYLES = R"(
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     .wave-band { 
-        background: #e0e0e0; 
         padding: 10px; 
         margin: 15px 0; 
         border-radius: 3px;
+    }
+    .wave-band:nth-of-type(1) {
+        background: #e3f2fd;
         border-left: 4px solid #2196F3;
+    }
+    .wave-band:nth-of-type(2) {
+        background: #e8f5e9;
+        border-left: 4px solid #4CAF50;
+    }
+    .wave-band:nth-of-type(3) {
+        background: #f3e5f5;
+        border-left: 4px solid #9c27b0;
     }
     .freq-group { 
         display: flex; 
         align-items: center; 
         gap: 10px; 
-        margin: 5px 0; 
+        margin: 15px 0; 
     }
-    input[type="number"], input[type="text"] { 
-        flex: 1; 
-        padding: 8px; 
-        margin: 5px 0; 
+    input[type="number"] { 
+        flex: 2;
+        padding: 12px;
         border: 1px solid #ddd;
         border-radius: 4px;
         box-sizing: border-box;
+        font-size: 16px;
+    }
+    input[type="text"] { 
+        width: 100%;
+        padding: 12px;
+        margin: 8px 0;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+        font-size: 16px;
+    }
+    label {
+        display: block;
+        width: 100%;
+        margin-top: 15px;
     }
     button { 
         background: #4CAF50; 
         color: white; 
-        padding: 8px 15px; 
+        padding: 12px 20px; 
         border: none; 
         border-radius: 5px; 
         cursor: pointer;
         transition: background-color 0.3s;
+        font-size: 16px;
     }
     button:hover { 
         background: #45a049; 
     }
     .tune-button { 
         background: #2196F3;
-        min-width: 100px;
+        min-width: 120px;
+        white-space: nowrap;
     }
     .tune-button:hover { 
         background: #1976D2; 
     }
     .status { 
-        color: #666; 
-        font-size: 0.9em; 
-        margin-top: 5px;
-        background: #fff;
-        padding: 10px;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: rgba(255, 255, 255, 0.95);
+        padding: 15px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        text-align: center;
+        z-index: 1000;
+        font-size: 1.1em;
+        font-weight: bold;
+        color: #2196F3;
+    }
+    .save-button-container {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(255, 255, 255, 0.95);
+        padding: 15px;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        text-align: center;
+        z-index: 1000;
+    }
+    .save-button-container button {
+        width: 100%;
+        max-width: 800px;
+        margin: 0 auto;
+        font-weight: bold;
+    }
+    .toast {
+        position: fixed;
+        top: 70px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #4CAF50;
+        color: white;
+        padding: 12px 24px;
         border-radius: 4px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        z-index: 2000;
+        font-weight: bold;
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out;
+    }
+    .toast.error {
+    }
+    .toast.show {
+        opacity: 1;
     }
     h1 {
         color: #333;
         border-bottom: 2px solid #2196F3;
         padding-bottom: 10px;
+        margin: 0 0 20px 0;
+        font-size: 24px;
     }
     h2 {
         color: #444;
-        margin-top: 0;
+        margin: 0 0 15px 0;
+        font-size: 20px;
     }
     h3 {
         color: #666;
         margin: 0 0 10px 0;
+        font-size: 18px;
+    }
+    @media (max-width: 600px) {
+        body {
+            padding: 15px;
+            padding-bottom: 80px;
+            padding-top: 70px;
+        }
+        .freq-group {
+            flex-direction: column;
+            gap: 8px;
+        }
+        .tune-button {
+            width: 100%;
+        }
+        input[type="number"] {
+            width: 100%;
+        }
     }
 )";
 
@@ -113,8 +206,77 @@ const char *WiFiManager::JAVASCRIPT_CODE = R"(
             .catch(error => console.error('Error setting frequency:', error));
     }
 
-    // Update tuning value every second
-    setInterval(updateTuningValue, 1000);
+    function showToast(message, isError = false) {
+        const toast = document.createElement('div');
+        toast.className = 'toast' + (isError ? ' error' : '');
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        
+        // Trigger reflow to ensure animation works
+        toast.offsetHeight;
+        toast.classList.add('show');
+        
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    function handleFormSubmit(event) {
+        event.preventDefault();
+        const form = event.target;
+        
+        // Collect form data into a structured object
+        const stations = [];
+        const inputs = form.querySelectorAll('input');
+        let currentStation = {};
+        
+        inputs.forEach(input => {
+            const match = input.name.match(/(freq|msg)_(\d+)/);
+            if (match) {
+                const [, type, index] = match;
+                if (type === 'freq') {
+                    currentStation = { index: parseInt(index), frequency: parseInt(input.value) };
+                } else if (type === 'msg') {
+                    currentStation.message = input.value;
+                    stations.push(currentStation);
+                    currentStation = {};
+                }
+            }
+        });
+
+        // Send as JSON
+        fetch('/save', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ stations })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Save response:', data);  // Debug log
+            showToast(data.message, !data.success);
+            if (data.success) {
+                history.pushState({}, '', '/');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('Error saving configuration', true);
+        });
+    }
+
+    // Update tuning value every 100ms
+    setInterval(updateTuningValue, 100);
+
+    // Add form submit handler
+    document.addEventListener('DOMContentLoaded', () => {
+        const form = document.querySelector('form');
+        if (form) {
+            form.addEventListener('submit', handleFormSubmit);
+        }
+    });
 )";
 
 void WiFiManager::begin()
@@ -242,47 +404,105 @@ void WiFiManager::handleSaveConfig()
   bool success = true;
   String message = "Configuration saved successfully";
 
+  // Get the raw POST data
+  String jsonData = server.arg("plain");
+
+#ifdef DEBUG_SERIAL_OUTPUT
+  Serial.println("Received JSON data: " + jsonData);
+#endif
+
+  // Parse JSON using ArduinoJson
+  DynamicJsonDocument doc(4096); // Increased buffer size for larger JSON
+  DeserializationError error = deserializeJson(doc, jsonData);
+
+  if (error)
+  {
+#ifdef DEBUG_SERIAL_OUTPUT
+    Serial.println("Failed to parse JSON: ");
+    Serial.println(error.c_str());
+#endif
+    server.send(400, "application/json", "{\"success\":false,\"message\":\"Invalid JSON format\"}");
+    return;
+  }
+
+  // Get the stations array
+  JsonArray stations = doc["stations"];
+  if (stations.isNull())
+  {
+#ifdef DEBUG_SERIAL_OUTPUT
+    Serial.println("No stations array in JSON");
+#endif
+    server.send(400, "application/json", "{\"success\":false,\"message\":\"Invalid JSON format\"}");
+    return;
+  }
+
   auto &stationManager = StationManager::getInstance();
 
-  for (size_t i = 0; i < stationManager.getStationCount(); i++)
+  // Process each station
+  for (JsonObject station : stations)
   {
-    String freqKey = "freq_" + String(i);
-    String msgKey = "msg_" + String(i);
+    int index = station["index"].as<int>();
+    int frequency = station["frequency"].as<int>();
+    const char *stationMessage = station["message"].as<const char *>();
 
-    if (server.hasArg(freqKey) && server.hasArg(msgKey))
+#ifdef DEBUG_SERIAL_OUTPUT
+    Serial.printf("Processing station - Index: %d, Frequency: %d, Message: %s\n",
+                  index, frequency, stationMessage);
+#endif
+
+    if (frequency > 0)
     {
-      int frequency = server.arg(freqKey).toInt();
-      String newMessage = server.arg(msgKey);
-
-      if (frequency > 0)
-      {
-        stationManager.updateStation(i, frequency, newMessage);
-      }
-      else
-      {
-        success = false;
-        message = "Invalid frequency value";
-        break;
-      }
+      stationManager.updateStation(index, frequency, stationMessage);
+#ifdef DEBUG_SERIAL_OUTPUT
+      Serial.printf("Updated station %d\n", index);
+#endif
+    }
+    else
+    {
+#ifdef DEBUG_SERIAL_OUTPUT
+      Serial.printf("Invalid frequency value for station %d: %d\n", index, frequency);
+#endif
+      success = false;
+      message = "Invalid frequency value for station " + String(index);
+      break;
     }
   }
 
   if (success)
   {
+#ifdef DEBUG_SERIAL_OUTPUT
+    Serial.println("Saving to preferences...");
+#endif
     stationManager.saveToPreferences();
+#ifdef DEBUG_SERIAL_OUTPUT
+    Serial.println("Successfully saved to preferences");
+#endif
   }
 
-  String response = "<div class='" + String(success ? "success" : "error") + "'>" +
-                    message + "</div>";
-  server.send(200, "text/html", generateHTML(response + generateConfigPage()));
+#ifdef DEBUG_SERIAL_OUTPUT
+  Serial.printf("Save result - Success: %s, Message: %s\n",
+                success ? "true" : "false", message.c_str());
+#endif
+
+  // Create JSON response
+  DynamicJsonDocument response(256);
+  response["success"] = success;
+  response["message"] = message;
+
+  String responseStr;
+  serializeJson(response, responseStr);
+  server.send(200, "application/json", responseStr);
 }
 
 String WiFiManager::generateConfigPage() const
 {
-  String html = "<h1>Radio Configuration</h1>";
+  String html = "<div class='status'>Current Tuning Value: <span id='currentTuning'>-</span></div>";
+  html += "<h1>Radio Configuration</h1>";
   html += "<form method='POST' action='/save'>";
   html += generateStationTable();
+  html += "<div class='save-button-container'>";
   html += "<button type='submit'>Save Configuration</button>";
+  html += "</div>";
   html += "</form>";
   return html;
 }
@@ -291,8 +511,6 @@ String WiFiManager::generateStationTable() const
 {
   String html;
   auto &stationManager = StationManager::getInstance();
-
-  html += "<div class='status'>Current Tuning Value: <span id='currentTuning'>-</span></div>";
 
   WaveBand currentBand = WaveBand::LONG_WAVE;
   bool firstBand = true;
@@ -323,7 +541,7 @@ String WiFiManager::generateStationTable() const
     html += "</div>";
 
     html += "<label>Message:<br><input type='text' name='msg_" + String(i) +
-            "' value='" + station->getMessage() + "'></label>";
+            "' value='" + String(station->getMessage()) + "'></label>";
     html += "</div>";
   }
 
