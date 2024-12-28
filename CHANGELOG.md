@@ -1,3 +1,12 @@
+# [0.15.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.14.0...v0.15.0) (2024-12-28)
+
+
+### Features
+
+* task scheduler added, simplifies things a lot ([fec4b11](https://github.com/olipayne/Arduino-Morse-Radio/commit/fec4b115279865ee1fe0a10a76461aeba268d062))
+
+
+
 # [0.14.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.13.4...v0.14.0) (2024-12-05)
 
 
@@ -32,15 +41,6 @@
 ### Bug Fixes
 
 * build improvements ([d137111](https://github.com/olipayne/Arduino-Morse-Radio/commit/d137111ea39be4745309128ae7137620f73d7d62))
-
-
-
-## [0.13.1](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.13.0...v0.13.1) (2024-12-04)
-
-
-### Bug Fixes
-
-* refactor bits to chop it up a bit ([5645c82](https://github.com/olipayne/Arduino-Morse-Radio/commit/5645c8222534a555ab7e0a57cbc60e289f7bddcc))
 
 
 
