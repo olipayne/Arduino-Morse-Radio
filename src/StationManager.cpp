@@ -33,7 +33,7 @@ Station *StationManager::findClosestStation(int tuningValue, WaveBand band, int 
     // Check all stations in the current band
     for (auto &station : stations)
     {
-        if (station.getBand() == band)
+        if (station.getBand() == band && station.isEnabled())
         {
             // Check if we're in range of this station
             if (station.isInRange(tuningValue))
@@ -87,10 +87,16 @@ std::vector<Station *> StationManager::getStationsForBand(WaveBand band)
 
 void StationManager::updateStation(size_t index, int frequency, const String &message)
 {
+    updateStation(index, frequency, message, true);
+}
+
+void StationManager::updateStation(size_t index, int frequency, const String &message, bool enabled)
+{
     if (index < stations.size())
     {
         stations[index].setFrequency(frequency);
         stations[index].setMessage(message);
+        stations[index].setEnabled(enabled);
         saveToPreferences();
     }
 }

@@ -27,6 +27,24 @@ const char* WiFiManager::CSS_STYLES = R"(
         border-radius: 5px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
+    .station-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    .enable-toggle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        user-select: none;
+    }
+    input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        margin: 0;
+    }
     .wave-band { 
         padding: 10px; 
         margin: 15px 0; 
@@ -228,22 +246,35 @@ const char *WiFiManager::JAVASCRIPT_CODE = R"(
         
         // Collect form data into a structured object
         const stations = [];
-        const inputs = form.querySelectorAll('input');
-        let currentStation = {};
+        const stationData = {};
         
-        inputs.forEach(input => {
-            const match = input.name.match(/(freq|msg)_(\d+)/);
+        // First pass: collect all inputs
+        form.querySelectorAll('input').forEach(input => {
+            const match = input.name.match(/(freq|msg|enable)_(\d+)/);
             if (match) {
                 const [, type, index] = match;
+                if (!stationData[index]) {
+                    stationData[index] = { index: parseInt(index) };
+                }
+                
                 if (type === 'freq') {
-                    currentStation = { index: parseInt(index), frequency: parseInt(input.value) };
+                    stationData[index].frequency = parseInt(input.value);
                 } else if (type === 'msg') {
-                    currentStation.message = input.value;
-                    stations.push(currentStation);
-                    currentStation = {};
+                    stationData[index].message = input.value;
+                } else if (type === 'enable') {
+                    stationData[index].enabled = input.checked;
                 }
             }
         });
+        
+        // Convert to array and ensure enabled is set
+        for (const index in stationData) {
+            const station = stationData[index];
+            if (!('enabled' in station)) {
+                station.enabled = false;
+            }
+            stations.push(station);
+        }
 
         // Send as JSON
         fetch('/save', {
@@ -255,11 +286,7 @@ const char *WiFiManager::JAVASCRIPT_CODE = R"(
         })
         .then(response => response.json())
         .then(data => {
-            console.log('Save response:', data);  // Debug log
             showToast(data.message, !data.success);
-            if (data.success) {
-                history.pushState({}, '', '/');
-            }
         })
         .catch(error => {
             console.error('Error:', error);
@@ -444,15 +471,16 @@ void WiFiManager::handleSaveConfig()
     int index = station["index"].as<int>();
     int frequency = station["frequency"].as<int>();
     const char *stationMessage = station["message"].as<const char *>();
+    bool enabled = station["enabled"].as<bool>();
 
 #ifdef DEBUG_SERIAL_OUTPUT
-    Serial.printf("Processing station - Index: %d, Frequency: %d, Message: %s\n",
-                  index, frequency, stationMessage);
+    Serial.printf("Processing station - Index: %d, Frequency: %d, Message: %s, Enabled: %s\n",
+                  index, frequency, stationMessage, enabled ? "true" : "false");
 #endif
 
     if (frequency > 0)
     {
-      stationManager.updateStation(index, frequency, stationMessage);
+      stationManager.updateStation(index, frequency, stationMessage, enabled);
 #ifdef DEBUG_SERIAL_OUTPUT
       Serial.printf("Updated station %d\n", index);
 #endif
@@ -531,7 +559,13 @@ String WiFiManager::generateStationTable() const
     }
 
     html += "<div class='station'>";
+    html += "<div class='station-header'>";
     html += "<h3>" + String(station->getName()) + "</h3>";
+    html += "<div class='enable-toggle'>";
+    html += "<input type='checkbox' id='enable_" + String(i) + "' name='enable_" + String(i) + "' " + (station->isEnabled() ? "checked" : "") + ">";
+    html += "<label for='enable_" + String(i) + "'>Enabled</label>";
+    html += "</div>";
+    html += "</div>";
 
     html += "<div class='freq-group'>";
     html += "<input type='number' id='freq_" + String(i) + "' name='freq_" + String(i) +
