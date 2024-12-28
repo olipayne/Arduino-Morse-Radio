@@ -1,3 +1,12 @@
+# [0.17.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.16.0...v0.17.0) (2024-12-28)
+
+
+### Features
+
+* enhance power LED behavior with FreeRTOS task ([40ed174](https://github.com/olipayne/Arduino-Morse-Radio/commit/40ed174dfbee5af9d326a76ef5409288fd8f53c6))
+
+
+
 # [0.16.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.15.3...v0.16.0) (2024-12-28)
 
 
@@ -40,15 +49,6 @@
 
 * morse volume improvements ([e374d41](https://github.com/olipayne/Arduino-Morse-Radio/commit/e374d41289ec2fac187640212f37a8b777ce084e))
 * **power:** optimize deep sleep wake-up with USB+battery ([10234cb](https://github.com/olipayne/Arduino-Morse-Radio/commit/10234cb3644931879e945acb91b398da946c9cbf))
-
-
-
-# [0.15.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.14.0...v0.15.0) (2024-12-28)
-
-
-### Features
-
-* task scheduler added, simplifies things a lot ([fec4b11](https://github.com/olipayne/Arduino-Morse-Radio/commit/fec4b115279865ee1fe0a10a76461aeba268d062))
 
 
 
