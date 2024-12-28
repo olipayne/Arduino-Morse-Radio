@@ -58,10 +58,21 @@ void PowerManager::enterDeepSleep()
     // Turn off power indicators
     updatePowerIndicators(false);
 
-    delay(100); // Allow serial to flush
-
-    // Configure wake-up on power switch high (when switch is turned back on)
-    esp_sleep_enable_ext0_wakeup(static_cast<gpio_num_t>(Pins::POWER_SWITCH), HIGH);
+    // Configure GPIO wake-up source
+    gpio_num_t wakeupPin = static_cast<gpio_num_t>(Pins::POWER_SWITCH);
+    
+    // Configure specific RTC GPIO parameters for faster wake-up
+    gpio_pullup_en(wakeupPin);
+    gpio_pulldown_dis(wakeupPin);
+    
+    // Set wake-up source with specific configuration
+    esp_sleep_enable_ext0_wakeup(wakeupPin, HIGH);
+    
+    // Only keep necessary power domains
+    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
+    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_OFF);
+    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_OFF);
+    esp_sleep_pd_config(ESP_PD_DOMAIN_XTAL, ESP_PD_OPTION_OFF);
 
     // Enter deep sleep
     esp_deep_sleep_start();
