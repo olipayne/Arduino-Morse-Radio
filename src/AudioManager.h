@@ -26,12 +26,20 @@ private:
     AudioManager &operator=(const AudioManager &) = delete;
 
     void configurePWM();
+    int smoothVolume(int newReading);
 
     static constexpr int MORSE_FREQUENCY = 600; // Fixed 600Hz for Morse code
 
     // Updated static frequency range
     static constexpr int MIN_STATIC_FREQ = 100; // 100 Hz
     static constexpr int MAX_STATIC_FREQ = 300; // 300 Hz
+
+    // Volume smoothing
+    static constexpr int VOLUME_SAMPLES = 5;
+    static constexpr int VOLUME_THRESHOLD = 3; // Minimum change to update volume
+    int volumeReadings[VOLUME_SAMPLES] = {0};
+    int volumeIndex = 0;
+    int smoothedVolume = 0;
 
     // State tracking
     int currentVolume = 0;
