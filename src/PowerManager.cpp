@@ -1,4 +1,6 @@
 #include "PowerManager.h"
+#include "driver/rtc_io.h"
+#include "driver/gpio.h"
 
 void PowerManager::begin()
 {
@@ -30,17 +32,33 @@ void PowerManager::begin()
 
 void PowerManager::checkPowerSwitch()
 {
-    bool powerOn = (digitalRead(Pins::POWER_SWITCH) == HIGH);
-    updatePowerIndicators(powerOn);
+    // Add debouncing for power switch with longer debounce time
+    static unsigned long lastDebounceTime = 0;
+    static int lastPowerState = -1;
+    const unsigned long debounceDelay = 100;  // Increased to 100ms for more stability
 
-    // If power switch is pulled low (switched off)
-    if (!powerOn)
-    {
-        // Disable the 3.3V 1 power supply
-        ums3.setLDO2Power(false);
+    int currentPowerState = gpio_get_level(static_cast<gpio_num_t>(Pins::POWER_SWITCH));
+    unsigned long currentTime = millis();
 
-        // Enter deep sleep
-        enterDeepSleep();
+    // If the state has changed, reset debounce timer
+    if (currentPowerState != lastPowerState) {
+        lastDebounceTime = currentTime;
+        lastPowerState = currentPowerState;
+        return;
+    }
+
+    // Only act if debounce time has passed
+    if ((currentTime - lastDebounceTime) > debounceDelay) {
+        bool powerOn = (currentPowerState == HIGH);
+        updatePowerIndicators(powerOn);
+
+        // If power switch is pulled low (switched off)
+        if (!powerOn) {
+            // Disable the 3.3V 1 power supply
+            ums3.setLDO2Power(false);
+            // Enter deep sleep immediately
+            enterDeepSleep();
+        }
     }
 }
 
@@ -58,22 +76,36 @@ void PowerManager::enterDeepSleep()
     // Turn off power indicators
     updatePowerIndicators(false);
 
-    // Configure GPIO wake-up source
+    // Disable WiFi and BT to prevent any interference
+    WiFi.mode(WIFI_OFF);
+    btStop();
+
+    // Configure wake-up source with specific settings for stability
     gpio_num_t wakeupPin = static_cast<gpio_num_t>(Pins::POWER_SWITCH);
     
-    // Configure specific RTC GPIO parameters for faster wake-up
+    // Configure for wake-up
+    gpio_hold_dis(wakeupPin);
+    gpio_deep_sleep_hold_dis();
+    
+    // Set up the pin for wake-up
+    gpio_pad_select_gpio(static_cast<uint32_t>(wakeupPin));
+    gpio_set_direction(wakeupPin, GPIO_MODE_INPUT);
     gpio_pullup_en(wakeupPin);
     gpio_pulldown_dis(wakeupPin);
     
-    // Set wake-up source with specific configuration
+    // Set wake-up source to detect HIGH level (when switch is turned ON)
     esp_sleep_enable_ext0_wakeup(wakeupPin, HIGH);
     
-    // Only keep necessary power domains
+    // Keep RTC peripherals on and configure for stability
     esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
     esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_OFF);
     esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_OFF);
     esp_sleep_pd_config(ESP_PD_DOMAIN_XTAL, ESP_PD_OPTION_OFF);
-
+    
+    // Hold the GPIO state during sleep
+    gpio_hold_en(wakeupPin);
+    gpio_deep_sleep_hold_en();
+    
     // Enter deep sleep
     esp_deep_sleep_start();
 }
@@ -352,11 +384,32 @@ bool PowerManager::isLowBattery()
 
 void PowerManager::configurePins()
 {
-    // Configure power switch pin
-    pinMode(Pins::POWER_SWITCH, INPUT_PULLUP);
+    // Configure power switch pin with both pull-up and input filtering
+    gpio_config_t powerSwitchConfig = {
+        .pin_bit_mask = (1ULL << Pins::POWER_SWITCH),
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = GPIO_PULLUP_ENABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE
+    };
+    gpio_config(&powerSwitchConfig);
+
+    // Set maximum drive strength for the power switch pin
+    gpio_set_drive_capability(static_cast<gpio_num_t>(Pins::POWER_SWITCH), GPIO_DRIVE_CAP_3);
+    
+    // Enable internal input filter to reduce noise
+    REG_SET_BIT(GPIO_PIN_MUX_REG[Pins::POWER_SWITCH], FUN_IE);
+    
+    // Configure the pin for wake-up with strong pull-up
+    gpio_hold_dis(static_cast<gpio_num_t>(Pins::POWER_SWITCH));
+    gpio_deep_sleep_hold_dis();
+    
+    // Configure for RTC wake-up
+    gpio_pad_select_gpio(static_cast<uint32_t>(Pins::POWER_SWITCH));
     gpio_set_direction(static_cast<gpio_num_t>(Pins::POWER_SWITCH), GPIO_MODE_INPUT);
     gpio_pullup_en(static_cast<gpio_num_t>(Pins::POWER_SWITCH));
     gpio_pulldown_dis(static_cast<gpio_num_t>(Pins::POWER_SWITCH));
+    gpio_hold_en(static_cast<gpio_num_t>(Pins::POWER_SWITCH));
 
     // Configure input pins
     pinMode(Pins::LW_BAND_SWITCH, INPUT_PULLUP);
