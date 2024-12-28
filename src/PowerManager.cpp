@@ -9,6 +9,8 @@
 // - GPIO state holding during sleep
 // - 100ms debounce time for stability
 
+bool PowerManager::inactivitySleep = false;
+
 void PowerManager::begin()
 {
     btStop();
@@ -16,15 +18,27 @@ void PowerManager::begin()
     // Initialize FeatherS3 specific features
     ums3.begin();
 
+    // Set up PWM for power LED (do this early for proper shutdown)
+    ledcSetup(LED_CHANNEL, LED_FREQ, LED_RESOLUTION);
+    ledcAttachPin(Pins::POWER_LED, LED_CHANNEL);
+    ledcWrite(LED_CHANNEL, 0);  // Start with LED off
+
+    // If we're waking from inactivity sleep and switch is still ON, go back to sleep
+    if (inactivitySleep && digitalRead(Pins::POWER_SWITCH) == HIGH) {
+        enterDeepSleep(SleepReason::INACTIVITY);
+        return;
+    }
+    
+    // Clear inactivity flag since we're awake now
+    inactivitySleep = false;
+
     // Enable the 3.3V 1 power supply
     ums3.setLDO2Power(true);
 
     // Configure pins with explicit pull-ups and set pin modes
     configurePins();
 
-    // Set up PWM for power LED
-    ledcSetup(LED_CHANNEL, LED_FREQ, LED_RESOLUTION);
-    ledcAttachPin(Pins::POWER_LED, LED_CHANNEL);
+    // Turn on power LED at full brightness
     ledcWrite(LED_CHANNEL, MAX_BRIGHTNESS);
 
     // Start LED task
@@ -148,10 +162,7 @@ void PowerManager::checkPowerSwitch()
 
         // If power switch is pulled low (switched off)
         if (!powerOn) {
-            // Disable the 3.3V 1 power supply
-            ums3.setLDO2Power(false);
-            // Enter deep sleep immediately
-            enterDeepSleep();
+            enterDeepSleep(SleepReason::POWER_OFF);
         }
     }
 }
@@ -162,46 +173,66 @@ void PowerManager::updatePowerIndicators(bool powerOn)
     digitalWrite(Pins::POWER_LED, powerOn ? HIGH : LOW);
 }
 
-void PowerManager::enterDeepSleep()
+void PowerManager::shutdownAllPins()
+{
+    // Stop morse code output
+    MorseCode::getInstance().stop();
+
+    // Turn off all LEDs
+    ledcWrite(LED_CHANNEL, 0);          // Power LED
+    digitalWrite(Pins::BACKLIGHT, LOW);
+    digitalWrite(Pins::LW_LED, LOW);
+    digitalWrite(Pins::MW_LED, LOW);
+    digitalWrite(Pins::SW_LED, LOW);
+    digitalWrite(Pins::LOCK_LED, LOW);
+    digitalWrite(Pins::MORSE_LEDS, LOW);
+
+    // Turn off all PWM channels
+    ledcWrite(PWMChannels::AUDIO, 0);   // Audio output
+    ledcWrite(PWMChannels::DECODE, 0);  // Decode speed control
+    ledcWrite(PWMChannels::CARRIER, 0); // Signal strength indicator
+
+    // Disable power supply
+    ums3.setLDO2Power(false);
+}
+
+void PowerManager::enterDeepSleep(SleepReason reason)
 {
 #ifdef DEBUG_SERIAL_OUTPUT
     Serial.println("Entering deep sleep mode...");
 #endif
-    // Turn off power indicators
-    updatePowerIndicators(false);
 
-    // Disable WiFi and BT to prevent any interference
-    WiFi.mode(WIFI_OFF);
-    btStop();
+    // Shutdown all pins and peripherals
+    shutdownAllPins();
 
-    // Configure wake-up source with specific settings for stability
-    gpio_num_t wakeupPin = static_cast<gpio_num_t>(Pins::POWER_SWITCH);
-    
-    // Configure for wake-up
-    gpio_hold_dis(wakeupPin);
-    gpio_deep_sleep_hold_dis();
-    
-    // Set up the pin for wake-up
-    gpio_pad_select_gpio(static_cast<uint32_t>(wakeupPin));
-    gpio_set_direction(wakeupPin, GPIO_MODE_INPUT);
-    gpio_pullup_en(wakeupPin);
-    gpio_pulldown_dis(wakeupPin);
-    
-    // Set wake-up source to detect HIGH level (when switch is turned ON)
-    esp_sleep_enable_ext0_wakeup(wakeupPin, HIGH);
-    
-    // Keep RTC peripherals on and configure for stability
-    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
-    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_OFF);
-    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_OFF);
-    esp_sleep_pd_config(ESP_PD_DOMAIN_XTAL, ESP_PD_OPTION_OFF);
-    
-    // Hold the GPIO state during sleep
-    gpio_hold_en(wakeupPin);
-    gpio_deep_sleep_hold_en();
-    
+    if (reason == SleepReason::INACTIVITY) {
+        // Set flag in RTC memory
+        inactivitySleep = true;
+        // Wake when power switch goes low (turned off)
+        esp_sleep_enable_ext0_wakeup(static_cast<gpio_num_t>(Pins::POWER_SWITCH), 0);
+    } else {
+        // Wake when power switch goes high (turned on)
+        esp_sleep_enable_ext0_wakeup(static_cast<gpio_num_t>(Pins::POWER_SWITCH), 1);
+    }
+
     // Enter deep sleep
     esp_deep_sleep_start();
+}
+
+void PowerManager::checkActivity()
+{
+    if (!checkForInputChanges()) {
+        unsigned long currentTime = millis();
+        if (currentTime - lastActivityTime >= INACTIVITY_TIMEOUT) {
+            // Only enter deep sleep if power switch is still ON
+            if (digitalRead(Pins::POWER_SWITCH) == HIGH) {
+#ifdef DEBUG_SERIAL_OUTPUT
+                Serial.println("Inactivity timeout - entering deep sleep");
+#endif
+                enterDeepSleep(SleepReason::INACTIVITY);
+            }
+        }
+    }
 }
 
 void PowerManager::configureADC()
@@ -337,132 +368,6 @@ bool PowerManager::checkForInputChanges()
     lastWiFiState = currentWiFiState;
 
     return activity;
-}
-
-void PowerManager::checkActivity()
-{
-    // First check power switch state
-    checkPowerSwitch();
-
-    static unsigned long lastDebounceTime = 0;
-    const unsigned long debounceDelay = 100; // 100ms debounce
-
-    static unsigned long lastDisplayTime = 0;   // Track last display time
-    const unsigned long displayInterval = 5000; // 5 seconds
-
-    unsigned long currentTime = millis();
-
-    // Only display battery status every 5 seconds
-    if (currentTime - lastDisplayTime >= displayInterval)
-    {
-#ifdef DEBUG_SERIAL_OUTPUT
-        displayBatteryStatus();
-#endif
-        lastDisplayTime = currentTime;
-    }
-
-    if (WiFiManager::getInstance().isEnabled())
-    {
-        lastActivityTime = millis();
-        return;
-    }
-
-    // Add debounce for input checks
-    if (currentTime - lastDebounceTime > debounceDelay)
-    {
-        if (checkForInputChanges())
-        {
-            lastActivityTime = millis();
-            lastDebounceTime = millis();
-            return;
-        }
-    }
-
-    // Check if we've been inactive for too long
-    unsigned long inactiveTime = (currentTime - lastActivityTime) / 1000;
-
-    // Print remaining time every minute, but only print it once, not every time it loops in a single second
-    static unsigned long lastPrintTime = 0;
-    if (inactiveTime > 0 && inactiveTime % 60 == 0 && currentTime - lastPrintTime >= 50000)
-    {
-        unsigned long timeToSleep = (INACTIVITY_TIMEOUT - (currentTime - lastActivityTime)) / 1000;
-        Serial.printf("Inactive for %lu seconds. Sleep in %lu seconds...\n\r",
-                      inactiveTime, timeToSleep);
-        lastPrintTime = currentTime;
-    }
-
-    if (currentTime - lastActivityTime >= INACTIVITY_TIMEOUT)
-    {
-#ifdef DEBUG_SERIAL_OUTPUT
-        Serial.println("No activity detected for some time, entering light sleep...");
-#endif
-        delay(100);
-        enterLightSleep();
-    }
-}
-
-void PowerManager::enterLightSleep()
-{
-#ifdef DEBUG_SERIAL_OUTPUT
-    Serial.println("Preparing for light sleep...");
-#endif
-    // Turn off power indicators
-    updatePowerIndicators(false);
-
-    delay(100);
-
-    // Enable GPIO wakeup
-    esp_sleep_enable_gpio_wakeup();
-
-    // List of pins to monitor
-    const gpio_num_t monitoredPins[] = {
-        static_cast<gpio_num_t>(Pins::LW_BAND_SWITCH),
-        static_cast<gpio_num_t>(Pins::MW_BAND_SWITCH),
-        static_cast<gpio_num_t>(Pins::SLOW_DECODE),
-        static_cast<gpio_num_t>(Pins::MED_DECODE),
-        static_cast<gpio_num_t>(Pins::WIFI_BUTTON)};
-
-    // Configure per-pin wakeup triggers based on opposite of current state
-    for (const auto &pin : monitoredPins)
-    {
-        // Read current level
-        int pinLevel = gpio_get_level(pin);
-
-        // Set wakeup trigger to opposite level
-        gpio_int_type_t wakeupMode = (pinLevel == 1) ? GPIO_INTR_LOW_LEVEL : GPIO_INTR_HIGH_LEVEL;
-        esp_err_t result = gpio_wakeup_enable(pin, wakeupMode);
-        if (result != ESP_OK)
-        {
-#ifdef DEBUG_SERIAL_OUTPUT
-            Serial.printf("Failed to configure wakeup on pin %d: %s\n\r", pin, esp_err_to_name(result));
-#endif
-        }
-    }
-
-    // Prepare for light sleep
-    Serial.flush(); // Ensure all serial output is sent
-
-    // Disable the 3.3V 1 power supply
-    ums3.setLDO2Power(false);
-
-    // Enter light sleep
-    esp_light_sleep_start();
-
-    // Execution resumes here after wake-up
-#ifdef DEBUG_SERIAL_OUTPUT
-    Serial.println("Woke up from light sleep");
-#endif
-
-    // Re-enable the 3.3V 1 power supply
-    ums3.setLDO2Power(true);
-
-    // Restore power indicators based on power switch state
-    bool powerOn = (digitalRead(Pins::POWER_SWITCH) == HIGH);
-    updatePowerIndicators(powerOn);
-
-    // Reinitialize any peripherals if necessary
-    lastActivityTime = millis();
-    setCpuFrequencyMhz(80);
 }
 
 float PowerManager::getBatteryVoltage()

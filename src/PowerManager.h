@@ -5,6 +5,7 @@
 #include <UMS3.h>
 #include "Config.h"
 #include "WiFiManager.h"
+#include "MorseCode.h"
 
 class PowerManager
 {
@@ -23,6 +24,12 @@ public:
     bool isUSBPowered() { return ums3.getVbusPresent(); }
     void updatePowerLED();
 
+    // Sleep reason enum
+    enum class SleepReason {
+        POWER_OFF,
+        INACTIVITY
+    };
+
 private:
     PowerManager() = default;
     PowerManager(const PowerManager &) = delete;
@@ -32,34 +39,37 @@ private:
     void configureADC();
     void updatePinStates();
     bool checkForInputChanges();
-    void enterDeepSleep();
-    void enterLightSleep();
+    void enterDeepSleep(SleepReason reason = SleepReason::POWER_OFF);
     void displayBatteryStatus();
     void updatePowerIndicators(bool powerOn);
     int readADC(int pin);
-    void updateLEDBrightness(float batteryVoltage);
     void pulseLED();
     void startLEDTask();
     void stopLEDTask();
-    static void LEDTaskCode(void* parameter);
+    static void LEDTaskCode(void *parameter);
+    void updateLEDBrightness(float batteryVoltage);
+    void shutdownAllPins();  // New function to handle all pin shutdown
+
+    // RTC data structure that persists during deep sleep
+    RTC_DATA_ATTR static bool inactivitySleep;
 
     // Constants
-    static constexpr float LOW_BATTERY_THRESHOLD = 3.3; // LiPo should not go below 3.3V
-    static constexpr float MAX_BATTERY_VOLTAGE = 4.2; // Fully charged LiPo
-    static constexpr float FULLY_CHARGED_THRESHOLD = 4.15; // Very close to full charge
-    static constexpr float MIN_BATTERY_VOLTAGE = 3.2; // Absolute minimum - protect battery
-    static constexpr unsigned long INACTIVITY_TIMEOUT = 300000; // 5 minutes
+    static constexpr float LOW_BATTERY_THRESHOLD = 3.3;        // LiPo should not go below 3.3V
+    static constexpr float MAX_BATTERY_VOLTAGE = 4.2;          // Fully charged LiPo
+    static constexpr float FULLY_CHARGED_THRESHOLD = 4.15;     // Very close to full charge
+    static constexpr float MIN_BATTERY_VOLTAGE = 3.2;          // Absolute minimum - protect battery
+    static constexpr unsigned long INACTIVITY_TIMEOUT = 30000; // 30 seconds
     static constexpr int POTENTIOMETER_THRESHOLD = 100;
-    
+
     // LED control constants
-    static constexpr uint8_t LED_CHANNEL = 4; // PWM channel for power LED
-    static constexpr uint32_t LED_FREQ = 5000; // PWM frequency
+    static constexpr uint8_t LED_CHANNEL = 4;    // PWM channel for power LED
+    static constexpr uint32_t LED_FREQ = 5000;   // PWM frequency
     static constexpr uint8_t LED_RESOLUTION = 8; // 8-bit resolution (0-255)
     static constexpr uint8_t MAX_BRIGHTNESS = 255;
     static constexpr uint8_t MIN_BRIGHTNESS = 10;
     static constexpr uint8_t CRITICAL_BRIGHTNESS = 5;
-    static constexpr unsigned long PULSE_INTERVAL = 8; // Reduced from 15ms to 8ms
-    static constexpr uint8_t BRIGHTNESS_STEP = 2; // Add step size for faster changes
+    static constexpr unsigned long PULSE_INTERVAL = 8;    // Reduced from 15ms to 8ms
+    static constexpr uint8_t BRIGHTNESS_STEP = 2;         // Add step size for faster changes
     static constexpr unsigned long FLASH_INTERVAL = 1000; // ms between flashes for low battery
 
     // State tracking
