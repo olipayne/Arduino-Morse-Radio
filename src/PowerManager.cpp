@@ -2,6 +2,13 @@
 #include "driver/rtc_io.h"
 #include "driver/gpio.h"
 
+// PowerManager implementation
+// The power switch is configured with:
+// - Maximum drive strength pull-up
+// - Input filtering for noise reduction
+// - GPIO state holding during sleep
+// - 100ms debounce time for stability
+
 void PowerManager::begin()
 {
     btStop();
