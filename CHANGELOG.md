@@ -1,3 +1,13 @@
+## [0.15.1](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.15.0...v0.15.1) (2024-12-28)
+
+
+### Bug Fixes
+
+* morse volume improvements ([e374d41](https://github.com/olipayne/Arduino-Morse-Radio/commit/e374d41289ec2fac187640212f37a8b777ce084e))
+* **power:** optimize deep sleep wake-up with USB+battery ([10234cb](https://github.com/olipayne/Arduino-Morse-Radio/commit/10234cb3644931879e945acb91b398da946c9cbf))
+
+
+
 # [0.15.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.14.0...v0.15.0) (2024-12-28)
 
 
@@ -32,15 +42,6 @@
 
 * production improvements ([12af37d](https://github.com/olipayne/Arduino-Morse-Radio/commit/12af37d643d612f16bea92c92a33ecac2ea8946d))
 * production improvements ([8bb2f19](https://github.com/olipayne/Arduino-Morse-Radio/commit/8bb2f190939c07c2b616ae600ad6e6b0467493d5))
-
-
-
-## [0.13.2](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.13.1...v0.13.2) (2024-12-04)
-
-
-### Bug Fixes
-
-* build improvements ([d137111](https://github.com/olipayne/Arduino-Morse-Radio/commit/d137111ea39be4745309128ae7137620f73d7d62))
 
 
 
