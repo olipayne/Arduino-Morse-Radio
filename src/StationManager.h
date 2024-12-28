@@ -28,6 +28,7 @@ public:
 
   // Station configuration
   void updateStation(size_t index, int frequency, const String &message);
+  void updateStation(size_t index, int frequency, const String &message, bool enabled);
 
   // Band-specific operations
   std::vector<Station *> getStationsForBand(WaveBand band);
