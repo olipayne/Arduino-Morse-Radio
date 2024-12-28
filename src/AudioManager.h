@@ -27,7 +27,7 @@ private:
 
     void configurePWM();
 
-    static constexpr int MORSE_FREQUENCY = 800; // Fixed 800Hz for Morse code
+    static constexpr int MORSE_FREQUENCY = 600; // Fixed 600Hz for Morse code
 
     // Updated static frequency range
     static constexpr int MIN_STATIC_FREQ = 100; // 100 Hz
@@ -38,6 +38,7 @@ private:
     int lastVolumeRead = 0;
     unsigned long lastVolumeUpdate = 0;
     unsigned long lastPulseTime = 0;
+    bool isPlayingMorse = false;
     static constexpr unsigned long VOLUME_UPDATE_INTERVAL = 50; // ms
 };
 
