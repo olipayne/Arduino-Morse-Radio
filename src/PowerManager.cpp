@@ -88,7 +88,16 @@ void PowerManager::LEDTaskCode(void* parameter)
     const TickType_t xFrequency = pdMS_TO_TICKS(PULSE_INTERVAL);
 
     while (true) {
-        if (powerManager->shouldPulse) {
+        float voltage = powerManager->getBatteryVoltage();
+        
+        // Critical battery level - flash the LED
+        if (voltage <= LOW_BATTERY_THRESHOLD) {
+            static bool flashState = false;
+            flashState = !flashState;
+            ledcWrite(LED_CHANNEL, flashState ? CRITICAL_BRIGHTNESS : 0);
+        }
+        // Normal operation - handle pulsing or steady state
+        else if (powerManager->shouldPulse) {
             if (powerManager->pulseIncreasing) {
                 if (powerManager->currentBrightness <= MAX_BRIGHTNESS - BRIGHTNESS_STEP) {
                     powerManager->currentBrightness += BRIGHTNESS_STEP;
@@ -133,9 +142,8 @@ void PowerManager::updatePowerLED()
         return;
     }
 
-    // On battery power, brightness indicates level
+    // On battery power, LED task will handle brightness
     shouldPulse = false;
-    updateLEDBrightness(voltage);
 }
 
 void PowerManager::checkPowerSwitch()

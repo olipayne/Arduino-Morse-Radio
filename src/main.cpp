@@ -21,9 +21,9 @@ void systemUpdateCallback();
 void managerUpdateCallback();
 
 // Tasks
-Task tBatteryCheck(60000, TASK_FOREVER, &batteryCheckCallback);    // Check battery every minute
-Task tSystemUpdate(20, TASK_FOREVER, &systemUpdateCallback);       // System update every 20ms
-Task tManagerUpdate(20, TASK_FOREVER, &managerUpdateCallback);     // Manager updates every 20ms
+Task tBatteryCheck(60000, TASK_FOREVER, &batteryCheckCallback); // Check battery every minute
+Task tSystemUpdate(20, TASK_FOREVER, &systemUpdateCallback);    // System update every 20ms
+Task tManagerUpdate(20, TASK_FOREVER, &managerUpdateCallback);  // Manager updates every 20ms
 
 // Main system manager class
 class RadioSystem
@@ -54,7 +54,7 @@ public:
     // If power switch is off, don't process anything else
     if (digitalRead(Pins::POWER_SWITCH) == LOW)
     {
-      delay(100); // Debounce delay
+      delay(10); // Debounce delay
       return;
     }
 
@@ -123,7 +123,7 @@ private:
     ts.addTask(tBatteryCheck);
     ts.addTask(tSystemUpdate);
     ts.addTask(tManagerUpdate);
-    
+
     tBatteryCheck.enable();
     tSystemUpdate.enable();
     tManagerUpdate.enable();
@@ -136,17 +136,8 @@ void batteryCheckCallback()
   auto &power = PowerManager::getInstance();
   float voltage = power.getBatteryVoltage();
 
-  if (power.isLowBattery())
-  {
-    // Flash LED pattern to indicate low battery
-    for (int i = 0; i < 3; i++)
-    {
-      digitalWrite(LED_BUILTIN, HIGH);
-      delay(100);
-      digitalWrite(LED_BUILTIN, LOW);
-      delay(100);
-    }
-  }
+  // Let the LED task handle low battery indication
+  power.updatePowerLED();
 
 #ifdef DEBUG_SERIAL_OUTPUT
   Serial.printf("Battery Voltage: %.2fV\n", voltage);
