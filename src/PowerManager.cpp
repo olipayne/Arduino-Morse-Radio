@@ -21,8 +21,8 @@ void PowerManager::begin()
     configureADC();
 
     // Initialize last known values
-    lastTuningValue = analogRead(Pins::TUNING_POT);
-    lastVolumeValue = analogRead(Pins::VOLUME_POT);
+    lastTuningValue = readADC(Pins::TUNING_POT);
+    lastVolumeValue = readADC(Pins::VOLUME_POT);
 
     // Initialize digital pin states with debounce
     updatePinStates();
@@ -80,10 +80,42 @@ void PowerManager::enterDeepSleep()
 
 void PowerManager::configureADC()
 {
+    // Set ADC resolution to maximum
     analogReadResolution(12);
-    analogSetAttenuation(ADC_11db);
+    
+    // Configure ADC for better stability
+    adcAttachPin(Pins::TUNING_POT);
+    adcAttachPin(Pins::VOLUME_POT);
+    
+    // Set attenuation for the full voltage range (0-3.3V)
     analogSetPinAttenuation(Pins::TUNING_POT, ADC_11db);
     analogSetPinAttenuation(Pins::VOLUME_POT, ADC_11db);
+}
+
+int PowerManager::readADC(int pin)
+{
+    const int samples = 5;
+    int readings[samples];
+    
+    // Take multiple samples with a small delay between them
+    for(int i = 0; i < samples; i++) {
+        readings[i] = analogRead(pin);
+        delay(2); // Small delay between readings
+    }
+    
+    // Sort readings (insertion sort for small array)
+    for(int i = 1; i < samples; i++) {
+        int key = readings[i];
+        int j = i - 1;
+        while(j >= 0 && readings[j] > key) {
+            readings[j + 1] = readings[j];
+            j--;
+        }
+        readings[j + 1] = key;
+    }
+    
+    // Return median value (middle reading)
+    return readings[samples / 2];
 }
 
 void PowerManager::updatePinStates()
@@ -102,9 +134,9 @@ bool PowerManager::checkForInputChanges()
 
     bool activity = false;
 
-    // Check potentiometers
-    int currentTuning = analogRead(Pins::TUNING_POT);
-    int currentVolume = analogRead(Pins::VOLUME_POT);
+    // Check potentiometers using filtered readings
+    int currentTuning = readADC(Pins::TUNING_POT);
+    int currentVolume = readADC(Pins::VOLUME_POT);
 
     if (abs(currentTuning - lastTuningValue) > POTENTIOMETER_THRESHOLD)
     {

@@ -35,6 +35,7 @@ private:
     void enterLightSleep();
     void displayBatteryStatus();
     void updatePowerIndicators(bool powerOn);
+    int readADC(int pin);  // New method for filtered ADC readings
 
     // Constants
     static constexpr float LOW_BATTERY_THRESHOLD = 3.5;
