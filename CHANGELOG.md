@@ -1,3 +1,12 @@
+## [0.15.3](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.15.2...v0.15.3) (2024-12-28)
+
+
+### Bug Fixes
+
+* **adc:** reduce crosstalk between potentiometers ([d656d89](https://github.com/olipayne/Arduino-Morse-Radio/commit/d656d89f9e45e5aa7009ad254d31342f63129318))
+
+
+
 ## [0.15.2](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.15.1...v0.15.2) (2024-12-28)
 
 
@@ -32,15 +41,6 @@
 ### Features
 
 * nicer web ui, json, ajax all the things ([fb3a2b9](https://github.com/olipayne/Arduino-Morse-Radio/commit/fb3a2b9c87a5f40fee652720f18fe09b19e66d78))
-
-
-
-## [0.13.4](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.13.3...v0.13.4) (2024-12-04)
-
-
-### Bug Fixes
-
-* production improvements ([0acb34b](https://github.com/olipayne/Arduino-Morse-Radio/commit/0acb34b929da1f1b510726663d163f2004618603))
 
 
 
