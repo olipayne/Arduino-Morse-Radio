@@ -1,3 +1,15 @@
+# [1.0.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.17.0...v1.0.0) (2024-12-28)
+
+
+* feat!: optimize power management and LED handling ([c873bef](https://github.com/olipayne/Arduino-Morse-Radio/commit/c873beff1eb753575d708b1c908ac359d30187fb))
+
+
+### BREAKING CHANGES
+
+* LED control moved to FreeRTOS task, battery check no longer controls LED directly
+
+
+
 # [0.17.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.16.0...v0.17.0) (2024-12-28)
 
 
@@ -39,16 +51,6 @@
 ### Bug Fixes
 
 * force usb path for quicker flashing ([f4d2d51](https://github.com/olipayne/Arduino-Morse-Radio/commit/f4d2d51e9a409d6decc25171f95ede13be3070b0))
-
-
-
-## [0.15.1](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.15.0...v0.15.1) (2024-12-28)
-
-
-### Bug Fixes
-
-* morse volume improvements ([e374d41](https://github.com/olipayne/Arduino-Morse-Radio/commit/e374d41289ec2fac187640212f37a8b777ce084e))
-* **power:** optimize deep sleep wake-up with USB+battery ([10234cb](https://github.com/olipayne/Arduino-Morse-Radio/commit/10234cb3644931879e945acb91b398da946c9cbf))
 
 
 
