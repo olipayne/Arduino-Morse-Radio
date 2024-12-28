@@ -33,17 +33,58 @@ const char* WiFiManager::CSS_STYLES = R"(
         align-items: center;
         margin-bottom: 15px;
     }
+    .station-name {
+        margin: 0;
+        font-size: 1.17em;
+    }
+    .input-group {
+        display: flex;
+        margin-bottom: 10px;
+    }
+    .input-group input {
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+        border-right: none;
+    }
+    .input-group button {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+        border: 1px solid #ddd;
+        background: #e9ecef;
+        cursor: pointer;
+        color: #212529;
+        font-weight: 500;
+        min-width: 50px;
+    }
+    .input-group button:hover {
+        background: #dee2e6;
+    }
     .enable-toggle {
         display: flex;
         align-items: center;
         gap: 8px;
-        cursor: pointer;
-        user-select: none;
+        white-space: nowrap;
     }
     input[type="checkbox"] {
         width: 18px;
         height: 18px;
         margin: 0;
+    }
+    input[type="number"] {
+        width: 60px;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+    input[type="text"] {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+    .tune-button {
+        padding: 8px;
+        white-space: nowrap;
     }
     .wave-band { 
         padding: 10px; 
@@ -61,29 +102,6 @@ const char* WiFiManager::CSS_STYLES = R"(
     .wave-band:nth-of-type(3) {
         background: #f3e5f5;
         border-left: 4px solid #9c27b0;
-    }
-    .freq-group { 
-        display: flex; 
-        align-items: center; 
-        gap: 10px; 
-        margin: 15px 0; 
-    }
-    input[type="number"] { 
-        flex: 2;
-        padding: 12px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        box-sizing: border-box;
-        font-size: 16px;
-    }
-    input[type="text"] { 
-        width: 100%;
-        padding: 12px;
-        margin: 8px 0;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        box-sizing: border-box;
-        font-size: 16px;
     }
     label {
         display: block;
@@ -110,6 +128,34 @@ const char* WiFiManager::CSS_STYLES = R"(
     }
     .tune-button:hover { 
         background: #1976D2; 
+    }
+    button[type="submit"] {
+        background-color: #4CAF50;
+        color: white;
+        padding: 12px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        width: 100%;
+        font-size: 16px;
+        margin-top: 15px;
+    }
+    button[type="submit"]:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+        opacity: 0.7;
+    }
+    button[type="submit"].saving {
+        position: relative;
+        color: transparent;
+    }
+    button[type="submit"].saving::after {
+        content: 'Saving...';
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        color: white;
     }
     .status { 
         position: fixed;
@@ -243,6 +289,11 @@ const char *WiFiManager::JAVASCRIPT_CODE = R"(
     function handleFormSubmit(event) {
         event.preventDefault();
         const form = event.target;
+        const submitButton = form.querySelector('button[type="submit"]');
+        
+        // Disable button and show saving state
+        submitButton.disabled = true;
+        submitButton.classList.add('saving');
         
         // Collect form data into a structured object
         const stations = [];
@@ -291,6 +342,11 @@ const char *WiFiManager::JAVASCRIPT_CODE = R"(
         .catch(error => {
             console.error('Error:', error);
             showToast('Error saving configuration', true);
+        })
+        .finally(() => {
+            // Re-enable button and remove saving state
+            submitButton.disabled = false;
+            submitButton.classList.remove('saving');
         });
     }
 
@@ -560,22 +616,22 @@ String WiFiManager::generateStationTable() const
 
     html += "<div class='station'>";
     html += "<div class='station-header'>";
-    html += "<h3>" + String(station->getName()) + "</h3>";
+    html += "<h3 class='station-name'>" + String(station->getName()) + "</h3>";
     html += "<div class='enable-toggle'>";
     html += "<input type='checkbox' id='enable_" + String(i) + "' name='enable_" + String(i) + "' " + (station->isEnabled() ? "checked" : "") + ">";
     html += "<label for='enable_" + String(i) + "'>Enabled</label>";
     html += "</div>";
     html += "</div>";
-
-    html += "<div class='freq-group'>";
+    
+    html += "<div class='input-group'>";
     html += "<input type='number' id='freq_" + String(i) + "' name='freq_" + String(i) +
             "' value='" + String(station->getFrequency()) + "'>";
     html += "<button type='button' class='tune-button' " +
-            String("onclick='setFrequency(\"freq_") + String(i) + "\")'>Set Current</button>";
+            String("onclick='setFrequency(\"freq_") + String(i) + "\")'>Set</button>";
     html += "</div>";
 
-    html += "<label>Message:<br><input type='text' name='msg_" + String(i) +
-            "' value='" + String(station->getMessage()) + "'></label>";
+    html += "<input type='text' name='msg_" + String(i) +
+            "' value='" + String(station->getMessage()) + "' placeholder='Message'>";
     html += "</div>";
   }
 
