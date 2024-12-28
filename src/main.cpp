@@ -136,6 +136,15 @@ void batteryCheckCallback()
   auto &power = PowerManager::getInstance();
   float voltage = power.getBatteryVoltage();
 
+  // Force deep sleep if battery is critically low
+  if (voltage <= PowerManager::MIN_BATTERY_VOLTAGE) {
+    #ifdef DEBUG_SERIAL_OUTPUT
+    Serial.printf("Battery critically low (%.2fV). Entering deep sleep.\n", voltage);
+    #endif
+    power.enterDeepSleep(PowerManager::SleepReason::BATTERY_CRITICAL);
+    return;
+  }
+
   // Let the LED task handle low battery indication
   power.updatePowerLED();
 
