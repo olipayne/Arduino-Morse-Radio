@@ -48,8 +48,23 @@ public:
 
   void loop()
   {
-    ts.execute();
+    // Check power switch state
+    PowerManager::getInstance().checkPowerSwitch();
+
+    // If power switch is off, don't process anything else
+    if (digitalRead(Pins::POWER_SWITCH) == LOW)
+    {
+      delay(100); // Debounce delay
+      return;
+    }
+
+    // Update power LED state
+    PowerManager::getInstance().updatePowerLED();
+
+    // Check for inactivity and manage power state
     PowerManager::getInstance().checkActivity();
+
+    ts.execute();
     delay(1); // Small delay to prevent overwhelming the CPU
   }
 

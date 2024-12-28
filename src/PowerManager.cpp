@@ -22,6 +22,14 @@ void PowerManager::begin()
     // Configure pins with explicit pull-ups and set pin modes
     configurePins();
 
+    // Set up PWM for power LED
+    ledcSetup(LED_CHANNEL, LED_FREQ, LED_RESOLUTION);
+    ledcAttachPin(Pins::POWER_LED, LED_CHANNEL);
+    ledcWrite(LED_CHANNEL, MAX_BRIGHTNESS);
+
+    // Start LED task
+    startLEDTask();
+
     // Check power switch state immediately and update indicators
     bool powerOn = (digitalRead(Pins::POWER_SWITCH) == HIGH);
     updatePowerIndicators(powerOn);
@@ -35,6 +43,85 @@ void PowerManager::begin()
 
     // Initialize digital pin states with debounce
     updatePinStates();
+}
+
+void PowerManager::startLEDTask()
+{
+    if (ledTaskHandle == nullptr) {
+        xTaskCreate(
+            LEDTaskCode,        // Task function
+            "LED_Task",         // Task name
+            2048,              // Stack size
+            this,              // Task parameters (this pointer)
+            1,                 // Priority
+            &ledTaskHandle     // Task handle
+        );
+    }
+}
+
+void PowerManager::stopLEDTask()
+{
+    if (ledTaskHandle != nullptr) {
+        vTaskDelete(ledTaskHandle);
+        ledTaskHandle = nullptr;
+    }
+}
+
+void PowerManager::LEDTaskCode(void* parameter)
+{
+    PowerManager* powerManager = static_cast<PowerManager*>(parameter);
+    TickType_t xLastWakeTime = xTaskGetTickCount();
+    const TickType_t xFrequency = pdMS_TO_TICKS(PULSE_INTERVAL);
+
+    while (true) {
+        if (powerManager->shouldPulse) {
+            if (powerManager->pulseIncreasing) {
+                if (powerManager->currentBrightness <= MAX_BRIGHTNESS - BRIGHTNESS_STEP) {
+                    powerManager->currentBrightness += BRIGHTNESS_STEP;
+                } else {
+                    powerManager->currentBrightness = MAX_BRIGHTNESS;
+                    powerManager->pulseIncreasing = false;
+                }
+            } else {
+                if (powerManager->currentBrightness >= MIN_BRIGHTNESS + BRIGHTNESS_STEP) {
+                    powerManager->currentBrightness -= BRIGHTNESS_STEP;
+                } else {
+                    powerManager->currentBrightness = MIN_BRIGHTNESS;
+                    powerManager->pulseIncreasing = true;
+                }
+            }
+            ledcWrite(LED_CHANNEL, powerManager->currentBrightness);
+        }
+        vTaskDelayUntil(&xLastWakeTime, xFrequency);
+    }
+}
+
+void PowerManager::updatePowerLED()
+{
+    if (!digitalRead(Pins::POWER_SWITCH)) {
+        shouldPulse = false;
+        ledcWrite(LED_CHANNEL, 0);
+        return;
+    }
+
+    float voltage = getBatteryVoltage();
+    
+    // If plugged in and fully charged, solid LED
+    if (isUSBPowered() && voltage >= FULLY_CHARGED_THRESHOLD) {
+        shouldPulse = false;
+        ledcWrite(LED_CHANNEL, MAX_BRIGHTNESS);
+        return;
+    }
+
+    // If plugged in but not fully charged, pulse
+    if (isUSBPowered()) {
+        shouldPulse = true;
+        return;
+    }
+
+    // On battery power, brightness indicates level
+    shouldPulse = false;
+    updateLEDBrightness(voltage);
 }
 
 void PowerManager::checkPowerSwitch()
@@ -485,5 +572,31 @@ void PowerManager::displayBatteryStatus()
     else
     {
         ums3.setPixelColor(255, 0, 0); // Low Battery - Red
+    }
+}
+
+void PowerManager::updateLEDBrightness(float batteryVoltage)
+{
+    unsigned long currentTime = millis();
+    
+    // Critical battery level - flash the LED
+    if (batteryVoltage <= LOW_BATTERY_THRESHOLD) {
+        if (currentTime - lastFlashUpdate >= FLASH_INTERVAL) {
+            lastFlashUpdate = currentTime;
+            currentBrightness = (currentBrightness == 0) ? CRITICAL_BRIGHTNESS : 0;
+            ledcWrite(LED_CHANNEL, currentBrightness);
+        }
+        return;
+    }
+    
+    // Normal battery operation - brightness indicates level
+    float voltageRange = MAX_BATTERY_VOLTAGE - MIN_BATTERY_VOLTAGE;
+    float normalizedVoltage = (batteryVoltage - MIN_BATTERY_VOLTAGE) / voltageRange;
+    normalizedVoltage = constrain(normalizedVoltage, 0.0f, 1.0f);
+    
+    uint8_t brightness = MIN_BRIGHTNESS + (normalizedVoltage * (MAX_BRIGHTNESS - MIN_BRIGHTNESS));
+    if (brightness != currentBrightness) {
+        currentBrightness = brightness;
+        ledcWrite(LED_CHANNEL, currentBrightness);
     }
 }
