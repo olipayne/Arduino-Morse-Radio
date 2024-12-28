@@ -1,3 +1,12 @@
+# [1.1.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.0.0...v1.1.0) (2024-12-28)
+
+
+### Features
+
+* force deep sleep at critical battery level ([16e55e7](https://github.com/olipayne/Arduino-Morse-Radio/commit/16e55e7e04569ded2b29b6d837b1560be7759dbd))
+
+
+
 # [1.0.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.17.0...v1.0.0) (2024-12-28)
 
 
@@ -42,15 +51,6 @@
 ### Bug Fixes
 
 * **adc:** reduce crosstalk between potentiometers ([d656d89](https://github.com/olipayne/Arduino-Morse-Radio/commit/d656d89f9e45e5aa7009ad254d31342f63129318))
-
-
-
-## [0.15.2](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.15.1...v0.15.2) (2024-12-28)
-
-
-### Bug Fixes
-
-* force usb path for quicker flashing ([f4d2d51](https://github.com/olipayne/Arduino-Morse-Radio/commit/f4d2d51e9a409d6decc25171f95ede13be3070b0))
 
 
 
