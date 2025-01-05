@@ -71,7 +71,7 @@ private:
     int lastVolumeValue = 0;
     uint8_t currentBrightness = 0;
     unsigned long lastFlashUpdate = 0;
-    
+
     // Button states
     bool lastLWState = false;
     bool lastMWState = false;

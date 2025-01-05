@@ -7,9 +7,9 @@
 // - Maximum drive strength pull-up
 // - Input filtering for noise reduction
 // - GPIO state holding during sleep
-// - 100ms debounce time for stability
+// - 500ms debounce time for stability
 
-bool PowerManager::inactivitySleep = false;
+static RTC_DATA_ATTR bool justWentToSleep = false; // Flag to indicate we just went to sleep
 
 void PowerManager::begin()
 {
@@ -17,6 +17,14 @@ void PowerManager::begin()
 
     // Initialize UMS3
     ums3.begin();
+
+    // If we're waking up right after going to sleep, go back to sleep
+    if (justWentToSleep)
+    {
+        justWentToSleep = false; // Clear the flag for next wake
+        enterDeepSleep(SleepReason::POWER_OFF);
+        return;
+    }
 
     // Configure pins
     configurePins();
@@ -182,6 +190,13 @@ void PowerManager::shutdownAllPins()
 
 void PowerManager::configurePins()
 {
+    // Configure power switch pin with internal pull-up
+    rtc_gpio_init(static_cast<gpio_num_t>(Pins::POWER_SWITCH));
+    rtc_gpio_set_direction(static_cast<gpio_num_t>(Pins::POWER_SWITCH), RTC_GPIO_MODE_INPUT_ONLY);
+    rtc_gpio_pullup_en(static_cast<gpio_num_t>(Pins::POWER_SWITCH));
+    rtc_gpio_pulldown_dis(static_cast<gpio_num_t>(Pins::POWER_SWITCH));
+    rtc_gpio_hold_en(static_cast<gpio_num_t>(Pins::POWER_SWITCH));
+
     // Configure LED pins
     pinMode(Pins::POWER_LED, OUTPUT); // Power LED will be configured in LED task
     pinMode(Pins::LW_LED, OUTPUT);
@@ -191,7 +206,6 @@ void PowerManager::configurePins()
     pinMode(Pins::BACKLIGHT, OUTPUT);
 
     // Configure input pins
-    pinMode(Pins::POWER_SWITCH, INPUT_PULLUP);
     pinMode(Pins::LW_BAND_SWITCH, INPUT_PULLUP);
     pinMode(Pins::MW_BAND_SWITCH, INPUT_PULLUP);
     pinMode(Pins::SLOW_DECODE, INPUT_PULLUP);
@@ -333,39 +347,26 @@ void PowerManager::displayBatteryStatus()
 
 void PowerManager::enterDeepSleep(SleepReason reason)
 {
-    // Shutdown all pins and peripherals
+    // Update last known state
+    // Prepare for sleep
     shutdownAllPins();
 
-    if (reason == SleepReason::INACTIVITY)
-    {
-        // Set flag in RTC memory
-        inactivitySleep = true;
-        // Wake when power switch goes low (turned off)
-        esp_sleep_enable_ext0_wakeup(static_cast<gpio_num_t>(Pins::POWER_SWITCH), 0);
-    }
-    else
-    {
-        // Wake when power switch goes high (turned on)
-        esp_sleep_enable_ext0_wakeup(static_cast<gpio_num_t>(Pins::POWER_SWITCH), 1);
-    }
+    // Configure wake-up on GPIO with pull-up (wake on button press - LOW)
+    esp_sleep_enable_ext0_wakeup(static_cast<gpio_num_t>(Pins::POWER_SWITCH), 0);
 
     // Enter deep sleep
     esp_deep_sleep_start();
 }
 
-void PowerManager::checkActivity()
+void PowerManager::checkPowerSwitch()
 {
-    if (!checkForInputChanges())
+    bool switchPressed = !rtc_gpio_get_level(static_cast<gpio_num_t>(Pins::POWER_SWITCH)); // Active low with pull-up
+
+    // If momentary switch is pressed (connected to ground), go to sleep
+    if (switchPressed)
     {
-        unsigned long currentTime = millis();
-        if (currentTime - lastActivityTime >= INACTIVITY_TIMEOUT)
-        {
-            // Only enter deep sleep if power switch is still ON
-            if (digitalRead(Pins::POWER_SWITCH) == HIGH)
-            {
-                enterDeepSleep(SleepReason::INACTIVITY);
-            }
-        }
+        justWentToSleep = true; // Set flag before sleeping
+        enterDeepSleep(SleepReason::POWER_OFF);
     }
 }
 
@@ -412,34 +413,18 @@ int PowerManager::readADC(int pin)
     return readings[samples / 2];
 }
 
-void PowerManager::checkPowerSwitch()
+void PowerManager::checkActivity()
 {
-    // Add debouncing for power switch with longer debounce time
-    static unsigned long lastDebounceTime = 0;
-    static int lastPowerState = -1;
-    const unsigned long debounceDelay = 100; // Increased to 100ms for more stability
-
-    int currentPowerState = gpio_get_level(static_cast<gpio_num_t>(Pins::POWER_SWITCH));
-    unsigned long currentTime = millis();
-
-    // If the state has changed, reset debounce timer
-    if (currentPowerState != lastPowerState)
+    if (!checkForInputChanges())
     {
-        lastDebounceTime = currentTime;
-        lastPowerState = currentPowerState;
-        return;
-    }
-
-    // Only act if debounce time has passed
-    if ((currentTime - lastDebounceTime) > debounceDelay)
-    {
-        bool powerOn = (currentPowerState == HIGH);
-        updatePowerIndicators(powerOn);
-
-        // If power switch is pulled low (switched off)
-        if (!powerOn)
+        unsigned long currentTime = millis();
+        if (currentTime - lastActivityTime >= INACTIVITY_TIMEOUT)
         {
-            enterDeepSleep(SleepReason::POWER_OFF);
+            // Only enter deep sleep if power switch is still ON
+            if (digitalRead(Pins::POWER_SWITCH) == HIGH)
+            {
+                enterDeepSleep(SleepReason::INACTIVITY);
+            }
         }
     }
 }

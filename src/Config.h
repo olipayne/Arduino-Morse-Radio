@@ -49,6 +49,7 @@ namespace LEDConfig
   constexpr uint8_t MAX_BRIGHTNESS = 255;
   constexpr uint8_t MIN_BRIGHTNESS = 0;
   constexpr uint32_t PULSE_PERIOD_MS = 1000; // 1 second pulse period
+  constexpr uint32_t POWER_SWITCH_DEBOUNCE_MS = 500; // Power switch debounce time
 
   // LiPo battery voltage levels
   constexpr float BATTERY_MIN_V = 3.2f; // Battery empty (~0%)
