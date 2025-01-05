@@ -1,3 +1,12 @@
+# [1.4.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.3.0...v1.4.0) (2025-01-05)
+
+
+### Features
+
+* add battery level indicator using LED array ([1bb2f21](https://github.com/olipayne/Arduino-Morse-Radio/commit/1bb2f21452901c93cfbf712d6c471598c6af7258))
+
+
+
 # [1.3.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.2.0...v1.3.0) (2025-01-05)
 
 
@@ -39,15 +48,6 @@
 ### BREAKING CHANGES
 
 * LED control moved to FreeRTOS task, battery check no longer controls LED directly
-
-
-
-# [0.17.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.16.0...v0.17.0) (2024-12-28)
-
-
-### Features
-
-* enhance power LED behavior with FreeRTOS task ([40ed174](https://github.com/olipayne/Arduino-Morse-Radio/commit/40ed174dfbee5af9d326a76ef5409288fd8f53c6))
 
 
 
