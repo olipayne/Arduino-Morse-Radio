@@ -39,6 +39,9 @@ namespace PWMChannels
   constexpr uint8_t DECODE = 2;    // Decode speed control
   constexpr uint8_t CARRIER = 3;   // Signal strength indicator
   constexpr uint8_t POWER_LED = 4; // Power LED control
+  constexpr uint8_t LW_LED = 5;    // Long wave LED for battery indicator
+  constexpr uint8_t MW_LED = 6;    // Medium wave LED for battery indicator
+  constexpr uint8_t SW_LED = 7;    // Short wave LED for battery indicator
 }
 
 // LED Configuration Namespace

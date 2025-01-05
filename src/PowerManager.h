@@ -41,6 +41,7 @@ public:
     bool isLowBattery();
     bool isUSBPowered() { return ums3.getVbusPresent(); }
     void updatePowerLED();
+    void displayBatteryLevel();
     void enterDeepSleep(SleepReason reason = SleepReason::POWER_OFF);
 
 private:
