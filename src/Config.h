@@ -21,14 +21,14 @@ namespace Pins
 
   // Output Pins
   constexpr int BACKLIGHT = 33;
-  constexpr int POWER_LED = 35;
+  constexpr int POWER_LED = 44;
   constexpr int LW_LED = 36;
   constexpr int MW_LED = 37;
   constexpr int SW_LED = 38;
   constexpr int LOCK_LED = 7;
   constexpr int CARRIER_PWM = 10;
   constexpr int DECODE_PWM = 3;
-  constexpr int MORSE_LEDS = 44;
+  constexpr int MORSE_LEDS = 35;
   constexpr int SPEAKER = 1;
 }
 
