@@ -1,3 +1,12 @@
+# [1.3.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.2.0...v1.3.0) (2025-01-05)
+
+
+### Features
+
+* **power:** implement momentary power switch functionality ([729b1b5](https://github.com/olipayne/Arduino-Morse-Radio/commit/729b1b56976dbf1bdefa7ff402d5fba7c0ead552))
+
+
+
 # [1.2.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.1.0...v1.2.0) (2025-01-05)
 
 
@@ -39,23 +48,6 @@
 ### Features
 
 * enhance power LED behavior with FreeRTOS task ([40ed174](https://github.com/olipayne/Arduino-Morse-Radio/commit/40ed174dfbee5af9d326a76ef5409288fd8f53c6))
-
-
-
-# [0.16.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.15.3...v0.16.0) (2024-12-28)
-
-
-### Bug Fixes
-
-* forgot to migrate ([9014d0a](https://github.com/olipayne/Arduino-Morse-Radio/commit/9014d0aa599449c36cbeb957b50106c0857d22b7))
-* improve power switch reliability and deep sleep wake-up ([939e821](https://github.com/olipayne/Arduino-Morse-Radio/commit/939e82170dbf46deeba808d6f421f735a6ec969e))
-
-
-### Features
-
-* add station enable/disable functionality ([6d532db](https://github.com/olipayne/Arduino-Morse-Radio/commit/6d532dbaf752f026502f86f4bde700b757154303))
-* **audio:** implement volume smoothing ([2054707](https://github.com/olipayne/Arduino-Morse-Radio/commit/2054707e2c7a1417f434ba86e77f7bd4dc4ac400))
-* improve station configuration UI ([ad893c5](https://github.com/olipayne/Arduino-Morse-Radio/commit/ad893c580c0bfc273143bfa4160b126b883d8570))
 
 
 
