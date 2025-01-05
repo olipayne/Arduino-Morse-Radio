@@ -23,7 +23,7 @@ namespace StationDefaults
         {"Monaco", 2400, WaveBand::LONG_WAVE, "BASEMENT HOLDS SECRET"},
         {"Oslo", 2900, WaveBand::LONG_WAVE, "CHECK THE BOOKSHELF"},
         {"Ankara", 3200, WaveBand::LONG_WAVE, "THIRD FLOOR NEXT"},
-        {"Kiev", 3900, WaveBand::LONG_WAVE, "FINAL CODE 1893"},
+        {"Tunis", 3900, WaveBand::LONG_WAVE, "FINAL CODE 1893"},
 
         // Medium Wave
         {"Hilversum", 300, WaveBand::MEDIUM_WAVE, "START IN CONFERENCE ROOM"},

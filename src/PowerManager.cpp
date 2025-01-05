@@ -15,25 +15,17 @@ void PowerManager::begin()
 {
     btStop();
 
-    // Initialize Serial for debugging
-    Serial.begin(115200);
-    Serial.println("PowerManager initializing...");
-
     // Initialize UMS3
     ums3.begin();
-    Serial.println("UMS3 initialized");
 
     // Configure pins
     configurePins();
-    Serial.println("Pins configured");
 
     // Start LED task
     startLEDTask();
-    Serial.println("LED task started");
 
     // Initial power indicator update
     updatePowerIndicators(true);
-    Serial.println("Power indicators updated");
 
     // Enable the 3.3V 1 power supply
     ums3.setLDO2Power(true);
@@ -89,63 +81,70 @@ void PowerManager::LEDTaskCode(void *parameter)
     uint32_t lastFlashTime = 0;
     uint32_t lastBatteryReadTime = 0;
     bool flashState = false;
-    
+
     // Get initial battery reading
     float cachedBatteryVoltage = powerManager->getBatteryVoltage();
     float batteryPercent = constrain(
         (cachedBatteryVoltage - LEDConfig::BATTERY_MIN_V) /
-        (LEDConfig::BATTERY_MAX_V - LEDConfig::BATTERY_MIN_V) * 100.0f,
+            (LEDConfig::BATTERY_MAX_V - LEDConfig::BATTERY_MIN_V) * 100.0f,
         0.0f, 100.0f);
-    uint8_t baseBrightness = (uint8_t)(LEDConfig::MAX_BRIGHTNESS * 
-        (0.2f + (batteryPercent / 100.0f) * 0.8f));
+    uint8_t baseBrightness = (uint8_t)(LEDConfig::MAX_BRIGHTNESS *
+                                       (0.2f + (batteryPercent / 100.0f) * 0.8f));
     lastBatteryReadTime = startTime;
 
     while (true)
     {
         bool usbConnected = powerManager->ums3.getVbusPresent();
         uint32_t currentTime = millis();
-        
+
         // Update battery reading every 10 seconds
-        if (currentTime - lastBatteryReadTime >= 10000) {
+        if (currentTime - lastBatteryReadTime >= 10000)
+        {
             cachedBatteryVoltage = powerManager->getBatteryVoltage();
-            
+
             // Calculate base brightness from battery level (20-100% of max)
             batteryPercent = constrain(
                 (cachedBatteryVoltage - LEDConfig::BATTERY_MIN_V) /
-                (LEDConfig::BATTERY_MAX_V - LEDConfig::BATTERY_MIN_V) * 100.0f,
+                    (LEDConfig::BATTERY_MAX_V - LEDConfig::BATTERY_MIN_V) * 100.0f,
                 0.0f, 100.0f);
-            
-            baseBrightness = (uint8_t)(LEDConfig::MAX_BRIGHTNESS * 
-                (0.2f + (batteryPercent / 100.0f) * 0.8f));
-                
+
+            baseBrightness = (uint8_t)(LEDConfig::MAX_BRIGHTNESS *
+                                       (0.2f + (batteryPercent / 100.0f) * 0.8f));
+
             lastBatteryReadTime = currentTime;
         }
-        
-        if (usbConnected) {
+
+        if (usbConnected)
+        {
             // USB is connected, pulse between battery level and 100%
             float progress = (float)((currentTime - startTime) % LEDConfig::PULSE_PERIOD_MS) / LEDConfig::PULSE_PERIOD_MS;
-            
+
             // Sine wave adjusted to pulse between base brightness and max
             float pulseRange = LEDConfig::MAX_BRIGHTNESS - baseBrightness;
             float brightness = baseBrightness + (pulseRange * (sin(progress * 2 * PI) + 1.0f) * 0.5f);
-            
+
             ledcWrite(PWMChannels::POWER_LED, (uint8_t)brightness);
-        } else {
+        }
+        else
+        {
             // USB not connected, show battery level
             // Critical battery level - flash the LED
-            if (cachedBatteryVoltage <= LEDConfig::BATTERY_MIN_V) {
-                if (currentTime - lastFlashTime >= 1000) {  // 1Hz flash rate
+            if (cachedBatteryVoltage <= LEDConfig::BATTERY_MIN_V)
+            {
+                if (currentTime - lastFlashTime >= 1000)
+                { // 1Hz flash rate
                     flashState = !flashState;
                     lastFlashTime = currentTime;
                 }
                 ledcWrite(PWMChannels::POWER_LED, flashState ? LEDConfig::MAX_BRIGHTNESS : 0);
             }
             // Normal battery operation - steady brightness indicates level
-            else {
+            else
+            {
                 ledcWrite(PWMChannels::POWER_LED, baseBrightness);
             }
         }
-        
+
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
     }
 }
@@ -184,7 +183,7 @@ void PowerManager::shutdownAllPins()
 void PowerManager::configurePins()
 {
     // Configure LED pins
-    pinMode(Pins::POWER_LED, OUTPUT);  // Power LED will be configured in LED task
+    pinMode(Pins::POWER_LED, OUTPUT); // Power LED will be configured in LED task
     pinMode(Pins::LW_LED, OUTPUT);
     pinMode(Pins::MW_LED, OUTPUT);
     pinMode(Pins::SW_LED, OUTPUT);
@@ -240,17 +239,11 @@ bool PowerManager::checkForInputChanges()
     if (abs(currentTuning - lastTuningValue) > POTENTIOMETER_THRESHOLD)
     {
         activity = true;
-#ifdef DEBUG_SERIAL_OUTPUT
-        Serial.printf("Tuning change: %d -> %d\n\r", lastTuningValue, currentTuning);
-#endif
     }
 
     if (abs(currentVolume - lastVolumeValue) > POTENTIOMETER_THRESHOLD)
     {
         activity = true;
-#ifdef DEBUG_SERIAL_OUTPUT
-        Serial.printf("Volume change: %d -> %d\n\r", lastVolumeValue, currentVolume);
-#endif
     }
 
     // Check digital inputs for state changes
@@ -263,41 +256,26 @@ bool PowerManager::checkForInputChanges()
     if (currentLWState != lastLWState)
     {
         activity = true;
-#ifdef DEBUG_SERIAL_OUTPUT
-        Serial.println("LW switch changed");
-#endif
     }
 
     if (currentMWState != lastMWState)
     {
         activity = true;
-#ifdef DEBUG_SERIAL_OUTPUT
-        Serial.println("MW switch changed");
-#endif
     }
 
     if (currentSlowState != lastSlowState)
     {
         activity = true;
-#ifdef DEBUG_SERIAL_OUTPUT
-        Serial.println("Slow decode changed");
-#endif
     }
 
     if (currentMedState != lastMedState)
     {
         activity = true;
-#ifdef DEBUG_SERIAL_OUTPUT
-        Serial.println("Med decode changed");
-#endif
     }
 
     if (currentWiFiState != lastWiFiState)
     {
         activity = true;
-#ifdef DEBUG_SERIAL_OUTPUT
-        Serial.println("WiFi button changed");
-#endif
     }
 
     // Update stored states
@@ -328,8 +306,6 @@ void PowerManager::displayBatteryStatus()
     float voltage = getBatteryVoltage();
     bool isPluggedIn = ums3.getVbusPresent();
 
-    Serial.printf("Battery voltage: %.2fV\n\r", voltage);
-
     ums3.setPixelBrightness(10);
 
     if (isPluggedIn)
@@ -357,10 +333,6 @@ void PowerManager::displayBatteryStatus()
 
 void PowerManager::enterDeepSleep(SleepReason reason)
 {
-#ifdef DEBUG_SERIAL_OUTPUT
-    Serial.println("Entering deep sleep mode...");
-#endif
-
     // Shutdown all pins and peripherals
     shutdownAllPins();
 
@@ -391,9 +363,6 @@ void PowerManager::checkActivity()
             // Only enter deep sleep if power switch is still ON
             if (digitalRead(Pins::POWER_SWITCH) == HIGH)
             {
-#ifdef DEBUG_SERIAL_OUTPUT
-                Serial.println("Inactivity timeout - entering deep sleep");
-#endif
                 enterDeepSleep(SleepReason::INACTIVITY);
             }
         }
