@@ -15,38 +15,28 @@ void PowerManager::begin()
 {
     btStop();
 
-    // Initialize FeatherS3 specific features
+    // Initialize Serial for debugging
+    Serial.begin(115200);
+    Serial.println("PowerManager initializing...");
+
+    // Initialize UMS3
     ums3.begin();
+    Serial.println("UMS3 initialized");
 
-    // Set up PWM for power LED (do this early for proper shutdown)
-    ledcSetup(LED_CHANNEL, LED_FREQ, LED_RESOLUTION);
-    ledcAttachPin(Pins::POWER_LED, LED_CHANNEL);
-    ledcWrite(LED_CHANNEL, 0);  // Start with LED off
-
-    // If we're waking from inactivity sleep and switch is still ON, go back to sleep
-    if (inactivitySleep && digitalRead(Pins::POWER_SWITCH) == HIGH) {
-        enterDeepSleep(SleepReason::INACTIVITY);
-        return;
-    }
-    
-    // Clear inactivity flag since we're awake now
-    inactivitySleep = false;
-
-    // Enable the 3.3V 1 power supply
-    ums3.setLDO2Power(true);
-
-    // Configure pins with explicit pull-ups and set pin modes
+    // Configure pins
     configurePins();
-
-    // Turn on power LED at full brightness
-    ledcWrite(LED_CHANNEL, MAX_BRIGHTNESS);
+    Serial.println("Pins configured");
 
     // Start LED task
     startLEDTask();
+    Serial.println("LED task started");
 
-    // Check power switch state immediately and update indicators
-    bool powerOn = (digitalRead(Pins::POWER_SWITCH) == HIGH);
-    updatePowerIndicators(powerOn);
+    // Initial power indicator update
+    updatePowerIndicators(true);
+    Serial.println("Power indicators updated");
+
+    // Enable the 3.3V 1 power supply
+    ums3.setLDO2Power(true);
 
     // Configure ADC for power efficiency
     configureADC();
@@ -61,226 +51,164 @@ void PowerManager::begin()
 
 void PowerManager::startLEDTask()
 {
-    if (ledTaskHandle == nullptr) {
+    if (ledTaskHandle == nullptr)
+    {
         xTaskCreate(
-            LEDTaskCode,        // Task function
-            "LED_Task",         // Task name
-            2048,              // Stack size
-            this,              // Task parameters (this pointer)
-            1,                 // Priority
-            &ledTaskHandle     // Task handle
+            LEDTaskCode,   // Task function
+            "LED_Task",    // Task name
+            4096,          // Stack size
+            this,          // Task parameters (this pointer)
+            1,             // Priority
+            &ledTaskHandle // Task handle
         );
     }
 }
 
 void PowerManager::stopLEDTask()
 {
-    if (ledTaskHandle != nullptr) {
+    if (ledTaskHandle != nullptr)
+    {
         vTaskDelete(ledTaskHandle);
         ledTaskHandle = nullptr;
     }
 }
 
-void PowerManager::LEDTaskCode(void* parameter)
+void PowerManager::LEDTaskCode(void *parameter)
 {
-    PowerManager* powerManager = static_cast<PowerManager*>(parameter);
+    // Get pointer to PowerManager instance to access ums3
+    PowerManager *powerManager = static_cast<PowerManager *>(parameter);
+
+    // Initialize PWM for LED
+    ledcSetup(PWMChannels::POWER_LED, LEDConfig::PWM_FREQUENCY, LEDConfig::PWM_RESOLUTION);
+    ledcAttachPin(Pins::POWER_LED, PWMChannels::POWER_LED);
+    ledcWrite(PWMChannels::POWER_LED, 0); // Start with LED off
+
+    uint32_t startTime = millis();
+    const TickType_t xFrequency = pdMS_TO_TICKS(20); // 50Hz update rate
     TickType_t xLastWakeTime = xTaskGetTickCount();
-    const TickType_t xFrequency = pdMS_TO_TICKS(PULSE_INTERVAL);
-
-    while (true) {
-        float voltage = powerManager->getBatteryVoltage();
-        
-        // Critical battery level - flash the LED
-        if (voltage <= LOW_BATTERY_THRESHOLD) {
-            static bool flashState = false;
-            flashState = !flashState;
-            ledcWrite(LED_CHANNEL, flashState ? CRITICAL_BRIGHTNESS : 0);
-        }
-        // Normal operation - handle pulsing or steady state
-        else if (powerManager->shouldPulse) {
-            if (powerManager->pulseIncreasing) {
-                if (powerManager->currentBrightness <= MAX_BRIGHTNESS - BRIGHTNESS_STEP) {
-                    powerManager->currentBrightness += BRIGHTNESS_STEP;
-                } else {
-                    powerManager->currentBrightness = MAX_BRIGHTNESS;
-                    powerManager->pulseIncreasing = false;
-                }
-            } else {
-                if (powerManager->currentBrightness >= MIN_BRIGHTNESS + BRIGHTNESS_STEP) {
-                    powerManager->currentBrightness -= BRIGHTNESS_STEP;
-                } else {
-                    powerManager->currentBrightness = MIN_BRIGHTNESS;
-                    powerManager->pulseIncreasing = true;
-                }
-            }
-            ledcWrite(LED_CHANNEL, powerManager->currentBrightness);
-        }
-        vTaskDelayUntil(&xLastWakeTime, xFrequency);
-    }
-}
-
-void PowerManager::updatePowerLED()
-{
-    if (!digitalRead(Pins::POWER_SWITCH)) {
-        shouldPulse = false;
-        ledcWrite(LED_CHANNEL, 0);
-        return;
-    }
-
-    float voltage = getBatteryVoltage();
+    uint32_t lastFlashTime = 0;
+    uint32_t lastBatteryReadTime = 0;
+    bool flashState = false;
     
-    // If plugged in and fully charged, solid LED
-    if (isUSBPowered() && voltage >= FULLY_CHARGED_THRESHOLD) {
-        shouldPulse = false;
-        ledcWrite(LED_CHANNEL, MAX_BRIGHTNESS);
-        return;
-    }
+    // Get initial battery reading
+    float cachedBatteryVoltage = powerManager->getBatteryVoltage();
+    float batteryPercent = constrain(
+        (cachedBatteryVoltage - LEDConfig::BATTERY_MIN_V) /
+        (LEDConfig::BATTERY_MAX_V - LEDConfig::BATTERY_MIN_V) * 100.0f,
+        0.0f, 100.0f);
+    uint8_t baseBrightness = (uint8_t)(LEDConfig::MAX_BRIGHTNESS * 
+        (0.2f + (batteryPercent / 100.0f) * 0.8f));
+    lastBatteryReadTime = startTime;
 
-    // If plugged in but not fully charged, pulse
-    if (isUSBPowered()) {
-        shouldPulse = true;
-        return;
-    }
-
-    // On battery power, LED task will handle brightness
-    shouldPulse = false;
-}
-
-void PowerManager::checkPowerSwitch()
-{
-    // Add debouncing for power switch with longer debounce time
-    static unsigned long lastDebounceTime = 0;
-    static int lastPowerState = -1;
-    const unsigned long debounceDelay = 100;  // Increased to 100ms for more stability
-
-    int currentPowerState = gpio_get_level(static_cast<gpio_num_t>(Pins::POWER_SWITCH));
-    unsigned long currentTime = millis();
-
-    // If the state has changed, reset debounce timer
-    if (currentPowerState != lastPowerState) {
-        lastDebounceTime = currentTime;
-        lastPowerState = currentPowerState;
-        return;
-    }
-
-    // Only act if debounce time has passed
-    if ((currentTime - lastDebounceTime) > debounceDelay) {
-        bool powerOn = (currentPowerState == HIGH);
-        updatePowerIndicators(powerOn);
-
-        // If power switch is pulled low (switched off)
-        if (!powerOn) {
-            enterDeepSleep(SleepReason::POWER_OFF);
+    while (true)
+    {
+        bool usbConnected = powerManager->ums3.getVbusPresent();
+        uint32_t currentTime = millis();
+        
+        // Update battery reading every 10 seconds
+        if (currentTime - lastBatteryReadTime >= 10000) {
+            cachedBatteryVoltage = powerManager->getBatteryVoltage();
+            
+            // Calculate base brightness from battery level (20-100% of max)
+            batteryPercent = constrain(
+                (cachedBatteryVoltage - LEDConfig::BATTERY_MIN_V) /
+                (LEDConfig::BATTERY_MAX_V - LEDConfig::BATTERY_MIN_V) * 100.0f,
+                0.0f, 100.0f);
+            
+            baseBrightness = (uint8_t)(LEDConfig::MAX_BRIGHTNESS * 
+                (0.2f + (batteryPercent / 100.0f) * 0.8f));
+                
+            lastBatteryReadTime = currentTime;
         }
+        
+        if (usbConnected) {
+            // USB is connected, pulse between battery level and 100%
+            float progress = (float)((currentTime - startTime) % LEDConfig::PULSE_PERIOD_MS) / LEDConfig::PULSE_PERIOD_MS;
+            
+            // Sine wave adjusted to pulse between base brightness and max
+            float pulseRange = LEDConfig::MAX_BRIGHTNESS - baseBrightness;
+            float brightness = baseBrightness + (pulseRange * (sin(progress * 2 * PI) + 1.0f) * 0.5f);
+            
+            ledcWrite(PWMChannels::POWER_LED, (uint8_t)brightness);
+        } else {
+            // USB not connected, show battery level
+            // Critical battery level - flash the LED
+            if (cachedBatteryVoltage <= LEDConfig::BATTERY_MIN_V) {
+                if (currentTime - lastFlashTime >= 1000) {  // 1Hz flash rate
+                    flashState = !flashState;
+                    lastFlashTime = currentTime;
+                }
+                ledcWrite(PWMChannels::POWER_LED, flashState ? LEDConfig::MAX_BRIGHTNESS : 0);
+            }
+            // Normal battery operation - steady brightness indicates level
+            else {
+                ledcWrite(PWMChannels::POWER_LED, baseBrightness);
+            }
+        }
+        
+        vTaskDelayUntil(&xLastWakeTime, xFrequency);
     }
 }
 
 void PowerManager::updatePowerIndicators(bool powerOn)
 {
-    digitalWrite(Pins::BACKLIGHT, powerOn ? HIGH : LOW);
-    digitalWrite(Pins::POWER_LED, powerOn ? HIGH : LOW);
+    if (powerOn)
+    {
+        digitalWrite(Pins::BACKLIGHT, HIGH);
+    }
+    else
+    {
+        digitalWrite(Pins::BACKLIGHT, LOW);
+        digitalWrite(Pins::LW_LED, LOW);
+        digitalWrite(Pins::MW_LED, LOW);
+        digitalWrite(Pins::SW_LED, LOW);
+        digitalWrite(Pins::LOCK_LED, LOW);
+    }
+}
+
+void PowerManager::updatePowerLED()
+{
+    // This function is now handled by the LED task
 }
 
 void PowerManager::shutdownAllPins()
 {
-    // Stop morse code output
-    MorseCode::getInstance().stop();
-
-    // Turn off all LEDs
-    ledcWrite(LED_CHANNEL, 0);          // Power LED
+    // Turn off all output pins except Power LED (handled by LED task)
     digitalWrite(Pins::BACKLIGHT, LOW);
     digitalWrite(Pins::LW_LED, LOW);
     digitalWrite(Pins::MW_LED, LOW);
     digitalWrite(Pins::SW_LED, LOW);
     digitalWrite(Pins::LOCK_LED, LOW);
-    digitalWrite(Pins::MORSE_LEDS, LOW);
-
-    // Turn off all PWM channels
-    ledcWrite(PWMChannels::AUDIO, 0);   // Audio output
-    ledcWrite(PWMChannels::DECODE, 0);  // Decode speed control
-    ledcWrite(PWMChannels::CARRIER, 0); // Signal strength indicator
-
-    // Disable power supply
-    ums3.setLDO2Power(false);
 }
 
-void PowerManager::enterDeepSleep(SleepReason reason)
+void PowerManager::configurePins()
 {
-#ifdef DEBUG_SERIAL_OUTPUT
-    Serial.println("Entering deep sleep mode...");
-#endif
+    // Configure LED pins
+    pinMode(Pins::POWER_LED, OUTPUT);  // Power LED will be configured in LED task
+    pinMode(Pins::LW_LED, OUTPUT);
+    pinMode(Pins::MW_LED, OUTPUT);
+    pinMode(Pins::SW_LED, OUTPUT);
+    pinMode(Pins::LOCK_LED, OUTPUT);
+    pinMode(Pins::BACKLIGHT, OUTPUT);
 
-    // Shutdown all pins and peripherals
-    shutdownAllPins();
+    // Configure input pins
+    pinMode(Pins::POWER_SWITCH, INPUT_PULLUP);
+    pinMode(Pins::LW_BAND_SWITCH, INPUT_PULLUP);
+    pinMode(Pins::MW_BAND_SWITCH, INPUT_PULLUP);
+    pinMode(Pins::SLOW_DECODE, INPUT_PULLUP);
+    pinMode(Pins::MED_DECODE, INPUT_PULLUP);
+    pinMode(Pins::WIFI_BUTTON, INPUT_PULLUP);
 
-    if (reason == SleepReason::INACTIVITY) {
-        // Set flag in RTC memory
-        inactivitySleep = true;
-        // Wake when power switch goes low (turned off)
-        esp_sleep_enable_ext0_wakeup(static_cast<gpio_num_t>(Pins::POWER_SWITCH), 0);
-    } else {
-        // Wake when power switch goes high (turned on)
-        esp_sleep_enable_ext0_wakeup(static_cast<gpio_num_t>(Pins::POWER_SWITCH), 1);
-    }
+    // Configure ADC pins
+    pinMode(Pins::TUNING_POT, INPUT);
+    pinMode(Pins::VOLUME_POT, INPUT);
 
-    // Enter deep sleep
-    esp_deep_sleep_start();
-}
-
-void PowerManager::checkActivity()
-{
-    if (!checkForInputChanges()) {
-        unsigned long currentTime = millis();
-        if (currentTime - lastActivityTime >= INACTIVITY_TIMEOUT) {
-            // Only enter deep sleep if power switch is still ON
-            if (digitalRead(Pins::POWER_SWITCH) == HIGH) {
-#ifdef DEBUG_SERIAL_OUTPUT
-                Serial.println("Inactivity timeout - entering deep sleep");
-#endif
-                enterDeepSleep(SleepReason::INACTIVITY);
-            }
-        }
-    }
-}
-
-void PowerManager::configureADC()
-{
-    // Set ADC resolution to maximum
-    analogReadResolution(12);
-    
-    // Configure ADC for better stability
-    adcAttachPin(Pins::TUNING_POT);
-    adcAttachPin(Pins::VOLUME_POT);
-    
-    // Set attenuation for the full voltage range (0-3.3V)
-    analogSetPinAttenuation(Pins::TUNING_POT, ADC_11db);
-    analogSetPinAttenuation(Pins::VOLUME_POT, ADC_11db);
-}
-
-int PowerManager::readADC(int pin)
-{
-    const int samples = 5;
-    int readings[samples];
-    
-    // Take multiple samples with a small delay between them
-    for(int i = 0; i < samples; i++) {
-        readings[i] = analogRead(pin);
-        delay(2); // Small delay between readings
-    }
-    
-    // Sort readings (insertion sort for small array)
-    for(int i = 1; i < samples; i++) {
-        int key = readings[i];
-        int j = i - 1;
-        while(j >= 0 && readings[j] > key) {
-            readings[j + 1] = readings[j];
-            j--;
-        }
-        readings[j + 1] = key;
-    }
-    
-    // Return median value (middle reading)
-    return readings[samples / 2];
+    // Initialize LED states (except Power LED)
+    digitalWrite(Pins::LW_LED, LOW);
+    digitalWrite(Pins::MW_LED, LOW);
+    digitalWrite(Pins::SW_LED, LOW);
+    digitalWrite(Pins::LOCK_LED, LOW);
+    digitalWrite(Pins::BACKLIGHT, LOW);
 }
 
 void PowerManager::updatePinStates()
@@ -290,6 +218,12 @@ void PowerManager::updatePinStates()
     lastSlowState = digitalRead(Pins::SLOW_DECODE) == LOW;
     lastMedState = digitalRead(Pins::MED_DECODE) == LOW;
     lastWiFiState = digitalRead(Pins::WIFI_BUTTON) == LOW;
+
+    // Update LED states based on current mode
+    WaveBand currentBand = ConfigManager::getInstance().getWaveBand();
+    digitalWrite(Pins::LW_LED, currentBand == WaveBand::LONG_WAVE);
+    digitalWrite(Pins::MW_LED, currentBand == WaveBand::MEDIUM_WAVE);
+    digitalWrite(Pins::SW_LED, currentBand == WaveBand::SHORT_WAVE);
 }
 
 bool PowerManager::checkForInputChanges()
@@ -389,73 +323,6 @@ bool PowerManager::isLowBattery()
     return voltage < LOW_BATTERY_THRESHOLD;
 }
 
-void PowerManager::configurePins()
-{
-    // Configure power switch pin with both pull-up and input filtering
-    gpio_config_t powerSwitchConfig = {
-        .pin_bit_mask = (1ULL << Pins::POWER_SWITCH),
-        .mode = GPIO_MODE_INPUT,
-        .pull_up_en = GPIO_PULLUP_ENABLE,
-        .pull_down_en = GPIO_PULLDOWN_DISABLE,
-        .intr_type = GPIO_INTR_DISABLE
-    };
-    gpio_config(&powerSwitchConfig);
-
-    // Set maximum drive strength for the power switch pin
-    gpio_set_drive_capability(static_cast<gpio_num_t>(Pins::POWER_SWITCH), GPIO_DRIVE_CAP_3);
-    
-    // Enable internal input filter to reduce noise
-    REG_SET_BIT(GPIO_PIN_MUX_REG[Pins::POWER_SWITCH], FUN_IE);
-    
-    // Configure the pin for wake-up with strong pull-up
-    gpio_hold_dis(static_cast<gpio_num_t>(Pins::POWER_SWITCH));
-    gpio_deep_sleep_hold_dis();
-    
-    // Configure for RTC wake-up
-    gpio_pad_select_gpio(static_cast<uint32_t>(Pins::POWER_SWITCH));
-    gpio_set_direction(static_cast<gpio_num_t>(Pins::POWER_SWITCH), GPIO_MODE_INPUT);
-    gpio_pullup_en(static_cast<gpio_num_t>(Pins::POWER_SWITCH));
-    gpio_pulldown_dis(static_cast<gpio_num_t>(Pins::POWER_SWITCH));
-    gpio_hold_en(static_cast<gpio_num_t>(Pins::POWER_SWITCH));
-
-    // Configure input pins
-    pinMode(Pins::LW_BAND_SWITCH, INPUT_PULLUP);
-    pinMode(Pins::MW_BAND_SWITCH, INPUT_PULLUP);
-    pinMode(Pins::SLOW_DECODE, INPUT_PULLUP);
-    pinMode(Pins::MED_DECODE, INPUT_PULLUP);
-    pinMode(Pins::WIFI_BUTTON, INPUT_PULLUP);
-
-    // Configure output pins
-    pinMode(Pins::BACKLIGHT, OUTPUT);
-    pinMode(Pins::POWER_LED, OUTPUT);
-    digitalWrite(Pins::BACKLIGHT, LOW);
-    digitalWrite(Pins::POWER_LED, LOW);
-
-    // Small delay to let pins settle
-    delay(10);
-
-    // Configure RTC GPIO for wake capabilities
-    gpio_set_direction(static_cast<gpio_num_t>(Pins::LW_BAND_SWITCH), GPIO_MODE_INPUT);
-    gpio_set_direction(static_cast<gpio_num_t>(Pins::MW_BAND_SWITCH), GPIO_MODE_INPUT);
-    gpio_set_direction(static_cast<gpio_num_t>(Pins::SLOW_DECODE), GPIO_MODE_INPUT);
-    gpio_set_direction(static_cast<gpio_num_t>(Pins::MED_DECODE), GPIO_MODE_INPUT);
-    gpio_set_direction(static_cast<gpio_num_t>(Pins::WIFI_BUTTON), GPIO_MODE_INPUT);
-
-    // Enable pull-ups on RTC GPIO
-    gpio_pullup_en(static_cast<gpio_num_t>(Pins::LW_BAND_SWITCH));
-    gpio_pullup_en(static_cast<gpio_num_t>(Pins::MW_BAND_SWITCH));
-    gpio_pullup_en(static_cast<gpio_num_t>(Pins::SLOW_DECODE));
-    gpio_pullup_en(static_cast<gpio_num_t>(Pins::MED_DECODE));
-    gpio_pullup_en(static_cast<gpio_num_t>(Pins::WIFI_BUTTON));
-
-    // Disable pull-downs to prevent conflicts
-    gpio_pulldown_dis(static_cast<gpio_num_t>(Pins::LW_BAND_SWITCH));
-    gpio_pulldown_dis(static_cast<gpio_num_t>(Pins::MW_BAND_SWITCH));
-    gpio_pulldown_dis(static_cast<gpio_num_t>(Pins::SLOW_DECODE));
-    gpio_pulldown_dis(static_cast<gpio_num_t>(Pins::MED_DECODE));
-    gpio_pulldown_dis(static_cast<gpio_num_t>(Pins::WIFI_BUTTON));
-}
-
 void PowerManager::displayBatteryStatus()
 {
     float voltage = getBatteryVoltage();
@@ -488,28 +355,122 @@ void PowerManager::displayBatteryStatus()
     }
 }
 
-void PowerManager::updateLEDBrightness(float batteryVoltage)
+void PowerManager::enterDeepSleep(SleepReason reason)
 {
-    unsigned long currentTime = millis();
-    
-    // Critical battery level - flash the LED
-    if (batteryVoltage <= LOW_BATTERY_THRESHOLD) {
-        if (currentTime - lastFlashUpdate >= FLASH_INTERVAL) {
-            lastFlashUpdate = currentTime;
-            currentBrightness = (currentBrightness == 0) ? CRITICAL_BRIGHTNESS : 0;
-            ledcWrite(LED_CHANNEL, currentBrightness);
+#ifdef DEBUG_SERIAL_OUTPUT
+    Serial.println("Entering deep sleep mode...");
+#endif
+
+    // Shutdown all pins and peripherals
+    shutdownAllPins();
+
+    if (reason == SleepReason::INACTIVITY)
+    {
+        // Set flag in RTC memory
+        inactivitySleep = true;
+        // Wake when power switch goes low (turned off)
+        esp_sleep_enable_ext0_wakeup(static_cast<gpio_num_t>(Pins::POWER_SWITCH), 0);
+    }
+    else
+    {
+        // Wake when power switch goes high (turned on)
+        esp_sleep_enable_ext0_wakeup(static_cast<gpio_num_t>(Pins::POWER_SWITCH), 1);
+    }
+
+    // Enter deep sleep
+    esp_deep_sleep_start();
+}
+
+void PowerManager::checkActivity()
+{
+    if (!checkForInputChanges())
+    {
+        unsigned long currentTime = millis();
+        if (currentTime - lastActivityTime >= INACTIVITY_TIMEOUT)
+        {
+            // Only enter deep sleep if power switch is still ON
+            if (digitalRead(Pins::POWER_SWITCH) == HIGH)
+            {
+#ifdef DEBUG_SERIAL_OUTPUT
+                Serial.println("Inactivity timeout - entering deep sleep");
+#endif
+                enterDeepSleep(SleepReason::INACTIVITY);
+            }
         }
+    }
+}
+
+void PowerManager::configureADC()
+{
+    // Set ADC resolution to maximum
+    analogReadResolution(12);
+
+    // Configure ADC for better stability
+    adcAttachPin(Pins::TUNING_POT);
+    adcAttachPin(Pins::VOLUME_POT);
+
+    // Set attenuation for the full voltage range (0-3.3V)
+    analogSetPinAttenuation(Pins::TUNING_POT, ADC_11db);
+    analogSetPinAttenuation(Pins::VOLUME_POT, ADC_11db);
+}
+
+int PowerManager::readADC(int pin)
+{
+    const int samples = 5;
+    int readings[samples];
+
+    // Take multiple samples with a small delay between them
+    for (int i = 0; i < samples; i++)
+    {
+        readings[i] = analogRead(pin);
+        delay(2); // Small delay between readings
+    }
+
+    // Sort readings (insertion sort for small array)
+    for (int i = 1; i < samples; i++)
+    {
+        int key = readings[i];
+        int j = i - 1;
+        while (j >= 0 && readings[j] > key)
+        {
+            readings[j + 1] = readings[j];
+            j--;
+        }
+        readings[j + 1] = key;
+    }
+
+    // Return median value (middle reading)
+    return readings[samples / 2];
+}
+
+void PowerManager::checkPowerSwitch()
+{
+    // Add debouncing for power switch with longer debounce time
+    static unsigned long lastDebounceTime = 0;
+    static int lastPowerState = -1;
+    const unsigned long debounceDelay = 100; // Increased to 100ms for more stability
+
+    int currentPowerState = gpio_get_level(static_cast<gpio_num_t>(Pins::POWER_SWITCH));
+    unsigned long currentTime = millis();
+
+    // If the state has changed, reset debounce timer
+    if (currentPowerState != lastPowerState)
+    {
+        lastDebounceTime = currentTime;
+        lastPowerState = currentPowerState;
         return;
     }
-    
-    // Normal battery operation - brightness indicates level
-    float voltageRange = MAX_BATTERY_VOLTAGE - MIN_BATTERY_VOLTAGE;
-    float normalizedVoltage = (batteryVoltage - MIN_BATTERY_VOLTAGE) / voltageRange;
-    normalizedVoltage = constrain(normalizedVoltage, 0.0f, 1.0f);
-    
-    uint8_t brightness = MIN_BRIGHTNESS + (normalizedVoltage * (MAX_BRIGHTNESS - MIN_BRIGHTNESS));
-    if (brightness != currentBrightness) {
-        currentBrightness = brightness;
-        ledcWrite(LED_CHANNEL, currentBrightness);
+
+    // Only act if debounce time has passed
+    if ((currentTime - lastDebounceTime) > debounceDelay)
+    {
+        bool powerOn = (currentPowerState == HIGH);
+        updatePowerIndicators(powerOn);
+
+        // If power switch is pulled low (switched off)
+        if (!powerOn)
+        {
+            enterDeepSleep(SleepReason::POWER_OFF);
+        }
     }
 }

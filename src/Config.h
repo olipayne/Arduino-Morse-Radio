@@ -35,18 +35,25 @@ namespace Pins
 // PWM Channel Assignments
 namespace PWMChannels
 {
-  constexpr uint8_t AUDIO = 1;   // Audio output
-  constexpr uint8_t DECODE = 2;  // Decode speed control
-  constexpr uint8_t CARRIER = 3; // Signal strength indicator
+  constexpr uint8_t AUDIO = 1;     // Audio output
+  constexpr uint8_t DECODE = 2;    // Decode speed control
+  constexpr uint8_t CARRIER = 3;   // Signal strength indicator
+  constexpr uint8_t POWER_LED = 4; // Power LED control
 }
 
 // LED Configuration Namespace
 namespace LEDConfig
 {
   constexpr uint8_t PWM_RESOLUTION = 8;
-  constexpr uint32_t PWM_FREQUENCY = 200;
+  constexpr uint32_t PWM_FREQUENCY = 1000; // 1kHz PWM frequency
   constexpr uint8_t MAX_BRIGHTNESS = 255;
   constexpr uint8_t MIN_BRIGHTNESS = 0;
+  constexpr uint32_t PULSE_PERIOD_MS = 1000; // 1 second pulse period
+  
+  // LiPo battery voltage levels
+  constexpr float BATTERY_MIN_V = 3.2f;  // Battery empty (~0%)
+  constexpr float BATTERY_LOW_V = 3.5f;  // Battery low (~20%)
+  constexpr float BATTERY_MAX_V = 4.2f;  // Battery full (100%)
 }
 
 // Audio Configuration Namespace

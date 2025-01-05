@@ -50,48 +50,36 @@ private:
 
     void configurePins();
     void configureADC();
-    void updatePinStates();
-    void updatePowerIndicators(bool powerOn);
     int readADC(int pin);
-    void pulseLED();
     void startLEDTask();
     void stopLEDTask();
     static void LEDTaskCode(void *parameter);
-    void updateLEDBrightness(float batteryVoltage);
-    void shutdownAllPins(); // New function to handle all pin shutdown
     void displayBatteryStatus();
+    void updateLEDBrightness(float batteryVoltage);
+    void shutdownAllPins();
+    void updatePinStates();
+    void updatePowerIndicators(bool powerOn);
 
-    // RTC data structure that persists during deep sleep
-    RTC_DATA_ATTR static bool inactivitySleep;
+    // Task handle for LED control
+    TaskHandle_t ledTaskHandle = nullptr;
 
-    // LED control constants
-    static constexpr uint8_t LED_CHANNEL = 4;    // PWM channel for power LED
-    static constexpr uint32_t LED_FREQ = 5000;   // PWM frequency
-    static constexpr uint8_t LED_RESOLUTION = 8; // 8-bit resolution (0-255)
-    static constexpr uint8_t MAX_BRIGHTNESS = 255;
-    static constexpr uint8_t MIN_BRIGHTNESS = 10;
-    static constexpr uint8_t CRITICAL_BRIGHTNESS = 5;
-    static constexpr unsigned long PULSE_INTERVAL = 8;    // Reduced from 15ms to 8ms
-    static constexpr uint8_t BRIGHTNESS_STEP = 2;         // Add step size for faster changes
-    static constexpr unsigned long FLASH_INTERVAL = 1000; // ms between flashes for low battery
-
-    // State tracking
+    // State variables
+    bool shouldPulse = false;
+    static bool inactivitySleep;
     unsigned long lastActivityTime = 0;
     int lastTuningValue = 0;
     int lastVolumeValue = 0;
+    uint8_t currentBrightness = 0;
+    unsigned long lastFlashUpdate = 0;
+    
+    // Button states
     bool lastLWState = false;
     bool lastMWState = false;
     bool lastSlowState = false;
     bool lastMedState = false;
     bool lastWiFiState = false;
-    uint8_t currentBrightness = MAX_BRIGHTNESS;
-    bool pulseIncreasing = true;
-    unsigned long lastPulseUpdate = 0;
-    unsigned long lastFlashUpdate = 0;
-    TaskHandle_t ledTaskHandle = nullptr;
-    volatile bool shouldPulse = false;
 
-    // UMS3 instance
+    // Hardware instance
     UMS3 ums3;
 };
 
