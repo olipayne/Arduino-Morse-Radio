@@ -1,16 +1,16 @@
 #include <Arduino.h>
-#include <esp_sleep.h>
-#include <UMS3.h>
 #include <TaskScheduler.h>
+#include <UMS3.h>
+#include <esp_sleep.h>
 
-#include "Config.h"
-#include "PowerManager.h"
 #include "AudioManager.h"
+#include "Config.h"
 #include "MorseCode.h"
+#include "PowerManager.h"
+#include "SpeedManager.h"
 #include "StationManager.h"
 #include "WaveBandManager.h"
 #include "WiFiManager.h"
-#include "SpeedManager.h"
 
 // Task Scheduler
 Scheduler ts;
@@ -21,16 +21,14 @@ void systemUpdateCallback();
 void managerUpdateCallback();
 
 // Tasks
-Task tBatteryCheck(60000, TASK_FOREVER, &batteryCheckCallback); // Check battery every minute
-Task tSystemUpdate(20, TASK_FOREVER, &systemUpdateCallback);    // System update every 20ms
-Task tManagerUpdate(20, TASK_FOREVER, &managerUpdateCallback);  // Manager updates every 20ms
+Task tBatteryCheck(60000, TASK_FOREVER, &batteryCheckCallback);  // Check battery every minute
+Task tSystemUpdate(20, TASK_FOREVER, &systemUpdateCallback);     // System update every 20ms
+Task tManagerUpdate(20, TASK_FOREVER, &managerUpdateCallback);   // Manager updates every 20ms
 
 // Main system manager class
-class RadioSystem
-{
-public:
-  void begin()
-  {
+class RadioSystem {
+ public:
+  void begin() {
 #ifdef DEBUG_SERIAL_OUTPUT
     Serial.begin(115200);
     Serial.println("\nRadio Starting...");
@@ -46,15 +44,13 @@ public:
     initializeTasks();
   }
 
-  void loop()
-  {
+  void loop() {
     // Check power switch state
     PowerManager::getInstance().checkPowerSwitch();
 
     // If power switch is off, don't process anything else
-    if (digitalRead(Pins::POWER_SWITCH) == LOW)
-    {
-      delay(10); // Debounce delay
+    if (digitalRead(Pins::POWER_SWITCH) == LOW) {
+      delay(10);  // Debounce delay
       return;
     }
 
@@ -65,34 +61,27 @@ public:
     PowerManager::getInstance().checkActivity();
 
     ts.execute();
-    delay(1); // Small delay to prevent overwhelming the CPU
+    delay(1);  // Small delay to prevent overwhelming the CPU
   }
 
-  static void handleStationTuning(Station *station, int signalStrength)
-  {
-    auto &config = ConfigManager::getInstance();
-    auto &audio = AudioManager::getInstance();
-    auto &morse = MorseCode::getInstance();
+  static void handleStationTuning(Station* station, int signalStrength) {
+    auto& config = ConfigManager::getInstance();
+    auto& audio = AudioManager::getInstance();
+    auto& morse = MorseCode::getInstance();
 
-    static Station *lastStation = nullptr;
+    static Station* lastStation = nullptr;
     bool stationLocked = (signalStrength > 0);
 
-    if (stationLocked)
-    {
-      if (!config.isMorsePlaying() || station != lastStation)
-      {
-        if (station != lastStation)
-        {
+    if (stationLocked) {
+      if (!config.isMorsePlaying() || station != lastStation) {
+        if (station != lastStation) {
           audio.stop();
         }
         morse.startMessage(station->getMessage());
         lastStation = station;
       }
-    }
-    else
-    {
-      if (config.isMorsePlaying())
-      {
+    } else {
+      if (config.isMorsePlaying()) {
         morse.stop();
         lastStation = nullptr;
       }
@@ -102,9 +91,8 @@ public:
     morse.update();
   }
 
-private:
-  void initializeSubsystems()
-  {
+ private:
+  void initializeSubsystems() {
     PowerManager::getInstance().begin();
     ConfigManager::getInstance().begin();
     AudioManager::getInstance().begin();
@@ -118,8 +106,7 @@ private:
 #endif
   }
 
-  void initializeTasks()
-  {
+  void initializeTasks() {
     ts.addTask(tBatteryCheck);
     ts.addTask(tSystemUpdate);
     ts.addTask(tManagerUpdate);
@@ -131,17 +118,12 @@ private:
 };
 
 // Task callback implementations
-void batteryCheckCallback()
-{
-  auto &power = PowerManager::getInstance();
+void batteryCheckCallback() {
+  auto& power = PowerManager::getInstance();
   float voltage = power.getBatteryVoltage();
 
   // Force deep sleep if battery is critically low
-  if (voltage <= PowerManager::MIN_BATTERY_VOLTAGE)
-  {
-#ifdef DEBUG_SERIAL_OUTPUT
-    Serial.printf("Battery critically low (%.2fV). Entering deep sleep.\n", voltage);
-#endif
+  if (voltage <= PowerManager::MIN_BATTERY_VOLTAGE) {
     power.enterDeepSleep(PowerManager::SleepReason::BATTERY_CRITICAL);
     return;
   }
@@ -154,17 +136,14 @@ void batteryCheckCallback()
 #endif
 }
 
-void systemUpdateCallback()
-{
+void systemUpdateCallback() {
   static unsigned long lastButtonPress = 0;
   const unsigned long debounceTime = Timing::DEBOUNCE_DELAY;
 
   // Check WiFi toggle button with debounce
-  if (digitalRead(Pins::WIFI_BUTTON) == LOW)
-  {
+  if (digitalRead(Pins::WIFI_BUTTON) == LOW) {
     unsigned long currentTime = millis();
-    if (currentTime - lastButtonPress > debounceTime)
-    {
+    if (currentTime - lastButtonPress > debounceTime) {
       WiFiManager::getInstance().toggle();
       lastButtonPress = currentTime;
     }
@@ -175,18 +154,15 @@ void systemUpdateCallback()
   int tuningValue = analogRead(Pins::TUNING_POT);
   int signalStrength = 0;
 
-  auto &config = ConfigManager::getInstance();
-  auto &stations = StationManager::getInstance();
-  Station *closestStation = stations.findClosestStation(
-      tuningValue,
-      config.getWaveBand(),
-      signalStrength);
+  auto& config = ConfigManager::getInstance();
+  auto& stations = StationManager::getInstance();
+  Station* closestStation =
+      stations.findClosestStation(tuningValue, config.getWaveBand(), signalStrength);
 
   RadioSystem::handleStationTuning(closestStation, signalStrength);
 }
 
-void managerUpdateCallback()
-{
+void managerUpdateCallback() {
   AudioManager::getInstance().handlePlayback();
   WiFiManager::getInstance().handle();
   WaveBandManager::getInstance().updateLEDs();
@@ -196,12 +172,6 @@ void managerUpdateCallback()
 // Global system instance
 RadioSystem radioSystem;
 
-void setup()
-{
-  radioSystem.begin();
-}
+void setup() { radioSystem.begin(); }
 
-void loop()
-{
-  radioSystem.loop();
-}
+void loop() { radioSystem.loop(); }

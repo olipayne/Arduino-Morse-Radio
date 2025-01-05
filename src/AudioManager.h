@@ -3,51 +3,49 @@
 
 #include "Config.h"
 
-class AudioManager
-{
-public:
-    static AudioManager &getInstance()
-    {
-        static AudioManager instance;
-        return instance;
-    }
+class AudioManager {
+ public:
+  static AudioManager& getInstance() {
+    static AudioManager instance;
+    return instance;
+  }
 
-    void begin();
-    void setVolume(int adcValue);
-    void handlePlayback();
-    void playMorseTone();
-    void stopMorseTone();
-    void playStaticNoise(int signalStrength);
-    void stop();
+  void begin();
+  void setVolume(int adcValue);
+  void handlePlayback();
+  void playMorseTone();
+  void stopMorseTone();
+  void playStaticNoise(int signalStrength);
+  void stop();
 
-private:
-    AudioManager() = default;
-    AudioManager(const AudioManager &) = delete;
-    AudioManager &operator=(const AudioManager &) = delete;
+ private:
+  AudioManager() = default;
+  AudioManager(const AudioManager&) = delete;
+  AudioManager& operator=(const AudioManager&) = delete;
 
-    void configurePWM();
-    int smoothVolume(int newReading);
+  void configurePWM();
+  int smoothVolume(int newReading);
 
-    static constexpr int MORSE_FREQUENCY = 600; // Fixed 600Hz for Morse code
+  static constexpr int MORSE_FREQUENCY = 600;  // Fixed 600Hz for Morse code
 
-    // Updated static frequency range
-    static constexpr int MIN_STATIC_FREQ = 100; // 100 Hz
-    static constexpr int MAX_STATIC_FREQ = 300; // 300 Hz
+  // Updated static frequency range
+  static constexpr int MIN_STATIC_FREQ = 100;  // 100 Hz
+  static constexpr int MAX_STATIC_FREQ = 300;  // 300 Hz
 
-    // Volume smoothing
-    static constexpr int VOLUME_SAMPLES = 5;
-    static constexpr int VOLUME_THRESHOLD = 3; // Minimum change to update volume
-    int volumeReadings[VOLUME_SAMPLES] = {0};
-    int volumeIndex = 0;
-    int smoothedVolume = 0;
+  // Volume smoothing
+  static constexpr int VOLUME_SAMPLES = 5;
+  static constexpr int VOLUME_THRESHOLD = 3;  // Minimum change to update volume
+  int volumeReadings[VOLUME_SAMPLES] = {0};
+  int volumeIndex = 0;
+  int smoothedVolume = 0;
 
-    // State tracking
-    int currentVolume = 0;
-    int lastVolumeRead = 0;
-    unsigned long lastVolumeUpdate = 0;
-    unsigned long lastPulseTime = 0;
-    bool isPlayingMorse = false;
-    static constexpr unsigned long VOLUME_UPDATE_INTERVAL = 50; // ms
+  // State tracking
+  int currentVolume = 0;
+  int lastVolumeRead = 0;
+  unsigned long lastVolumeUpdate = 0;
+  unsigned long lastPulseTime = 0;
+  bool isPlayingMorse = false;
+  static constexpr unsigned long VOLUME_UPDATE_INTERVAL = 50;  // ms
 };
 
 #endif
