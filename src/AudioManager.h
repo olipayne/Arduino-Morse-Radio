@@ -33,8 +33,8 @@ class AudioManager {
   static constexpr int MAX_STATIC_FREQ = 300;  // 300 Hz
 
   // Volume smoothing
-  static constexpr int VOLUME_SAMPLES = 5;
-  static constexpr int VOLUME_THRESHOLD = 3;  // Minimum change to update volume
+  static constexpr int VOLUME_SAMPLES = 3;      // Reduced from 5 to be more responsive
+  static constexpr int VOLUME_THRESHOLD = 1;    // Reduced from 3 to be more sensitive
   int volumeReadings[VOLUME_SAMPLES] = {0};
   int volumeIndex = 0;
   int smoothedVolume = 0;
@@ -45,7 +45,7 @@ class AudioManager {
   unsigned long lastVolumeUpdate = 0;
   unsigned long lastPulseTime = 0;
   bool isPlayingMorse = false;
-  static constexpr unsigned long VOLUME_UPDATE_INTERVAL = 50;  // ms
+  static constexpr unsigned long VOLUME_UPDATE_INTERVAL = 20;  // Reduced from 50ms to 20ms
 };
 
 #endif

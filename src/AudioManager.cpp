@@ -49,9 +49,17 @@ void AudioManager::setVolume(int adcValue) {
   if (abs(newVolume - currentVolume) > VOLUME_THRESHOLD) {
     currentVolume = newVolume;
 
-    // If currently playing Morse tone or static, update volume
-    if (isPlayingMorse || ledcRead(Audio::SPEAKER_CHANNEL) > 0) {
-      ledcWrite(Audio::SPEAKER_CHANNEL, currentVolume);
+    // Consider any very low volume as completely off
+    if (currentVolume <= 5) {  // Using threshold of 5 to catch very low volumes
+      // If volume is near zero, completely turn off speaker
+      ledcWrite(Audio::SPEAKER_CHANNEL, 0);
+      ledcDetachPin(Pins::SPEAKER);
+    } else {
+      // If currently playing Morse tone or static, ensure pin is attached and update volume
+      if (isPlayingMorse || ledcRead(Audio::SPEAKER_CHANNEL) > 0) {
+        ledcAttachPin(Pins::SPEAKER, Audio::SPEAKER_CHANNEL);
+        ledcWrite(Audio::SPEAKER_CHANNEL, currentVolume);
+      }
     }
   }
 }
@@ -67,6 +75,8 @@ void AudioManager::handlePlayback() {
 
 void AudioManager::playMorseTone() {
   isPlayingMorse = true;
+  // Ensure PWM is attached
+  ledcAttachPin(Pins::SPEAKER, Audio::SPEAKER_CHANNEL);
   // Set exact 600Hz frequency for Morse code
   ledcWriteTone(Audio::SPEAKER_CHANNEL, MORSE_FREQUENCY);
   ledcWrite(Audio::SPEAKER_CHANNEL, currentVolume);
@@ -75,11 +85,15 @@ void AudioManager::playMorseTone() {
 void AudioManager::stopMorseTone() {
   isPlayingMorse = false;
   ledcWrite(Audio::SPEAKER_CHANNEL, 0);
+  ledcDetachPin(Pins::SPEAKER);
 }
 
 void AudioManager::playStaticNoise(int signalStrength) {
   isPlayingMorse = false;
 
+  // Ensure PWM is attached
+  ledcAttachPin(Pins::SPEAKER, Audio::SPEAKER_CHANNEL);
+  
   // Generate random noise within the frequency range
   int noiseFrequency = random(MIN_STATIC_FREQ, MAX_STATIC_FREQ + 1);
 
@@ -93,4 +107,5 @@ void AudioManager::playStaticNoise(int signalStrength) {
 void AudioManager::stop() {
   isPlayingMorse = false;
   ledcWrite(Audio::SPEAKER_CHANNEL, 0);
+  ledcDetachPin(Pins::SPEAKER);
 }
