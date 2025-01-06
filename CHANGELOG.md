@@ -1,3 +1,12 @@
+## [1.4.1](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.4.0...v1.4.1) (2025-01-06)
+
+
+### Bug Fixes
+
+* reset idle time when reading the current tuning pot value ([38acfc4](https://github.com/olipayne/Arduino-Morse-Radio/commit/38acfc4ccf37342397594f51b4742117278732da))
+
+
+
 # [1.4.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.3.0...v1.4.0) (2025-01-05)
 
 
@@ -36,18 +45,6 @@
 ### Features
 
 * force deep sleep at critical battery level ([16e55e7](https://github.com/olipayne/Arduino-Morse-Radio/commit/16e55e7e04569ded2b29b6d837b1560be7759dbd))
-
-
-
-# [1.0.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v0.17.0...v1.0.0) (2024-12-28)
-
-
-* feat!: optimize power management and LED handling ([c873bef](https://github.com/olipayne/Arduino-Morse-Radio/commit/c873beff1eb753575d708b1c908ac359d30187fb))
-
-
-### BREAKING CHANGES
-
-* LED control moved to FreeRTOS task, battery check no longer controls LED directly
 
 
 
