@@ -265,7 +265,7 @@ const char* WiFiManager::JAVASCRIPT_CODE = R"(
                 const input = document.getElementById(inputId);
                 input.value = data.value;
                 input.style.backgroundColor = '#e8f5e9';
-                setTimeout(() => input.style.backgroundColor = '', 500);
+                setTimeout(() => input.style.backgroundColor = '', 1000);
             })
             .catch(error => console.error('Error setting frequency:', error));
     }
@@ -454,6 +454,7 @@ void WiFiManager::handleGetTuningValue() {
   int tuningValue = analogRead(Pins::TUNING_POT);
   String response = "{\"value\":" + String(tuningValue) + "}";
   server.send(200, "application/json", response);
+  startTime = millis(); // Reset the timeout counter
 }
 
 void WiFiManager::handleSaveConfig() {
