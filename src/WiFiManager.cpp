@@ -1,5 +1,6 @@
 #include "WiFiManager.h"
 #include <ArduinoJson.h>
+#include <ElegantOTA.h>
 
 // Define static members
 const char* WiFiManager::HTML_HEADER = R"(
@@ -265,7 +266,7 @@ const char* WiFiManager::JAVASCRIPT_CODE = R"(
                 const input = document.getElementById(inputId);
                 input.value = data.value;
                 input.style.backgroundColor = '#e8f5e9';
-                setTimeout(() => input.style.backgroundColor = '', 1000);
+                setTimeout(() => input.style.backgroundColor = '', 500);
             })
             .catch(error => console.error('Error setting frequency:', error));
     }
@@ -350,8 +351,8 @@ const char* WiFiManager::JAVASCRIPT_CODE = R"(
         });
     }
 
-    // Update tuning value every 100ms
-    setInterval(updateTuningValue, 100);
+    // Update tuning value every 500ms
+    setInterval(updateTuningValue, 500);
 
     // Add form submit handler
     document.addEventListener('DOMContentLoaded', () => {
@@ -417,6 +418,7 @@ void WiFiManager::handle() {
   if (!wifiEnabled) return;
 
   server.handleClient();
+  ElegantOTA.loop();
 
   // Only check timeout when running on battery power
   if (!PowerManager::getInstance().isUSBPowered() && millis() - startTime > DEFAULT_TIMEOUT) {
@@ -434,6 +436,7 @@ void WiFiManager::setupServer() {
   server.on("/stations", HTTP_GET, [this]() { handleStationConfig(); });
   server.on("/api/status", HTTP_GET, [this]() { handleAPI(); });
   server.onNotFound([this]() { handleNotFound(); });
+  ElegantOTA.begin(&server);
   server.begin();
 }
 
@@ -454,7 +457,7 @@ void WiFiManager::handleGetTuningValue() {
   int tuningValue = analogRead(Pins::TUNING_POT);
   String response = "{\"value\":" + String(tuningValue) + "}";
   server.send(200, "application/json", response);
-  startTime = millis(); // Reset the timeout counter
+  startTime = millis();  // Reset the timeout counter
 }
 
 void WiFiManager::handleSaveConfig() {
