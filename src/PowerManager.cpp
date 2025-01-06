@@ -441,7 +441,7 @@ void PowerManager::checkActivity() {
     if (currentTime - lastActivityTime >= INACTIVITY_TIMEOUT) {
       // Only enter deep sleep if power switch is still ON
       if (digitalRead(Pins::POWER_SWITCH) == HIGH) {
-        enterDeepSleep(SleepReason::INACTIVITY);
+        // enterDeepSleep(SleepReason::INACTIVITY);
       }
     }
   }
