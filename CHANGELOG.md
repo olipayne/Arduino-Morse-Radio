@@ -1,3 +1,12 @@
+## [1.5.1](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.5.0...v1.5.1) (2025-01-06)
+
+
+### Bug Fixes
+
+* comment out deep sleep for now ([ba76bae](https://github.com/olipayne/Arduino-Morse-Radio/commit/ba76bae5f540550102761b22a291b628c8f4d6f4))
+
+
+
 # [1.5.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.4.1...v1.5.0) (2025-01-06)
 
 
@@ -31,20 +40,6 @@
 ### Features
 
 * **power:** implement momentary power switch functionality ([729b1b5](https://github.com/olipayne/Arduino-Morse-Radio/commit/729b1b56976dbf1bdefa7ff402d5fba7c0ead552))
-
-
-
-# [1.2.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.1.0...v1.2.0) (2025-01-05)
-
-
-### Bug Fixes
-
-* swap power and morse LEDs ([98d6073](https://github.com/olipayne/Arduino-Morse-Radio/commit/98d60733f6d7b62710b6a39a0a3ddc4e3374ab45))
-
-
-### Features
-
-* **power:** improve LED behavior ([14dafd7](https://github.com/olipayne/Arduino-Morse-Radio/commit/14dafd7fffe9e26f2a570c73e9216ca1f87c79c1))
 
 
 
