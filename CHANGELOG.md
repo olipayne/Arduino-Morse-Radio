@@ -1,3 +1,12 @@
+## [1.5.3](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.5.2...v1.5.3) (2025-01-06)
+
+
+### Bug Fixes
+
+* **audio:** simplify volume control and fix zero volume detection ([7de41ec](https://github.com/olipayne/Arduino-Morse-Radio/commit/7de41ec1803901cfb5512a15df9df88eca170acb))
+
+
+
 ## [1.5.2](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.5.1...v1.5.2) (2025-01-06)
 
 
@@ -31,15 +40,6 @@
 ### Bug Fixes
 
 * reset idle time when reading the current tuning pot value ([38acfc4](https://github.com/olipayne/Arduino-Morse-Radio/commit/38acfc4ccf37342397594f51b4742117278732da))
-
-
-
-# [1.4.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.3.0...v1.4.0) (2025-01-05)
-
-
-### Features
-
-* add battery level indicator using LED array ([1bb2f21](https://github.com/olipayne/Arduino-Morse-Radio/commit/1bb2f21452901c93cfbf712d6c471598c6af7258))
 
 
 
