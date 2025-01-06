@@ -1,3 +1,12 @@
+## [1.5.2](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.5.1...v1.5.2) (2025-01-06)
+
+
+### Bug Fixes
+
+* improve speaker control and volume response ([2761913](https://github.com/olipayne/Arduino-Morse-Radio/commit/27619138ffaac1b7f61e8b72fc205704c53b14fd))
+
+
+
 ## [1.5.1](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.5.0...v1.5.1) (2025-01-06)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * add battery level indicator using LED array ([1bb2f21](https://github.com/olipayne/Arduino-Morse-Radio/commit/1bb2f21452901c93cfbf712d6c471598c6af7258))
-
-
-
-# [1.3.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.2.0...v1.3.0) (2025-01-05)
-
-
-### Features
-
-* **power:** implement momentary power switch functionality ([729b1b5](https://github.com/olipayne/Arduino-Morse-Radio/commit/729b1b56976dbf1bdefa7ff402d5fba7c0ead552))
 
 
 
