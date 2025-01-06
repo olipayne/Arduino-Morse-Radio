@@ -18,12 +18,10 @@ Scheduler ts;
 // Task forward declarations
 void batteryCheckCallback();
 void systemUpdateCallback();
-void managerUpdateCallback();
 
 // Tasks
 Task tBatteryCheck(60000, TASK_FOREVER, &batteryCheckCallback);  // Check battery every minute
 Task tSystemUpdate(20, TASK_FOREVER, &systemUpdateCallback);     // System update every 20ms
-Task tManagerUpdate(20, TASK_FOREVER, &managerUpdateCallback);   // Manager updates every 20ms
 
 // Main system manager class
 class RadioSystem {
@@ -109,11 +107,9 @@ class RadioSystem {
   void initializeTasks() {
     ts.addTask(tBatteryCheck);
     ts.addTask(tSystemUpdate);
-    ts.addTask(tManagerUpdate);
 
     tBatteryCheck.enable();
     tSystemUpdate.enable();
-    tManagerUpdate.enable();
   }
 };
 
@@ -160,9 +156,8 @@ void systemUpdateCallback() {
       stations.findClosestStation(tuningValue, config.getWaveBand(), signalStrength);
 
   RadioSystem::handleStationTuning(closestStation, signalStrength);
-}
 
-void managerUpdateCallback() {
+  // Handle other manager updates
   AudioManager::getInstance().handlePlayback();
   WiFiManager::getInstance().handle();
   WaveBandManager::getInstance().updateLEDs();

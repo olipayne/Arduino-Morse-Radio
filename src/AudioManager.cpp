@@ -3,13 +3,9 @@
 void AudioManager::begin() {
   configurePWM();
   lastPulseTime = 0;
-
-  // Initialize volume readings array
-  for (int i = 0; i < VOLUME_SAMPLES; i++) {
-    volumeReadings[i] = 0;
-  }
-  volumeIndex = 0;
-  smoothedVolume = 0;
+  lastVolumeUpdate = 0;
+  currentVolume = 0;
+  isPlayingMorse = false;
 }
 
 void AudioManager::configurePWM() {
@@ -18,48 +14,29 @@ void AudioManager::configurePWM() {
   ledcAttachPin(Pins::SPEAKER, Audio::SPEAKER_CHANNEL);
 }
 
-int AudioManager::smoothVolume(int newReading) {
-  // Add new reading to array
-  volumeReadings[volumeIndex] = newReading;
-  volumeIndex = (volumeIndex + 1) % VOLUME_SAMPLES;
-
-  // Calculate moving average
-  long sum = 0;
-  for (int i = 0; i < VOLUME_SAMPLES; i++) {
-    sum += volumeReadings[i];
-  }
-  int average = sum / VOLUME_SAMPLES;
-
-  // Only update if change is significant
-  if (abs(average - smoothedVolume) > VOLUME_THRESHOLD) {
-    smoothedVolume = average;
-  }
-
-  return smoothedVolume;
-}
-
 void AudioManager::setVolume(int adcValue) {
-  // Apply smoothing to the ADC reading
-  int smoothedADC = smoothVolume(adcValue);
-
-  // Map smoothed value to volume range
-  int newVolume = map(smoothedADC, 0, Radio::ADC_MAX, 0, 255);
-
-  // Only update if volume has changed significantly
-  if (abs(newVolume - currentVolume) > VOLUME_THRESHOLD) {
-    currentVolume = newVolume;
-
-    // Consider any very low volume as completely off
-    if (currentVolume <= 5) {  // Using threshold of 5 to catch very low volumes
-      // If volume is near zero, completely turn off speaker
+  // Handle zero volume case first
+  if (adcValue <= VOLUME_DEAD_ZONE) {
+    if (currentVolume > 0) {  // Only update if we need to turn off
+      currentVolume = 0;
       ledcWrite(Audio::SPEAKER_CHANNEL, 0);
       ledcDetachPin(Pins::SPEAKER);
-    } else {
-      // If currently playing Morse tone or static, ensure pin is attached and update volume
-      if (isPlayingMorse || ledcRead(Audio::SPEAKER_CHANNEL) > 0) {
-        ledcAttachPin(Pins::SPEAKER, Audio::SPEAKER_CHANNEL);
-        ledcWrite(Audio::SPEAKER_CHANNEL, currentVolume);
-      }
+    }
+    return;
+  }
+
+  // Map ADC value to volume range, accounting for dead zone
+  int newVolume = map(adcValue, VOLUME_DEAD_ZONE, Radio::ADC_MAX, 0, VOLUME_MAX);
+  newVolume = constrain(newVolume, 0, VOLUME_MAX);  // Ensure volume stays in valid range
+
+  // Update volume if changed
+  if (newVolume != currentVolume) {
+    currentVolume = newVolume;
+    
+    // Ensure pin is attached and update volume if we're making sound
+    if (currentVolume > 0 && (isPlayingMorse || ledcRead(Audio::SPEAKER_CHANNEL) > 0)) {
+      ledcAttachPin(Pins::SPEAKER, Audio::SPEAKER_CHANNEL);
+      ledcWrite(Audio::SPEAKER_CHANNEL, currentVolume);
     }
   }
 }
