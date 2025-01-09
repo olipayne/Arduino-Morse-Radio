@@ -6,6 +6,7 @@
 #include "Config.h"
 #include "MorseCode.h"
 #include "WiFiManager.h"
+#include "PotentiometerReader.h"
 
 class PowerManager {
  public:
@@ -36,15 +37,17 @@ class PowerManager {
   void updatePowerLED();
   void displayBatteryLevel();
   void enterDeepSleep(SleepReason reason = SleepReason::POWER_OFF);
+  int readADC(int pin);
 
  private:
-  PowerManager() = default;
+  PowerManager() : 
+    tuningPot(Pins::TUNING_POT),
+    volumePot(Pins::VOLUME_POT) {}
   PowerManager(const PowerManager&) = delete;
   PowerManager& operator=(const PowerManager&) = delete;
 
   void configurePins();
   void configureADC();
-  int readADC(int pin);
   void startLEDTask();
   void stopLEDTask();
   static void LEDTaskCode(void* parameter);
@@ -72,6 +75,10 @@ class PowerManager {
   bool lastSlowState = false;
   bool lastMedState = false;
   bool lastWiFiState = false;
+
+  // Potentiometer readers
+  PotentiometerReader tuningPot;
+  PotentiometerReader volumePot;
 
   // Hardware instance
   UMS3 ums3;

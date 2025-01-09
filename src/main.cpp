@@ -147,7 +147,7 @@ void systemUpdateCallback() {
 
   // Update tuning
   WaveBandManager::getInstance().update();
-  int tuningValue = analogRead(Pins::TUNING_POT);
+  int tuningValue = PowerManager::getInstance().readADC(Pins::TUNING_POT);
   int signalStrength = 0;
 
   auto& config = ConfigManager::getInstance();

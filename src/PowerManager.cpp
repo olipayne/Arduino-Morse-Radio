@@ -1,4 +1,5 @@
 #include "PowerManager.h"
+#include "PotentiometerReader.h"  // Include PotentiometerReader header
 #include "driver/gpio.h"
 #include "driver/rtc_io.h"
 
@@ -10,6 +11,10 @@
 // - 500ms debounce time for stability
 
 static RTC_DATA_ATTR bool justWentToSleep = false;  // Flag to indicate we just went to sleep
+
+// Initialize potentiometers
+PotentiometerReader tuningPot(Pins::TUNING_POT);
+PotentiometerReader volumePot(Pins::VOLUME_POT);
 
 void PowerManager::begin() {
   btStop();
@@ -27,6 +32,10 @@ void PowerManager::begin() {
   // Configure pins
   configurePins();
 
+  // Initialize potentiometers
+  tuningPot.begin();
+  volumePot.begin();
+
   // Setup LED PWM channels for battery display
   ledcSetup(PWMChannels::LW_LED, LEDConfig::PWM_FREQUENCY, LEDConfig::PWM_RESOLUTION);
   ledcSetup(PWMChannels::MW_LED, LEDConfig::PWM_FREQUENCY, LEDConfig::PWM_RESOLUTION);
@@ -38,7 +47,7 @@ void PowerManager::begin() {
 
   // Display battery level for 2 seconds
   displayBatteryLevel();
-  delay(2000);
+  delay(1000);
 
   // Turn off all LEDs after battery display
   ledcWrite(PWMChannels::LW_LED, 0);
@@ -290,6 +299,15 @@ bool PowerManager::checkForInputChanges() {
   return activity;
 }
 
+int PowerManager::readADC(int pin) {
+  if (pin == Pins::TUNING_POT) {
+    return tuningPot.read();
+  } else if (pin == Pins::VOLUME_POT) {
+    return volumePot.read();
+  }
+  return analogRead(pin);
+}
+
 float PowerManager::getBatteryVoltage() { return ums3.getBatteryVoltage(); }
 
 bool PowerManager::isLowBattery() {
@@ -408,31 +426,6 @@ void PowerManager::configureADC() {
   // Set attenuation for the full voltage range (0-3.3V)
   analogSetPinAttenuation(Pins::TUNING_POT, ADC_11db);
   analogSetPinAttenuation(Pins::VOLUME_POT, ADC_11db);
-}
-
-int PowerManager::readADC(int pin) {
-  const int samples = 5;
-  int readings[samples];
-
-  // Take multiple samples with a small delay between them
-  for (int i = 0; i < samples; i++) {
-    readings[i] = analogRead(pin);
-    delay(2);  // Small delay between readings
-  }
-
-  // Sort readings (insertion sort for small array)
-  for (int i = 1; i < samples; i++) {
-    int key = readings[i];
-    int j = i - 1;
-    while (j >= 0 && readings[j] > key) {
-      readings[j + 1] = readings[j];
-      j--;
-    }
-    readings[j + 1] = key;
-  }
-
-  // Return median value (middle reading)
-  return readings[samples / 2];
 }
 
 void PowerManager::checkActivity() {

@@ -1,4 +1,5 @@
 #include "AudioManager.h"
+#include "PowerManager.h"
 
 void AudioManager::begin() {
   configurePWM();
@@ -44,7 +45,7 @@ void AudioManager::setVolume(int adcValue) {
 void AudioManager::handlePlayback() {
   unsigned long currentTime = millis();
   if (currentTime - lastVolumeUpdate >= VOLUME_UPDATE_INTERVAL) {
-    int volumeRead = analogRead(Pins::VOLUME_POT);
+    int volumeRead = PowerManager::getInstance().readADC(Pins::VOLUME_POT);
     setVolume(volumeRead);
     lastVolumeUpdate = currentTime;
   }
