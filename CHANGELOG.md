@@ -1,3 +1,12 @@
+# [1.6.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.5.3...v1.6.0) (2025-01-09)
+
+
+### Features
+
+* **potentiometer:** implement advanced hysteresis for pot readings ([63ce58d](https://github.com/olipayne/Arduino-Morse-Radio/commit/63ce58df8aaa93cdef901f4770ddaf050f53b24b))
+
+
+
 ## [1.5.3](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.5.2...v1.5.3) (2025-01-06)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * updates now possible OTA with /update ([c54cfaf](https://github.com/olipayne/Arduino-Morse-Radio/commit/c54cfaf62fffe5f5236d91a019c55a1a38f19068))
-
-
-
-## [1.4.1](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.4.0...v1.4.1) (2025-01-06)
-
-
-### Bug Fixes
-
-* reset idle time when reading the current tuning pot value ([38acfc4](https://github.com/olipayne/Arduino-Morse-Radio/commit/38acfc4ccf37342397594f51b4742117278732da))
 
 
 
