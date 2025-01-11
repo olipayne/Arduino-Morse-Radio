@@ -11,6 +11,7 @@
 // - 500ms debounce time for stability
 
 static RTC_DATA_ATTR bool justWentToSleep = false;  // Flag to indicate we just went to sleep
+static RTC_DATA_ATTR bool rtcInitialized = false;   // Flag to track if RTC GPIO is initialized
 
 // Initialize potentiometers
 PotentiometerReader tuningPot(Pins::TUNING_POT);
@@ -21,6 +22,16 @@ void PowerManager::begin() {
 
   // Initialize UMS3
   ums3.begin();
+
+  // One-time RTC GPIO initialization
+  if (!rtcInitialized) {
+    rtc_gpio_init(static_cast<gpio_num_t>(Pins::POWER_SWITCH));
+    rtc_gpio_set_direction(static_cast<gpio_num_t>(Pins::POWER_SWITCH), RTC_GPIO_MODE_INPUT_ONLY);
+    rtc_gpio_pullup_en(static_cast<gpio_num_t>(Pins::POWER_SWITCH));
+    rtc_gpio_pulldown_dis(static_cast<gpio_num_t>(Pins::POWER_SWITCH));
+    rtc_gpio_hold_en(static_cast<gpio_num_t>(Pins::POWER_SWITCH));
+    rtcInitialized = true;
+  }
 
   // If we're waking up right after going to sleep, go back to sleep
   if (justWentToSleep) {
@@ -36,23 +47,15 @@ void PowerManager::begin() {
   tuningPot.begin();
   volumePot.begin();
 
-  // Setup LED PWM channels for battery display
-  ledcSetup(PWMChannels::LW_LED, LEDConfig::PWM_FREQUENCY, LEDConfig::PWM_RESOLUTION);
-  ledcSetup(PWMChannels::MW_LED, LEDConfig::PWM_FREQUENCY, LEDConfig::PWM_RESOLUTION);
-  ledcSetup(PWMChannels::SW_LED, LEDConfig::PWM_FREQUENCY, LEDConfig::PWM_RESOLUTION);
+  // Setup LED PWM channel for power LED
+  ledcSetup(PWMChannels::POWER_LED, LEDConfig::PWM_FREQUENCY, LEDConfig::PWM_RESOLUTION);
+  ledcAttachPin(Pins::POWER_LED, PWMChannels::POWER_LED);
 
-  ledcAttachPin(Pins::LW_LED, PWMChannels::LW_LED);
-  ledcAttachPin(Pins::MW_LED, PWMChannels::MW_LED);
-  ledcAttachPin(Pins::SW_LED, PWMChannels::SW_LED);
-
-  // Display battery level for 2 seconds
-  displayBatteryLevel();
-  delay(1000);
-
-  // Turn off all LEDs after battery display
-  ledcWrite(PWMChannels::LW_LED, 0);
-  ledcWrite(PWMChannels::MW_LED, 0);
-  ledcWrite(PWMChannels::SW_LED, 0);
+  // Turn off all LEDs
+  digitalWrite(Pins::LW_LED, LOW);
+  digitalWrite(Pins::MW_LED, LOW);
+  digitalWrite(Pins::SW_LED, LOW);
+  ledcWrite(PWMChannels::POWER_LED, 0);
 
   // Start LED task
   startLEDTask();
@@ -194,13 +197,6 @@ void PowerManager::shutdownAllPins() {
 }
 
 void PowerManager::configurePins() {
-  // Configure power switch pin with internal pull-up
-  rtc_gpio_init(static_cast<gpio_num_t>(Pins::POWER_SWITCH));
-  rtc_gpio_set_direction(static_cast<gpio_num_t>(Pins::POWER_SWITCH), RTC_GPIO_MODE_INPUT_ONLY);
-  rtc_gpio_pullup_en(static_cast<gpio_num_t>(Pins::POWER_SWITCH));
-  rtc_gpio_pulldown_dis(static_cast<gpio_num_t>(Pins::POWER_SWITCH));
-  rtc_gpio_hold_en(static_cast<gpio_num_t>(Pins::POWER_SWITCH));
-
   // Configure LED pins
   pinMode(Pins::POWER_LED, OUTPUT);  // Power LED will be configured in LED task
   pinMode(Pins::LW_LED, OUTPUT);
@@ -338,48 +334,27 @@ void PowerManager::displayBatteryStatus() {
 
 void PowerManager::displayBatteryLevel() {
   float voltage = getBatteryVoltage();
+  
+  // Turn off all LEDs first
+  digitalWrite(Pins::LW_LED, LOW);
+  digitalWrite(Pins::MW_LED, LOW);
+  digitalWrite(Pins::SW_LED, LOW);
 
-  // Calculate battery percentage (0-100%)
-  float percentage = (voltage - MIN_BATTERY_VOLTAGE) / (MAX_BATTERY_VOLTAGE - MIN_BATTERY_VOLTAGE);
-  percentage = constrain(percentage, 0.0f, 1.0f);
-
-  // Calculate how many "full" LEDs we need
-  int fullLEDs = floor(percentage * 3);
-
-  // Calculate the PWM value for the partial LED
-  float remainder = (percentage * 3) - fullLEDs;
-  uint8_t partialBrightness = remainder * LEDConfig::MAX_BRIGHTNESS;
-
-  // Set LED states based on battery level
-  switch (fullLEDs) {
-    case 0:
-      // Battery 0-33%: Only bottom LED might be partially lit
-      ledcWrite(PWMChannels::SW_LED, partialBrightness);
-      ledcWrite(PWMChannels::MW_LED, 0);
-      ledcWrite(PWMChannels::LW_LED, 0);
-      break;
-
-    case 1:
-      // Battery 33-66%: Bottom LED full, middle LED might be partial
-      ledcWrite(PWMChannels::SW_LED, LEDConfig::MAX_BRIGHTNESS);
-      ledcWrite(PWMChannels::MW_LED, partialBrightness);
-      ledcWrite(PWMChannels::LW_LED, 0);
-      break;
-
-    case 2:
-      // Battery 66-99%: Bottom and middle LED full, top LED might be partial
-      ledcWrite(PWMChannels::SW_LED, LEDConfig::MAX_BRIGHTNESS);
-      ledcWrite(PWMChannels::MW_LED, LEDConfig::MAX_BRIGHTNESS);
-      ledcWrite(PWMChannels::LW_LED, partialBrightness);
-      break;
-
-    case 3:
-      // Battery 100%: All LEDs full
-      ledcWrite(PWMChannels::SW_LED, LEDConfig::MAX_BRIGHTNESS);
-      ledcWrite(PWMChannels::MW_LED, LEDConfig::MAX_BRIGHTNESS);
-      ledcWrite(PWMChannels::LW_LED, LEDConfig::MAX_BRIGHTNESS);
-      break;
+  // Display battery level using binary LEDs
+  if (voltage >= 4.0) {
+    // Full battery - all LEDs on
+    digitalWrite(Pins::LW_LED, HIGH);
+    digitalWrite(Pins::MW_LED, HIGH);
+    digitalWrite(Pins::SW_LED, HIGH);
+  } else if (voltage >= 3.7) {
+    // Medium battery - two LEDs on
+    digitalWrite(Pins::LW_LED, HIGH);
+    digitalWrite(Pins::MW_LED, HIGH);
+  } else if (voltage >= 3.4) {
+    // Low battery - one LED on
+    digitalWrite(Pins::LW_LED, HIGH);
   }
+  // Below 3.4V - all LEDs off
 }
 
 void PowerManager::enterDeepSleep(SleepReason reason) {

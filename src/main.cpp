@@ -31,7 +31,7 @@ class RadioSystem {
     Serial.begin(115200);
     Serial.println("\nRadio Starting...");
 #endif
-    setCpuFrequencyMhz(80);
+    setCpuFrequencyMhz(240);
 
 #ifdef DEBUG_SERIAL_OUTPUT
     Serial.print("CPU Frequency set to ");
