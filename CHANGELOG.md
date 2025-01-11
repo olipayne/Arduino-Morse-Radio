@@ -1,3 +1,12 @@
+## [1.6.1](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.6.0...v1.6.1) (2025-01-11)
+
+
+### Bug Fixes
+
+* debug/release flags fixes and github builds working (i hope) ([824dddf](https://github.com/olipayne/Arduino-Morse-Radio/commit/824dddf1f0b718061e14d963f49323776f55dfe5))
+
+
+
 # [1.6.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.5.3...v1.6.0) (2025-01-09)
 
 
@@ -31,15 +40,6 @@
 ### Bug Fixes
 
 * comment out deep sleep for now ([ba76bae](https://github.com/olipayne/Arduino-Morse-Radio/commit/ba76bae5f540550102761b22a291b628c8f4d6f4))
-
-
-
-# [1.5.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.4.1...v1.5.0) (2025-01-06)
-
-
-### Features
-
-* updates now possible OTA with /update ([c54cfaf](https://github.com/olipayne/Arduino-Morse-Radio/commit/c54cfaf62fffe5f5236d91a019c55a1a38f19068))
 
 
 
