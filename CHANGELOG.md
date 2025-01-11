@@ -1,3 +1,12 @@
+## [1.6.2](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.6.1...v1.6.2) (2025-01-11)
+
+
+### Bug Fixes
+
+* small stuff ([29dba1c](https://github.com/olipayne/Arduino-Morse-Radio/commit/29dba1c55e3c3e28fe5924e5a67214e5475765bd))
+
+
+
 ## [1.6.1](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.6.0...v1.6.1) (2025-01-11)
 
 
@@ -31,15 +40,6 @@
 ### Bug Fixes
 
 * improve speaker control and volume response ([2761913](https://github.com/olipayne/Arduino-Morse-Radio/commit/27619138ffaac1b7f61e8b72fc205704c53b14fd))
-
-
-
-## [1.5.1](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.5.0...v1.5.1) (2025-01-06)
-
-
-### Bug Fixes
-
-* comment out deep sleep for now ([ba76bae](https://github.com/olipayne/Arduino-Morse-Radio/commit/ba76bae5f540550102761b22a291b628c8f4d6f4))
 
 
 
