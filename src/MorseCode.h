@@ -29,6 +29,13 @@ class MorseCode {
   String getSymbol(char c) const;
   void updateMorseLEDs(bool on);
 
+  // Helper methods to break down the update function
+  void handleTuneInDelay(unsigned long currentTime, ConfigManager& config, AudioManager& audio);
+  void handleWordSpace(unsigned long currentTime, const Audio::MorseTimings& timings,
+                       ConfigManager& config, AudioManager& audio);
+  void processSymbol(unsigned long currentTime, const Audio::MorseTimings& timings,
+                     ConfigManager& config, AudioManager& audio);
+
   // Message state
   String currentMessage;
   size_t messageIndex = 0;  // Current character in message

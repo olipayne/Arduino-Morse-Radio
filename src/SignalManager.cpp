@@ -4,9 +4,8 @@ void SignalManager::begin() {
   // Initialize LOCK_LED as digital output
   pinMode(Pins::LOCK_LED, OUTPUT);
   digitalWrite(Pins::LOCK_LED, LOW);
-  isStationLocked = false;
-  previousLockState = false;
-  lastLockPrintTime = 0;
+  isLocked = false;
+  currentSignalStrength = 0;
 
   // Initialize CARRIER_PWM using PWM
   ledcSetup(PWMChannels::CARRIER, LEDConfig::PWM_FREQUENCY, LEDConfig::PWM_RESOLUTION);
@@ -19,31 +18,43 @@ void SignalManager::begin() {
 }
 
 void SignalManager::updateLockStatus(bool locked) {
-  if (locked != isStationLocked) {
-    isStationLocked = locked;
-    digitalWrite(Pins::LOCK_LED, locked ? HIGH : LOW);
-  }
+  // Update lock LED status
+  digitalWrite(Pins::LOCK_LED, locked ? HIGH : LOW);
+  isLocked = locked;
 }
 
 void SignalManager::updateSignalStrength(int strength) {
-  ledcWrite(PWMChannels::CARRIER, strength);
+  // Map signal strength to PWM value (0-255)
+  int pwmValue = map(strength, 0, 255, 0, 255);
+
+  // Update carrier PWM to indicate signal strength
+  ledcWrite(PWMChannels::CARRIER, pwmValue);
+
+  // Store current signal strength
+  currentSignalStrength = strength;
 }
 
+void SignalManager::debugPrint(bool locked, const char* stationName, int signalStrength) {
 #ifdef DEBUG_SERIAL_OUTPUT
-void SignalManager::debugPrint(bool isLocked, const char* stationName, int signalStrength) {
+  static unsigned long lastDebugPrint = 0;
   unsigned long currentTime = millis();
-  bool lockStateChanged = (isLocked != previousLockState);
-  bool timeToUpdate = (currentTime - lastLockPrintTime >= 5000);
 
-  if (isLocked && (lockStateChanged || timeToUpdate)) {
-    Serial.printf("Station locked: %s, Signal strength: %d\n",
-                  stationName ? stationName : "Unknown", signalStrength);
-    lastLockPrintTime = currentTime;
-  } else if (!isLocked && lockStateChanged) {
-    Serial.println("Station unlocked");
-    lastLockPrintTime = currentTime;
+  // Only print debug info periodically to avoid flooding the serial output
+  if (currentTime - lastDebugPrint >= 1000) {
+    Serial.print("Signal: ");
+    Serial.print(signalStrength);
+    Serial.print(" | Locked: ");
+    Serial.print(locked ? "YES" : "NO");
+
+    if (stationName) {
+      Serial.print(" | Station: ");
+      Serial.print(stationName);
+    } else {
+      Serial.print(" | No station");
+    }
+
+    Serial.println();
+    lastDebugPrint = currentTime;
   }
-
-  previousLockState = isLocked;
-}
 #endif
+}

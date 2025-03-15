@@ -7,6 +7,7 @@
 #include "Config.h"
 #include "MorseCode.h"
 #include "PowerManager.h"
+#include "SignalManager.h"
 #include "SpeedManager.h"
 #include "StationManager.h"
 #include "WaveBandManager.h"
@@ -18,6 +19,8 @@ Scheduler ts;
 // Task forward declarations
 void batteryCheckCallback();
 void systemUpdateCallback();
+void handleWiFiButton(unsigned long& lastButtonPress, const unsigned long debounceTime);
+void updateTuningAndStation();
 
 // Tasks
 Task tBatteryCheck(60000, TASK_FOREVER, &batteryCheckCallback);  // Check battery every minute
@@ -99,6 +102,7 @@ class RadioSystem {
     WiFiManager::getInstance().begin();
     MorseCode::getInstance().begin();
     SpeedManager::getInstance().begin();
+    SignalManager::getInstance().begin();
 #ifdef DEBUG_SERIAL_OUTPUT
     Serial.println("All subsystems initialized");
 #endif
@@ -137,6 +141,20 @@ void systemUpdateCallback() {
   const unsigned long debounceTime = Timing::DEBOUNCE_DELAY;
 
   // Check WiFi toggle button with debounce
+  handleWiFiButton(lastButtonPress, debounceTime);
+
+  // Update tuning and find the closest station
+  updateTuningAndStation();
+
+  // Handle other manager updates
+  AudioManager::getInstance().handlePlayback();
+  WiFiManager::getInstance().handle();
+  WaveBandManager::getInstance().updateLEDs();
+  SpeedManager::getInstance().update();
+}
+
+// Helper functions to break down the systemUpdateCallback
+void handleWiFiButton(unsigned long& lastButtonPress, const unsigned long debounceTime) {
   if (digitalRead(Pins::WIFI_BUTTON) == LOW) {
     unsigned long currentTime = millis();
     if (currentTime - lastButtonPress > debounceTime) {
@@ -144,24 +162,38 @@ void systemUpdateCallback() {
       lastButtonPress = currentTime;
     }
   }
+}
 
-  // Update tuning
+void updateTuningAndStation() {
+  // Update wave band selection
   WaveBandManager::getInstance().update();
+
+  // Read the tuning potentiometer
   int tuningValue = PowerManager::getInstance().readADC(Pins::TUNING_POT);
   int signalStrength = 0;
 
+  // Get configuration and station managers
   auto& config = ConfigManager::getInstance();
   auto& stations = StationManager::getInstance();
+  auto& signalMgr = SignalManager::getInstance();
+
+  // Find the closest station based on tuning value and current wave band
   Station* closestStation =
       stations.findClosestStation(tuningValue, config.getWaveBand(), signalStrength);
 
-  RadioSystem::handleStationTuning(closestStation, signalStrength);
+  // Update signal indicators
+  bool stationLocked = (signalStrength > 0);
+  signalMgr.updateLockStatus(stationLocked);
+  signalMgr.updateSignalStrength(signalStrength);
 
-  // Handle other manager updates
-  AudioManager::getInstance().handlePlayback();
-  WiFiManager::getInstance().handle();
-  WaveBandManager::getInstance().updateLEDs();
-  SpeedManager::getInstance().update();
+  // Debug output if enabled
+#ifdef DEBUG_SERIAL_OUTPUT
+  signalMgr.debugPrint(stationLocked, closestStation ? closestStation->getName() : nullptr,
+                       signalStrength);
+#endif
+
+  // Handle station tuning and audio playback
+  RadioSystem::handleStationTuning(closestStation, signalStrength);
 }
 
 // Global system instance

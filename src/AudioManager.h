@@ -24,6 +24,7 @@ class AudioManager {
   AudioManager& operator=(const AudioManager&) = delete;
 
   void configurePWM();
+  int calculateVolumeLevel(int adcValue);
 
   static constexpr int MORSE_FREQUENCY = 600;  // Fixed 600Hz for Morse code
 

@@ -16,24 +16,13 @@ void AudioManager::configurePWM() {
 }
 
 void AudioManager::setVolume(int adcValue) {
-  // Handle zero volume case first
-  if (adcValue <= VOLUME_DEAD_ZONE) {
-    if (currentVolume > 0) {  // Only update if we need to turn off
-      currentVolume = 0;
-      ledcWrite(Audio::SPEAKER_CHANNEL, 0);
-      ledcDetachPin(Pins::SPEAKER);
-    }
-    return;
-  }
-
-  // Map ADC value to volume range, accounting for dead zone
-  int newVolume = map(adcValue, VOLUME_DEAD_ZONE, Radio::ADC_MAX, 0, VOLUME_MAX);
-  newVolume = constrain(newVolume, 0, VOLUME_MAX);  // Ensure volume stays in valid range
+  // Calculate the appropriate volume level based on the ADC reading
+  int newVolume = calculateVolumeLevel(adcValue);
 
   // Update volume if changed
   if (newVolume != currentVolume) {
     currentVolume = newVolume;
-    
+
     // Ensure pin is attached and update volume if we're making sound
     if (currentVolume > 0 && (isPlayingMorse || ledcRead(Audio::SPEAKER_CHANNEL) > 0)) {
       ledcAttachPin(Pins::SPEAKER, Audio::SPEAKER_CHANNEL);
@@ -42,8 +31,31 @@ void AudioManager::setVolume(int adcValue) {
   }
 }
 
+/**
+ * Calculates the appropriate volume level based on the ADC reading
+ * @param adcValue Raw ADC value from the volume potentiometer
+ * @return Calculated volume level (0-255)
+ */
+int AudioManager::calculateVolumeLevel(int adcValue) {
+  // Handle zero volume case first
+  if (adcValue <= VOLUME_DEAD_ZONE) {
+    // If volume is below dead zone, turn off audio
+    if (currentVolume > 0) {  // Only update if we need to turn off
+      ledcWrite(Audio::SPEAKER_CHANNEL, 0);
+      ledcDetachPin(Pins::SPEAKER);
+    }
+    return 0;
+  }
+
+  // Map ADC value to volume range, accounting for dead zone
+  int newVolume = map(adcValue, VOLUME_DEAD_ZONE, Radio::ADC_MAX, 0, VOLUME_MAX);
+  // Ensure volume stays in valid range
+  return constrain(newVolume, 0, VOLUME_MAX);
+}
+
 void AudioManager::handlePlayback() {
   unsigned long currentTime = millis();
+  // Update volume at regular intervals to avoid constant ADC reads
   if (currentTime - lastVolumeUpdate >= VOLUME_UPDATE_INTERVAL) {
     int volumeRead = PowerManager::getInstance().readADC(Pins::VOLUME_POT);
     setVolume(volumeRead);
@@ -71,11 +83,11 @@ void AudioManager::playStaticNoise(int signalStrength) {
 
   // Ensure PWM is attached
   ledcAttachPin(Pins::SPEAKER, Audio::SPEAKER_CHANNEL);
-  
+
   // Generate random noise within the frequency range
   int noiseFrequency = random(MIN_STATIC_FREQ, MAX_STATIC_FREQ + 1);
 
-  // Invert signalStrength mapping
+  // Invert signalStrength mapping - stronger signal = less static
   int scaledVolume = map(signalStrength, 0, 255, currentVolume, 0);
 
   ledcWriteTone(Audio::SPEAKER_CHANNEL, noiseFrequency);

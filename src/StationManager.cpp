@@ -22,54 +22,56 @@ void StationManager::initializeDefaultStations() {
 }
 
 Station* StationManager::findClosestStation(int tuningValue, WaveBand band, int& signalStrength) {
-  Station* closest = nullptr;
-  bool stationLocked = false;
-  signalStrength = 0;
+  Station* closestStation = nullptr;
+  int bestSignalStrength = 0;
 
-  // Check all stations in the current band
+  // Iterate through all stations to find the closest one for the current band
   for (auto& station : stations) {
-    if (station.getBand() == band && station.isEnabled()) {
-      // Check if we're in range of this station
-      if (station.isInRange(tuningValue)) {
-        closest = &station;
-        stationLocked = true;
-        signalStrength = station.getSignalStrength(tuningValue);
-        break;
-      }
-      // If not in range but closest so far, track it
-      else if (!closest) {
-        closest = &station;
-      }
+    // Skip stations that are not enabled or not on the current band
+    if (!station.isEnabled() || station.getBand() != band) {
+      continue;
+    }
+
+    // Calculate signal strength for this station
+    int strength = station.getSignalStrength(tuningValue);
+
+    // If this station has a better signal than what we've found so far, update our best match
+    if (strength > bestSignalStrength) {
+      bestSignalStrength = strength;
+      closestStation = &station;
     }
   }
 
-  // Update signal indicators
-  auto& signalMgr = SignalManager::getInstance();
-  signalMgr.updateLockStatus(stationLocked);
-  signalMgr.updateSignalStrength(signalStrength);
+  // Update the output parameter with the best signal strength we found
+  signalStrength = bestSignalStrength;
 
-#ifdef DEBUG_SERIAL_OUTPUT
-  signalMgr.debugPrint(stationLocked, closest ? closest->getName() : nullptr, signalStrength);
-#endif
-
-  return closest;
+  return closestStation;
 }
 
 Station* StationManager::getStation(size_t index) {
+  // Bounds checking to prevent out-of-range access
   if (index < stations.size()) {
     return &stations[index];
   }
+
+  // Return nullptr if the index is out of bounds
   return nullptr;
 }
 
 std::vector<Station*> StationManager::getStationsForBand(WaveBand band) {
-  std::vector<Station*> bandStations;
+  std::vector<Station*> result;
+
+  // Reserve space to avoid reallocations
+  result.reserve(stations.size());
+
+  // Collect all stations for the specified band
   for (auto& station : stations) {
     if (station.getBand() == band) {
-      bandStations.push_back(&station);
+      result.push_back(&station);
     }
   }
-  return bandStations;
+
+  return result;
 }
 
 void StationManager::updateStation(size_t index, int frequency, const String& message) {
@@ -78,12 +80,18 @@ void StationManager::updateStation(size_t index, int frequency, const String& me
 
 void StationManager::updateStation(size_t index, int frequency, const String& message,
                                    bool enabled) {
-  if (index < stations.size()) {
-    stations[index].setFrequency(frequency);
-    stations[index].setMessage(message);
-    stations[index].setEnabled(enabled);
-    saveToPreferences();
+  // Bounds checking to prevent out-of-range access
+  if (index >= stations.size()) {
+    return;
   }
+
+  // Update the station properties
+  stations[index].setFrequency(frequency);
+  stations[index].setMessage(message);
+  stations[index].setEnabled(enabled);
+
+  // Save changes to persistent storage
+  saveToPreferences();
 }
 
 void StationManager::saveToPreferences() { StationStorage::getInstance().saveStations(stations); }

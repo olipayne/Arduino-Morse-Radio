@@ -1,5 +1,5 @@
-#ifndef SIGNAL_MANAGER_H
-#define SIGNAL_MANAGER_H
+#ifndef SIGNALMANAGER_H
+#define SIGNALMANAGER_H
 
 #include <Arduino.h>
 #include "Config.h"
@@ -12,21 +12,26 @@ class SignalManager {
   }
 
   void begin();
+
+  // Signal status management
   void updateLockStatus(bool locked);
   void updateSignalStrength(int strength);
 
-#ifdef DEBUG_SERIAL_OUTPUT
-  void debugPrint(bool isLocked, const char* stationName = nullptr, int signalStrength = 0);
-#endif
+  // Debug output
+  void debugPrint(bool locked, const char* stationName, int signalStrength);
+
+  // Getters
+  bool isStationLocked() const { return isLocked; }
+  int getSignalStrength() const { return currentSignalStrength; }
 
  private:
   SignalManager() = default;
   SignalManager(const SignalManager&) = delete;
   SignalManager& operator=(const SignalManager&) = delete;
 
-  bool isStationLocked = false;
-  bool previousLockState = false;
-  unsigned long lastLockPrintTime = 0;
+  // State tracking
+  bool isLocked = false;
+  int currentSignalStrength = 0;
 };
 
 #endif
