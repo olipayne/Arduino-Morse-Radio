@@ -1,3 +1,12 @@
+## [1.6.3](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.6.2...v1.6.3) (2025-03-15)
+
+
+### Bug Fixes
+
+* swap medium/short wave and medium/fast decode speed logic for toggle switches ([33fc957](https://github.com/olipayne/Arduino-Morse-Radio/commit/33fc9572774fa8de1a5698a3def872ccf4e97099))
+
+
+
 ## [1.6.2](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.6.1...v1.6.2) (2025-01-11)
 
 
@@ -31,15 +40,6 @@
 ### Bug Fixes
 
 * **audio:** simplify volume control and fix zero volume detection ([7de41ec](https://github.com/olipayne/Arduino-Morse-Radio/commit/7de41ec1803901cfb5512a15df9df88eca170acb))
-
-
-
-## [1.5.2](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.5.1...v1.5.2) (2025-01-06)
-
-
-### Bug Fixes
-
-* improve speaker control and volume response ([2761913](https://github.com/olipayne/Arduino-Morse-Radio/commit/27619138ffaac1b7f61e8b72fc205704c53b14fd))
 
 
 
