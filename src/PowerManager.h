@@ -5,8 +5,8 @@
 #include <UMS3.h>
 #include "Config.h"
 #include "MorseCode.h"
-#include "WiFiManager.h"
 #include "PotentiometerReader.h"
+#include "WiFiManager.h"
 
 class PowerManager {
  public:
@@ -39,17 +39,17 @@ class PowerManager {
   void enterDeepSleep(SleepReason reason = SleepReason::POWER_OFF);
   int readADC(int pin);
 
+  // LED task control methods (moved from private)
+  void startLEDTask();
+  void stopLEDTask();
+
  private:
-  PowerManager() : 
-    tuningPot(Pins::TUNING_POT),
-    volumePot(Pins::VOLUME_POT) {}
+  PowerManager() : tuningPot(Pins::TUNING_POT), volumePot(Pins::VOLUME_POT) {}
   PowerManager(const PowerManager&) = delete;
   PowerManager& operator=(const PowerManager&) = delete;
 
   void configurePins();
   void configureADC();
-  void startLEDTask();
-  void stopLEDTask();
   static void LEDTaskCode(void* parameter);
   void displayBatteryStatus();
   void updateLEDBrightness(float batteryVoltage);

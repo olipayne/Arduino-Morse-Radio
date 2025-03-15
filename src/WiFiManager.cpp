@@ -406,6 +406,14 @@ void WiFiManager::startAP() {
     Serial.println("WiFi AP started: " + ssid);
     Serial.print("AP IP address: ");
     Serial.println(WiFi.softAPIP());
+    Serial.print("Free heap: ");
+    Serial.println(ESP.getFreeHeap());
+    Serial.print("Flash size: ");
+    Serial.println(ESP.getFlashChipSize());
+    Serial.print("Sketch size: ");
+    Serial.println(ESP.getSketchSize());
+    Serial.print("Free sketch space: ");
+    Serial.println(ESP.getFreeSketchSpace());
 #endif
   } else {
 #ifdef DEBUG_SERIAL_OUTPUT
@@ -426,6 +434,15 @@ void WiFiManager::handle() {
     return;
   }
 
+#ifdef DEBUG_SERIAL_OUTPUT
+  static unsigned long lastStatusCheck = 0;
+  if (millis() - lastStatusCheck > 5000) {  // Check every 5 seconds
+    Serial.printf("Connected stations: %d\n", WiFi.softAPgetStationNum());
+    Serial.printf("Free heap: %d\n", ESP.getFreeHeap());
+    lastStatusCheck = millis();
+  }
+#endif
+
   updateStatusLED();
 }
 
@@ -436,6 +453,36 @@ void WiFiManager::setupServer() {
   server.on("/stations", HTTP_GET, [this]() { handleStationConfig(); });
   server.on("/api/status", HTTP_GET, [this]() { handleAPI(); });
   server.onNotFound([this]() { handleNotFound(); });
+
+  // Add OTA event handlers
+  ElegantOTA.onStart([this]() {
+#ifdef DEBUG_SERIAL_OUTPUT
+    Serial.println("OTA Update Started");
+#endif
+    // Stop any tasks that might interfere with the update
+    PowerManager::getInstance().stopLEDTask();
+  });
+
+  ElegantOTA.onProgress([](size_t current, size_t final) {
+#ifdef DEBUG_SERIAL_OUTPUT
+    Serial.printf("OTA Progress: %u%%\r", (current * 100) / final);
+#endif
+  });
+
+  ElegantOTA.onEnd([this](bool success) {
+#ifdef DEBUG_SERIAL_OUTPUT
+    Serial.printf("\nOTA Update %s!\n", success ? "Successful" : "Failed");
+#endif
+    if (success) {
+      // Wait a bit before restarting
+      delay(1000);
+      ESP.restart();
+    } else {
+      // Restart LED task if update failed
+      PowerManager::getInstance().startLEDTask();
+    }
+  });
+
   ElegantOTA.begin(&server);
   server.begin();
 }
