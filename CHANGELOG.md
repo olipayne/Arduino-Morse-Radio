@@ -1,3 +1,13 @@
+## [1.7.3](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.7.2...v1.7.3) (2025-03-15)
+
+
+### Bug Fixes
+
+* ota working i think ([44acd4e](https://github.com/olipayne/Arduino-Morse-Radio/commit/44acd4e34cad53a2a1af5556d633787c3ac16a0f))
+* ota working i think ([16cea4c](https://github.com/olipayne/Arduino-Morse-Radio/commit/16cea4ce02d37a0728632cb0eecce877fc2f9674))
+
+
+
 ## [1.7.2](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.7.1...v1.7.2) (2025-03-15)
 
 
@@ -31,15 +41,6 @@
 ### Bug Fixes
 
 * swap medium/short wave and medium/fast decode speed logic for toggle switches ([33fc957](https://github.com/olipayne/Arduino-Morse-Radio/commit/33fc9572774fa8de1a5698a3def872ccf4e97099))
-
-
-
-## [1.6.2](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.6.1...v1.6.2) (2025-01-11)
-
-
-### Bug Fixes
-
-* small stuff ([29dba1c](https://github.com/olipayne/Arduino-Morse-Radio/commit/29dba1c55e3c3e28fe5924e5a67214e5475765bd))
 
 
 
