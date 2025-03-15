@@ -513,6 +513,14 @@ void WiFiManager::begin() {
   pinMode(Pins::WIFI_BUTTON, INPUT_PULLUP);
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
+
+  // Initialize timer for system tasks
+  esp_timer_create_args_t timer_config = {.callback = nullptr,
+                                          .arg = nullptr,
+                                          .dispatch_method = ESP_TIMER_TASK,
+                                          .name = "system_timer",
+                                          .skip_unhandled_events = true};
+  esp_timer_create(&timer_config, &timer);
 }
 
 void WiFiManager::toggle() {
@@ -605,8 +613,21 @@ void WiFiManager::setupServer() {
 #ifdef DEBUG_SERIAL_OUTPUT
     Serial.println("OTA Update Started");
 #endif
-    // Stop any tasks that might interfere with the update
+    // Stop all tasks that might interfere with the update
     PowerManager::getInstance().stopLEDTask();
+    StationManager::getInstance().saveToPreferences();  // Save current state
+
+    // Stop audio and other tasks
+    AudioManager::getInstance().stop();
+    MorseCode::getInstance().stop();
+
+    // Disable timer if it's running
+    if (timer != nullptr) {
+      esp_timer_stop(timer);
+    }
+
+    // Free up memory
+    ESP.getMinFreeHeap();
   });
 
   ElegantOTA.onProgress([](size_t current, size_t final) {
@@ -620,12 +641,20 @@ void WiFiManager::setupServer() {
     Serial.printf("\nOTA Update %s!\n", success ? "Successful" : "Failed");
 #endif
     if (success) {
+      // Save any pending state
+      StationManager::getInstance().saveToPreferences();
+
       // Wait a bit before restarting
       delay(1000);
       ESP.restart();
     } else {
-      // Restart LED task if update failed
+      // Restart tasks if update failed
       PowerManager::getInstance().startLEDTask();
+
+      // Re-enable timer if it exists
+      if (timer != nullptr) {
+        esp_timer_start_periodic(timer, 1000);  // 1ms period
+      }
     }
   });
 

@@ -5,9 +5,12 @@
 #include <ESPmDNS.h>
 #include <WebServer.h>
 #include <WiFi.h>
+#include "AudioManager.h"
 #include "Config.h"
+#include "MorseCode.h"
 #include "PowerManager.h"
 #include "StationManager.h"
+#include "esp_timer.h"
 
 class WiFiManager {
  public:
@@ -25,7 +28,12 @@ class WiFiManager {
 
  private:
   WiFiManager()
-      : server(80), wifiEnabled(false), startTime(0), lastLedFlash(0), hostname("radio-config") {}
+      : server(80),
+        wifiEnabled(false),
+        startTime(0),
+        lastLedFlash(0),
+        hostname("radio-config"),
+        timer(nullptr) {}
 
   WiFiManager(const WiFiManager&) = delete;
   WiFiManager& operator=(const WiFiManager&) = delete;
@@ -55,6 +63,7 @@ class WiFiManager {
   unsigned long startTime;
   unsigned long lastLedFlash;
   String hostname;
+  esp_timer_handle_t timer;  // Timer handle for OTA operations
 
   // Constants
   static constexpr unsigned long DEFAULT_TIMEOUT = 120000;  // 2 minutes
