@@ -1,3 +1,12 @@
+## [1.7.1](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.7.0...v1.7.1) (2025-03-15)
+
+
+### Bug Fixes
+
+* ota fix? ([38a07a7](https://github.com/olipayne/Arduino-Morse-Radio/commit/38a07a714aa1002c6b158994a522132752e2acea))
+
+
+
 # [1.7.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.6.3...v1.7.0) (2025-03-15)
 
 
@@ -31,15 +40,6 @@
 ### Bug Fixes
 
 * debug/release flags fixes and github builds working (i hope) ([824dddf](https://github.com/olipayne/Arduino-Morse-Radio/commit/824dddf1f0b718061e14d963f49323776f55dfe5))
-
-
-
-# [1.6.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.5.3...v1.6.0) (2025-01-09)
-
-
-### Features
-
-* **potentiometer:** implement advanced hysteresis for pot readings ([63ce58d](https://github.com/olipayne/Arduino-Morse-Radio/commit/63ce58df8aaa93cdef901f4770ddaf050f53b24b))
 
 
 
