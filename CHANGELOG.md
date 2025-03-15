@@ -1,3 +1,12 @@
+## [1.7.2](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.7.1...v1.7.2) (2025-03-15)
+
+
+### Bug Fixes
+
+* wifi html ([a575c63](https://github.com/olipayne/Arduino-Morse-Radio/commit/a575c63635ada2ddc25793e94e43de6524a59b18))
+
+
+
 ## [1.7.1](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.7.0...v1.7.1) (2025-03-15)
 
 
@@ -31,15 +40,6 @@
 ### Bug Fixes
 
 * small stuff ([29dba1c](https://github.com/olipayne/Arduino-Morse-Radio/commit/29dba1c55e3c3e28fe5924e5a67214e5475765bd))
-
-
-
-## [1.6.1](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.6.0...v1.6.1) (2025-01-11)
-
-
-### Bug Fixes
-
-* debug/release flags fixes and github builds working (i hope) ([824dddf](https://github.com/olipayne/Arduino-Morse-Radio/commit/824dddf1f0b718061e14d963f49323776f55dfe5))
 
 
 
