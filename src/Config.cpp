@@ -7,8 +7,8 @@ Audio::MorseTimings createTimings(unsigned int baseDuration) {
       .dotDuration = baseDuration,
       .dashDuration = baseDuration * 3,  // Dash is 3x dot
       .symbolGap = baseDuration,         // Symbol gap equals dot length
-      .letterGap = baseDuration * 3,     // Letter gap is 3x dot (adjusted from 4x)
-      .wordGap = baseDuration * 7        // Word gap is 7x dot (adjusted from 8x)
+      .letterGap = baseDuration * 4,     // Letter gap is 4x dot
+      .wordGap = baseDuration * 8        // Word gap is 8x dot
   };
 }
 }  // namespace
