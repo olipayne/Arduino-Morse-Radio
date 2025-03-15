@@ -3,12 +3,9 @@
 class PotentiometerReader {
  public:
   static constexpr int WINDOW_SIZE = 5;  // Size of moving average window
-  
+
   PotentiometerReader(int pin, int hysteresis = 20)
-      : pin_(pin), 
-        hysteresis_(hysteresis), 
-        lastStableValue_(0),
-        windowIndex_(0) {
+      : pin_(pin), hysteresis_(hysteresis), lastStableValue_(0), windowIndex_(0) {
     for (int i = 0; i < WINDOW_SIZE; i++) {
       window_[i] = 0;
     }
@@ -39,7 +36,7 @@ class PotentiometerReader {
     // Apply hysteresis with adaptive threshold
     int difference = currentValue - lastStableValue_;
     int adaptiveThreshold = hysteresis_;
-    
+
     // Increase threshold for larger changes to prevent oscillation
     if (abs(difference) > hysteresis_ * 2) {
       adaptiveThreshold = hysteresis_ * 1.5;
@@ -48,9 +45,8 @@ class PotentiometerReader {
     // Only update if change exceeds threshold
     if (abs(difference) > adaptiveThreshold) {
       // Gradual change for smoother transitions
-      lastStableValue_ += (difference > 0) ? 
-                         min(difference, hysteresis_ * 2) : 
-                         max(difference, -hysteresis_ * 2);
+      lastStableValue_ +=
+          (difference > 0) ? min(difference, hysteresis_ * 2) : max(difference, -hysteresis_ * 2);
     }
 
     return lastStableValue_;
