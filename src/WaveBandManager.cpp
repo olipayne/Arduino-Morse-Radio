@@ -29,11 +29,16 @@ void WaveBandManager::update() {
 
   // Read switch states
   if (digitalRead(Pins::LW_BAND_SWITCH) == LOW) {
+    // LONG_WAVE switch works as expected
     newBand = WaveBand::LONG_WAVE;
   } else if (digitalRead(Pins::MW_BAND_SWITCH) == LOW) {
-    newBand = WaveBand::MEDIUM_WAVE;
+    // Swapped: MW switch now selects SHORT_WAVE
+    // This is because the hardware was changed from rotary to toggle switches
+    newBand = WaveBand::SHORT_WAVE;
   } else {
-    newBand = WaveBand::SHORT_WAVE;  // Default to short wave
+    // Swapped: Default (no switch pressed) is now MEDIUM_WAVE
+    // This is because the hardware was changed from rotary to toggle switches
+    newBand = WaveBand::MEDIUM_WAVE;
   }
 
   // Only update if band has changed

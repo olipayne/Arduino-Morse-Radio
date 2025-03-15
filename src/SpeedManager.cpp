@@ -18,13 +18,18 @@ void SpeedManager::update() {
 
   // Determine the speed based on switch states and set corresponding voltage
   if (slowSwitch) {
+    // SLOW switch works as expected
     config.setMorseSpeed(MorseSpeed::SLOW);
     ledcWrite(PWMChannels::DECODE, 85);  // 1.1V (33% of 3.3V)
   } else if (medSwitch) {
-    config.setMorseSpeed(MorseSpeed::MEDIUM);
-    ledcWrite(PWMChannels::DECODE, 171);  // 2.2V (67% of 3.3V)
-  } else {
+    // Swapped: MED switch now selects FAST speed
+    // This is because the hardware was changed from rotary to toggle switches
     config.setMorseSpeed(MorseSpeed::FAST);
     ledcWrite(PWMChannels::DECODE, 255);  // 3.3V (100% of 3.3V)
+  } else {
+    // Swapped: Default (no switch pressed) is now MEDIUM speed
+    // This is because the hardware was changed from rotary to toggle switches
+    config.setMorseSpeed(MorseSpeed::MEDIUM);
+    ledcWrite(PWMChannels::DECODE, 171);  // 2.2V (67% of 3.3V)
   }
 }
