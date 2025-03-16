@@ -742,7 +742,7 @@ void WiFiManager::handleSaveConfig() {
 String WiFiManager::generateConfigPage() const {
   String html =
       "<div class='status' role='status' aria-live='polite'>Current Tuning Value: <span "
-      "id='currentTuning'>-</span> | Firmware: v" +
+      "id='currentTuning'>-</span> | Firmware: " +
       String(FIRMWARE_VERSION) + "</div>";
   html += "<h1>Radio Configuration</h1>";
   html +=
