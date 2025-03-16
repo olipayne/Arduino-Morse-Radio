@@ -1,0 +1,89 @@
+{
+    "categories": [
+        {
+            "title": "## 🚀 Features",
+            "labels": [
+                "feat"
+            ]
+        },
+        {
+            "title": "## 🐛 Bug Fixes",
+            "labels": [
+                "fix"
+            ]
+        },
+        {
+            "title": "## ⚡ Performance Improvements",
+            "labels": [
+                "perf"
+            ]
+        },
+        {
+            "title": "## 🔧 Other Changes",
+            "labels": [
+                "refactor",
+                "docs",
+                "style",
+                "test",
+                "build",
+                "ci",
+                "chore"
+            ]
+        }
+    ],
+    "sort": "ASC",
+    "template": "${{CHANGELOG}}\n\n**Full Changelog**: ${{RELEASE_DIFF}}",
+    "pr_template": "- ${{TITLE}} (#${{NUMBER}})",
+    "empty_template": "No changes detected in this release",
+    "max_pull_requests": 1000,
+    "max_back_track_time_days": 365,
+    "max_tags_to_fetch": 200,
+    "transformers": [
+        {
+            "pattern": "feat: (.*)",
+            "target": "- ✨ $1"
+        },
+        {
+            "pattern": "fix: (.*)",
+            "target": "- 🐛 $1"
+        },
+        {
+            "pattern": "docs: (.*)",
+            "target": "- 📝 $1"
+        },
+        {
+            "pattern": "style: (.*)",
+            "target": "- 💄 $1"
+        },
+        {
+            "pattern": "refactor: (.*)",
+            "target": "- ♻️ $1"
+        },
+        {
+            "pattern": "perf: (.*)",
+            "target": "- ⚡ $1"
+        },
+        {
+            "pattern": "test: (.*)",
+            "target": "- ✅ $1"
+        },
+        {
+            "pattern": "build: (.*)",
+            "target": "- 👷 $1"
+        },
+        {
+            "pattern": "ci: (.*)",
+            "target": "- 🔧 $1"
+        },
+        {
+            "pattern": "chore: (.*)",
+            "target": "- 🔨 $1"
+        }
+    ],
+    "trim_values": true,
+    "exclude_merge_branches": [
+        "merge pull request",
+        "Merge branch",
+        "merge master"
+    ]
+}

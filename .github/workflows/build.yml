@@ -1,4 +1,4 @@
-name: PlatformIO CI
+name: Build and Release
 
 on:
   push:
@@ -6,11 +6,13 @@ on:
       - main
 
 jobs:
-  build:
+  build-and-release:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for versioning
 
       - uses: actions/cache@v4
         with:
@@ -32,20 +34,70 @@ jobs:
 
       - name: Build Release Binary
         run: pio run -e release
+        id: release_build
 
       - name: Build Debug Binary
         run: pio run -e debug
+        id: debug_build
 
-      - name: Create changelog
-        id: changelog
-        uses: TriPSs/conventional-changelog-action@v6
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          skip-version-file: "true"
+      # If both builds succeed, we move on to determine the next version and create a release
+      
+      - name: Calculate Next Version
+        id: semver
+        run: |
+          # Get the latest tag
+          latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "Latest tag: $latest_tag"
+          
+          # Remove 'v' prefix
+          latest_version=${latest_tag#v}
+          
+          # Split into major, minor, patch
+          IFS='.' read -r -a version_parts <<< "$latest_version"
+          major="${version_parts[0]}"
+          minor="${version_parts[1]}"
+          patch="${version_parts[2]}"
+          
+          # Check commits since last tag for semantic versioning keywords
+          commits=$(git log --pretty=format:"%s" $latest_tag..HEAD)
+          
+          # Check if we have a major version bump (breaking change)
+          if echo "$commits" | grep -q "BREAKING CHANGE\|feat!:"; then
+            major=$((major + 1))
+            minor=0
+            patch=0
+          # Check if we have a minor version bump (new feature)
+          elif echo "$commits" | grep -q "^feat"; then
+            minor=$((minor + 1))
+            patch=0
+          # Otherwise, bump patch (fixes, docs, etc.)
+          elif [[ -n "$commits" ]]; then
+            patch=$((patch + 1))
+          fi
+          
+          # Set the new version
+          new_version="$major.$minor.$patch"
+          echo "new_version=$new_version" >> $GITHUB_OUTPUT
+          echo "New version will be: v$new_version"
+
+      - name: Check if version already exists
+        id: check-version
+        run: |
+          VERSION="v${{ steps.semver.outputs.new_version }}"
+          if git tag -l $VERSION | grep -q .; then
+            echo "Version $VERSION already exists, skipping release"
+            echo "skip_release=true" >> $GITHUB_OUTPUT
+          else
+            echo "Version $VERSION will be created"
+            echo "skip_release=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Merge Binaries
+        if: steps.check-version.outputs.skip_release == 'false'
         run: |
-          VERSION=${{ steps.changelog.outputs.tag }}
+          VERSION="v${{ steps.semver.outputs.new_version }}"
+          echo "Building version: ${VERSION}"
+          
           # Merge release binary
           ~/.platformio/packages/tool-esptoolpy/esptool.py --chip esp32s3 merge_bin --output .pio/build/release/merged-flash.bin --flash_mode dio --flash_size=keep 0x0 .pio/build/release/bootloader.bin 0x8000 .pio/build/release/partitions.bin 0x10000 .pio/build/release/firmware.bin
           mv .pio/build/release/merged-flash.bin .pio/build/release/firmware-${VERSION}-release.bin
@@ -58,10 +110,59 @@ jobs:
           cp .pio/build/release/firmware.bin .pio/build/release/firmware-${VERSION}-release-ota.bin
           cp .pio/build/debug/firmware.bin .pio/build/debug/firmware-${VERSION}-debug-ota.bin
 
-      - name: Create release
-        run: gh release create "$TAG_NAME" --notes "$BODY" .pio/build/release/firmware-${{ steps.changelog.outputs.tag }}-release.bin .pio/build/debug/firmware-${{ steps.changelog.outputs.tag }}-debug.bin .pio/build/release/firmware-${{ steps.changelog.outputs.tag }}-release-ota.bin .pio/build/debug/firmware-${{ steps.changelog.outputs.tag }}-debug-ota.bin
-        if: ${{ steps.changelog.outputs.skipped == 'false' }}
+      - name: Generate Changelog
+        if: steps.check-version.outputs.skip_release == 'false'
+        id: changelog
+        run: |
+          # Get commits since last tag
+          latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          
+          if [ -z "$latest_tag" ]; then
+            # No tags yet, get all commits
+            COMMITS=$(git log --pretty=format:"* %s (%h)" --reverse)
+          else
+            # Get commits since last tag
+            COMMITS=$(git log --pretty=format:"* %s (%h)" ${latest_tag}..HEAD --reverse)
+          fi
+          
+          # Format changelog by type
+          FEATURES=$(echo "$COMMITS" | grep "^* feat" || echo "")
+          FIXES=$(echo "$COMMITS" | grep "^* fix" || echo "")
+          OTHER=$(echo "$COMMITS" | grep -v "^* feat\|^* fix" || echo "")
+          
+          # Create markdown changelog
+          CHANGELOG="## What's Changed\n\n"
+          
+          if [ -n "$FEATURES" ]; then
+            CHANGELOG+="### 🚀 Features\n$FEATURES\n\n"
+          fi
+          
+          if [ -n "$FIXES" ]; then
+            CHANGELOG+="### 🐛 Bug Fixes\n$FIXES\n\n"
+          fi
+          
+          if [ -n "$OTHER" ]; then
+            CHANGELOG+="### 🔧 Other Changes\n$OTHER\n\n"
+          fi
+          
+          # Set output
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        if: steps.check-version.outputs.skip_release == 'false'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.semver.outputs.new_version }}
+          name: Release v${{ steps.semver.outputs.new_version }}
+          body: ${{ steps.changelog.outputs.changelog }}
+          files: |
+            .pio/build/release/firmware-v${{ steps.semver.outputs.new_version }}-release.bin
+            .pio/build/debug/firmware-v${{ steps.semver.outputs.new_version }}-debug.bin
+            .pio/build/release/firmware-v${{ steps.semver.outputs.new_version }}-release-ota.bin
+            .pio/build/debug/firmware-v${{ steps.semver.outputs.new_version }}-debug-ota.bin
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG_NAME: ${{ steps.changelog.outputs.tag }}
-          BODY: ${{ steps.changelog.outputs.clean_changelog }}
