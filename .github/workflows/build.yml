@@ -32,16 +32,7 @@ jobs:
       - name: Install PlatformIO Core
         run: pip install --upgrade platformio
 
-      # First, verify that the build works before doing anything else
-      - name: Verify Release Build
-        run: pio run -e release
-        id: verify_release_build
-
-      - name: Verify Debug Build
-        run: pio run -e debug
-        id: verify_debug_build
-
-      # If we made it here, builds are successful
+      # Calculate the version number
       - name: Calculate Next Version
         id: semver
         run: |
@@ -92,22 +83,7 @@ jobs:
             echo "skip_release=false" >> $GITHUB_OUTPUT
           fi
 
-      # Temporarily disable the extra_scripts.py file to prevent it from overwriting our Version.h
-      - name: Disable extra_scripts
-        if: steps.check-version.outputs.skip_release == 'false'
-        run: |
-          if [ -f "extra_scripts.py" ]; then
-            mv extra_scripts.py extra_scripts.py.bak
-            echo "Temporarily disabled extra_scripts.py"
-          fi
-          
-          # Also check and update platformio.ini to remove extra_scripts reference
-          if grep -q "extra_scripts" platformio.ini; then
-            sed -i 's/extra_scripts.*/# Temporarily disabled: extra_scripts = extra_scripts.py/' platformio.ini
-            echo "Removed extra_scripts from platformio.ini"
-          fi
-
-      # Update Version.h with the new clean version number
+      # Update Version.h with the new version number
       - name: Update Version.h
         if: steps.check-version.outputs.skip_release == 'false'
         run: |
@@ -127,43 +103,28 @@ jobs:
           
           # Show the generated file
           cat include/Version.h
-          
-          # Add additional instructions to enforce a complete rebuild
-          echo "Will now clean and rebuild to ensure version is included"
 
-      # Clean build directories to force a full rebuild with the new version
-      - name: Clean Build Directories
+      # Commit the Version.h file
+      - name: Commit Version.h
         if: steps.check-version.outputs.skip_release == 'false'
         run: |
-          echo "Cleaning build directories to force rebuild with new version"
-          pio run -t clean
-          # Remove any cached dependencies of files that include Version.h
-          rm -f .pio/build/*/src/main.* .pio/build/*/src/WiFiManager.* || true
-          # Verify Version.h is still correct after clean
-          cat include/Version.h
+          VERSION="v${{ steps.semver.outputs.new_version }}"
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add include/Version.h
+          git commit -m "chore: update version to $VERSION"
+          echo "Version.h committed with new version $VERSION"
 
-      # Now rebuild with the updated Version.h
-      - name: Build Final Release Binary
+      # Build with the committed Version.h
+      - name: Build Release Binary
         if: steps.check-version.outputs.skip_release == 'false'
-        run: |
-          # Verify Version.h content before building
-          echo "Version.h content before building:"
-          cat include/Version.h
-          
-          # Force verbose output to see what's happening
-          pio run -e release -v
-        id: final_release_build
+        run: pio run -e release
+        id: release_build
 
-      - name: Build Final Debug Binary
+      - name: Build Debug Binary
         if: steps.check-version.outputs.skip_release == 'false'
-        run: |
-          # Verify Version.h content before building
-          echo "Version.h content before building:"
-          cat include/Version.h
-          
-          # Build the debug version
-          pio run -e debug
-        id: final_debug_build
+        run: pio run -e debug
+        id: debug_build
 
       # Process the binaries for release
       - name: Process Release Binaries
@@ -171,10 +132,6 @@ jobs:
         run: |
           VERSION="v${{ steps.semver.outputs.new_version }}"
           echo "Building version: ${VERSION}"
-          
-          # Double-check Version.h to make sure it wasn't overwritten
-          echo "Checking Version.h content:"
-          cat include/Version.h
           
           # Merge release binary
           ~/.platformio/packages/tool-esptoolpy/esptool.py --chip esp32s3 merge_bin --output .pio/build/release/merged-flash.bin --flash_mode dio --flash_size=keep 0x0 .pio/build/release/bootloader.bin 0x8000 .pio/build/release/partitions.bin 0x10000 .pio/build/release/firmware.bin
@@ -187,21 +144,6 @@ jobs:
           # Create OTA-specific binaries (firmware only, no bootloader or partition table)
           cp .pio/build/release/firmware.bin .pio/build/release/firmware-${VERSION}-release-ota.bin
           cp .pio/build/debug/firmware.bin .pio/build/debug/firmware-${VERSION}-debug-ota.bin
-
-      # Restore extra_scripts.py if we disabled it
-      - name: Restore extra_scripts
-        if: steps.check-version.outputs.skip_release == 'false'
-        run: |
-          if [ -f "extra_scripts.py.bak" ]; then
-            mv extra_scripts.py.bak extra_scripts.py
-            echo "Restored extra_scripts.py"
-          fi
-          
-          # Also restore platformio.ini if we modified it
-          if grep -q "# Temporarily disabled: extra_scripts" platformio.ini; then
-            sed -i 's/# Temporarily disabled: extra_scripts/extra_scripts/' platformio.ini
-            echo "Restored extra_scripts in platformio.ini"
-          fi
 
       - name: Generate Changelog
         if: steps.check-version.outputs.skip_release == 'false'
@@ -243,13 +185,14 @@ jobs:
           echo -e "$CHANGELOG" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Create Tag
+      # Create tag and push both commit and tag
+      - name: Create and Push Tag
         if: steps.check-version.outputs.skip_release == 'false'
         run: |
           VERSION="v${{ steps.semver.outputs.new_version }}"
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
           git tag -a $VERSION -m "Release $VERSION"
+          git push origin HEAD:main
+          git push origin $VERSION
 
       - name: Create Release
         if: steps.check-version.outputs.skip_release == 'false'
