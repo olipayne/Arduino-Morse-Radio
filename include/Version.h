@@ -2,6 +2,6 @@
 #define VERSION_H
 
 // Automatically generated from Git - do not edit manually
-#define FIRMWARE_VERSION "ed81aa5-dirty"
+#define FIRMWARE_VERSION "27f070c-dirty"
 
 #endif // VERSION_H

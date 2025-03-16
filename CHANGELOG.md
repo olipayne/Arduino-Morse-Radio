@@ -1,3 +1,12 @@
+# [1.8.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.7.10...v1.8.0) (2025-03-16)
+
+
+### Features
+
+* add automated firmware versioning from Git tags ([27f070c](https://github.com/olipayne/Arduino-Morse-Radio/commit/27f070c24e61eead429dafc8214a9beb63ba59eb))
+
+
+
 ## [1.7.10](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.7.9...v1.7.10) (2025-03-16)
 
 
@@ -31,15 +40,6 @@
 ### Bug Fixes
 
 * usb to keep ota working ([a0b8bf8](https://github.com/olipayne/Arduino-Morse-Radio/commit/a0b8bf80721e67ce1dc3b6313dd5a09ba66d3ede))
-
-
-
-## [1.7.6](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.7.5...v1.7.6) (2025-03-16)
-
-
-### Bug Fixes
-
-* ota cleanup ([7c577ed](https://github.com/olipayne/Arduino-Morse-Radio/commit/7c577ed604f120984b660d0dcb33485f6f4a6248))
 
 
 
