@@ -1,0 +1,73 @@
+name: Build Release Firmware
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for proper versioning
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Cache PlatformIO dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.platformio/packages
+            ~/.platformio/platforms
+            ~/.platformio/toolchains
+          key: ${{ runner.os }}-pio-${{ hashFiles('**/platformio.ini') }}
+          restore-keys: |
+            ${{ runner.os }}-pio-
+
+      - name: Install PlatformIO Core
+        run: pip install --upgrade platformio
+
+      - name: Extract version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Build Release Binary
+        run: pio run -e release
+
+      - name: Build Debug Binary
+        run: pio run -e debug
+
+      - name: Merge Binaries
+        run: |
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          echo "Building version: ${VERSION}"
+          
+          # Merge release binary
+          ~/.platformio/packages/tool-esptoolpy/esptool.py --chip esp32s3 merge_bin --output .pio/build/release/merged-flash.bin --flash_mode dio --flash_size=keep 0x0 .pio/build/release/bootloader.bin 0x8000 .pio/build/release/partitions.bin 0x10000 .pio/build/release/firmware.bin
+          mv .pio/build/release/merged-flash.bin .pio/build/release/firmware-${VERSION}-release.bin
+
+          # Merge debug binary
+          ~/.platformio/packages/tool-esptoolpy/esptool.py --chip esp32s3 merge_bin --output .pio/build/debug/merged-flash.bin --flash_mode dio --flash_size=keep 0x0 .pio/build/debug/bootloader.bin 0x8000 .pio/build/debug/partitions.bin 0x10000 .pio/build/debug/firmware.bin
+          mv .pio/build/debug/merged-flash.bin .pio/build/debug/firmware-${VERSION}-debug.bin
+          
+          # Create OTA-specific binaries (firmware only, no bootloader or partition table)
+          cp .pio/build/release/firmware.bin .pio/build/release/firmware-${VERSION}-release-ota.bin
+          cp .pio/build/debug/firmware.bin .pio/build/debug/firmware-${VERSION}-debug-ota.bin
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            .pio/build/release/firmware-${{ steps.get_version.outputs.VERSION }}-release.bin
+            .pio/build/debug/firmware-${{ steps.get_version.outputs.VERSION }}-debug.bin
+            .pio/build/release/firmware-${{ steps.get_version.outputs.VERSION }}-release-ota.bin
+            .pio/build/debug/firmware-${{ steps.get_version.outputs.VERSION }}-debug-ota.bin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 

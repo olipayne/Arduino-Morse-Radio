@@ -4,10 +4,17 @@ import os
 def get_git_version():
     """
     Get version information from git:
+    - If running in GitHub Actions with a release tag, use that tag
     - If on a tag, use the tag name
     - Otherwise use the latest tag plus commits since tag
     - Include dirty flag if working directory has modifications
     """
+    # Check if we're running in GitHub Actions for a release
+    if 'GITHUB_REF' in os.environ and os.environ['GITHUB_REF'].startswith('refs/tags/'):
+        version = os.environ['GITHUB_REF'].replace('refs/tags/', '')
+        print(f"Using GitHub release tag: {version}")
+        return version
+        
     try:
         # Check if we're on a tag
         describe_cmd = ["git", "describe", "--tags", "--exact-match"]
