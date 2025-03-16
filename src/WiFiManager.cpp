@@ -630,37 +630,6 @@ void WiFiManager::setupServer() {
     ESP.getMinFreeHeap();
   });
 
-  ElegantOTA.onProgress([](size_t current, size_t final) {
-#ifdef DEBUG_SERIAL_OUTPUT
-    if (final > 0) {
-      Serial.printf("OTA Progress: %u%%\r", (current * 100) / final);
-    }
-#endif
-  });
-
-  ElegantOTA.onEnd([this](bool success) {
-#ifdef DEBUG_SERIAL_OUTPUT
-    Serial.printf("\nOTA Update %s!\n", success ? "Successful" : "Failed");
-#endif
-    if (success) {
-      // Save any pending state
-      StationManager::getInstance().saveToPreferences();
-
-#ifdef DEBUG_SERIAL_OUTPUT
-      Serial.println("OTA update complete, ElegantOTA will restart the device...");
-#endif
-
-    } else {
-      // Restart tasks if update failed
-      PowerManager::getInstance().startLEDTask();
-
-      // Re-enable timer if it exists
-      if (timer != nullptr) {
-        esp_timer_start_periodic(timer, 1000);  // 1ms period
-      }
-    }
-  });
-
   // Add a custom warning to the ElegantOTA interface
   ElegantOTA.setAutoReboot(true);
   ElegantOTA.begin(&server);
