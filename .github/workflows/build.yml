@@ -127,16 +127,42 @@ jobs:
           
           # Show the generated file
           cat include/Version.h
+          
+          # Add additional instructions to enforce a complete rebuild
+          echo "Will now clean and rebuild to ensure version is included"
+
+      # Clean build directories to force a full rebuild with the new version
+      - name: Clean Build Directories
+        if: steps.check-version.outputs.skip_release == 'false'
+        run: |
+          echo "Cleaning build directories to force rebuild with new version"
+          pio run -t clean
+          # Remove any cached dependencies of files that include Version.h
+          rm -f .pio/build/*/src/main.* .pio/build/*/src/WiFiManager.* || true
+          # Verify Version.h is still correct after clean
+          cat include/Version.h
 
       # Now rebuild with the updated Version.h
       - name: Build Final Release Binary
         if: steps.check-version.outputs.skip_release == 'false'
-        run: pio run -e release
+        run: |
+          # Verify Version.h content before building
+          echo "Version.h content before building:"
+          cat include/Version.h
+          
+          # Force verbose output to see what's happening
+          pio run -e release -v
         id: final_release_build
 
       - name: Build Final Debug Binary
         if: steps.check-version.outputs.skip_release == 'false'
-        run: pio run -e debug
+        run: |
+          # Verify Version.h content before building
+          echo "Version.h content before building:"
+          cat include/Version.h
+          
+          # Build the debug version
+          pio run -e debug
         id: final_debug_build
 
       # Process the binaries for release
