@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <TaskScheduler.h>
 #include <UMS3.h>
+#include <esp_ota_ops.h>
 #include <esp_sleep.h>
 
 #include "AudioManager.h"
@@ -40,6 +41,12 @@ class RadioSystem {
     Serial.print("CPU Frequency set to ");
     Serial.print(getCpuFrequencyMhz());
     Serial.println(" MHz");
+
+    // Simple system information
+    const esp_partition_t* running = esp_ota_get_running_partition();
+    if (running != NULL) {
+      Serial.printf("Running from partition: %s\n", running->label);
+    }
 #endif
     initializeSubsystems();
     initializeTasks();

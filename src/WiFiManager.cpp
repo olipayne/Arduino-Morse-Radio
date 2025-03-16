@@ -646,9 +646,10 @@ void WiFiManager::setupServer() {
       // Save any pending state
       StationManager::getInstance().saveToPreferences();
 
-      // Wait a bit before restarting
-      delay(1000);
-      ESP.restart();
+#ifdef DEBUG_SERIAL_OUTPUT
+      Serial.println("OTA update complete, ElegantOTA will restart the device...");
+#endif
+
     } else {
       // Restart tasks if update failed
       PowerManager::getInstance().startLEDTask();
@@ -660,7 +661,10 @@ void WiFiManager::setupServer() {
     }
   });
 
+  // Add a custom warning to the ElegantOTA interface
+  ElegantOTA.setAutoReboot(true);
   ElegantOTA.begin(&server);
+
   server.begin();
 }
 
