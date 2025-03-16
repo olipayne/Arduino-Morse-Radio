@@ -11,6 +11,7 @@
 #include "SignalManager.h"
 #include "SpeedManager.h"
 #include "StationManager.h"
+#include "Version.h"  // Include the auto-generated version header
 #include "WaveBandManager.h"
 #include "WiFiManager.h"
 
@@ -34,6 +35,8 @@ class RadioSystem {
 #ifdef DEBUG_SERIAL_OUTPUT
     Serial.begin(115200);
     Serial.println("\nRadio Starting...");
+    Serial.print("Firmware version: ");
+    Serial.println(FIRMWARE_VERSION);
 #endif
     setCpuFrequencyMhz(240);
 

@@ -10,6 +10,7 @@
 #include "MorseCode.h"
 #include "PowerManager.h"
 #include "StationManager.h"
+#include "Version.h"  // Include version information
 #include "esp_timer.h"
 
 class WiFiManager {
