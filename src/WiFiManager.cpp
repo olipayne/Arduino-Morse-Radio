@@ -663,7 +663,7 @@ void WiFiManager::handleSaveConfig() {
 #endif
 
   // Parse JSON using ArduinoJson
-  DynamicJsonDocument doc(4096);  // Increased buffer size for larger JSON
+  JsonDocument doc;  // No capacity needed in v7
   DeserializationError error = deserializeJson(doc, jsonData);
 
   if (error) {
@@ -730,7 +730,7 @@ void WiFiManager::handleSaveConfig() {
 #endif
 
   // Create JSON response
-  DynamicJsonDocument response(256);
+  JsonDocument response;  // No capacity needed in v7
   response["success"] = success;
   response["message"] = message;
 
