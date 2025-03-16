@@ -1,7 +1,7 @@
 #ifndef VERSION_H
 #define VERSION_H
 
-// Automatically generated from Git - do not edit manually
-#define FIRMWARE_VERSION "27f070c-dirty"
+// Automatically generated for release - do not edit manually
+#define FIRMWARE_VERSION "v1.9.5"
 
 #endif // VERSION_H
