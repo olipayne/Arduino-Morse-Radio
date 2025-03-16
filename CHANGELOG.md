@@ -1,3 +1,12 @@
+## [1.7.8](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.7.7...v1.7.8) (2025-03-16)
+
+
+### Bug Fixes
+
+* better wifi page ([87f142d](https://github.com/olipayne/Arduino-Morse-Radio/commit/87f142d0c64923db8abed0d0a228cf6ffdc788fa))
+
+
+
 ## [1.7.7](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.7.6...v1.7.7) (2025-03-16)
 
 
@@ -31,16 +40,6 @@
 ### Bug Fixes
 
 * divide by zero and logging ([b6a0bda](https://github.com/olipayne/Arduino-Morse-Radio/commit/b6a0bda272bfe9fd81899c9cd343ce08b355e09b))
-
-
-
-## [1.7.3](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.7.2...v1.7.3) (2025-03-15)
-
-
-### Bug Fixes
-
-* ota working i think ([44acd4e](https://github.com/olipayne/Arduino-Morse-Radio/commit/44acd4e34cad53a2a1af5556d633787c3ac16a0f))
-* ota working i think ([16cea4c](https://github.com/olipayne/Arduino-Morse-Radio/commit/16cea4ce02d37a0728632cb0eecce877fc2f9674))
 
 
 
