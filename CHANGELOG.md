@@ -1,3 +1,12 @@
+## [1.7.9](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.7.8...v1.7.9) (2025-03-16)
+
+
+### Bug Fixes
+
+* improve static noise generator ([8e14082](https://github.com/olipayne/Arduino-Morse-Radio/commit/8e1408206f6fd7eb7a9a8d198e42b1032d725d47))
+
+
+
 ## [1.7.8](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.7.7...v1.7.8) (2025-03-16)
 
 
@@ -31,15 +40,6 @@
 ### Bug Fixes
 
 * built an OTA file duh ([db8b89f](https://github.com/olipayne/Arduino-Morse-Radio/commit/db8b89f1fbca8bf3434b556f0ad8723fe2b994f9))
-
-
-
-## [1.7.4](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.7.3...v1.7.4) (2025-03-16)
-
-
-### Bug Fixes
-
-* divide by zero and logging ([b6a0bda](https://github.com/olipayne/Arduino-Morse-Radio/commit/b6a0bda272bfe9fd81899c9cd343ce08b355e09b))
 
 
 
