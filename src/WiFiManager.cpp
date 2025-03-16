@@ -632,7 +632,9 @@ void WiFiManager::setupServer() {
 
   ElegantOTA.onProgress([](size_t current, size_t final) {
 #ifdef DEBUG_SERIAL_OUTPUT
-    Serial.printf("OTA Progress: %u%%\r", (current * 100) / final);
+    if (final > 0) {
+      Serial.printf("OTA Progress: %u%%\r", (current * 100) / final);
+    }
 #endif
   });
 
