@@ -5,8 +5,14 @@ void AudioManager::begin() {
   configurePWM();
   lastPulseTime = 0;
   lastVolumeUpdate = 0;
+  lastStaticPatternUpdate = 0;
+  crackleEndTime = 0;
   currentVolume = 0;
+  currentSignalStrength = 255;
   isPlayingMorse = false;
+  isCrackling = false;
+  staticBaseFrequency = MIN_STATIC_FREQ;
+  isStaticPlaying = false;
 }
 
 void AudioManager::configurePWM() {
@@ -19,14 +25,33 @@ void AudioManager::setVolume(int adcValue) {
   // Calculate the appropriate volume level based on the ADC reading
   int newVolume = calculateVolumeLevel(adcValue);
 
-  // Update volume if changed
+  // Handle volume changes
   if (newVolume != currentVolume) {
+    // Store the new volume value
     currentVolume = newVolume;
 
-    // Ensure pin is attached and update volume if we're making sound
-    if (currentVolume > 0 && (isPlayingMorse || ledcRead(Audio::SPEAKER_CHANNEL) > 0)) {
+    // If volume is zero, ensure audio is completely stopped
+    if (currentVolume == 0) {
+      // Completely silence the audio and detach the pin
+      ledcWrite(Audio::SPEAKER_CHANNEL, 0);
+      ledcDetachPin(Pins::SPEAKER);
+    }
+    // Only make sound if the volume is greater than zero
+    else if (isPlayingMorse || isStaticPlaying) {
+      // Reattach pin if needed
       ledcAttachPin(Pins::SPEAKER, Audio::SPEAKER_CHANNEL);
-      ledcWrite(Audio::SPEAKER_CHANNEL, currentVolume);
+
+      // Update volume for morse tone
+      if (isPlayingMorse) {
+        ledcWrite(Audio::SPEAKER_CHANNEL, currentVolume);
+      }
+      // Update static noise with new volume - only update the volume, not the frequency
+      else if (isStaticPlaying) {
+        // Don't call updateStaticPattern() which would change frequency
+        // Just update the volume directly
+        int volumeToUse = calculateStaticVolume();
+        ledcWrite(Audio::SPEAKER_CHANNEL, volumeToUse);
+      }
     }
   }
 }
@@ -37,14 +62,9 @@ void AudioManager::setVolume(int adcValue) {
  * @return Calculated volume level (0-255)
  */
 int AudioManager::calculateVolumeLevel(int adcValue) {
-  // Handle zero volume case first
+  // Handle zero volume case
   if (adcValue <= VOLUME_DEAD_ZONE) {
-    // If volume is below dead zone, turn off audio
-    if (currentVolume > 0) {  // Only update if we need to turn off
-      ledcWrite(Audio::SPEAKER_CHANNEL, 0);
-      ledcDetachPin(Pins::SPEAKER);
-    }
-    return 0;
+    return 0;  // Just return 0, the silencing will happen in setVolume
   }
 
   // Map ADC value to volume range, accounting for dead zone
@@ -53,13 +73,40 @@ int AudioManager::calculateVolumeLevel(int adcValue) {
   return constrain(newVolume, 0, VOLUME_MAX);
 }
 
+// Helper method to calculate static volume without affecting frequency
+int AudioManager::calculateStaticVolume() {
+  // Invert signalStrength mapping - stronger signal = less static
+  int staticIntensity = map(currentSignalStrength, 0, 255, 255, 0);
+
+  // Volume scaling should only affect amplitude, not frequency
+  int staticVolume = map(staticIntensity, 0, 255, 0, currentVolume);
+
+  // Add some natural variation to the volume
+  int volumeVariation = 0;
+  if (!isCrackling) {
+    volumeVariation = random(-5, 6);
+  } else {
+    // During crackle, apply the crackle volume variation
+    int crackleIntensity = random(staticVolume / 2, int(staticVolume * 1.5));
+    return constrain(crackleIntensity, 0, 255);
+  }
+
+  return constrain(staticVolume + volumeVariation, 0, 255);
+}
+
 void AudioManager::handlePlayback() {
   unsigned long currentTime = millis();
+
   // Update volume at regular intervals to avoid constant ADC reads
   if (currentTime - lastVolumeUpdate >= VOLUME_UPDATE_INTERVAL) {
     int volumeRead = PowerManager::getInstance().readADC(Pins::VOLUME_POT);
     setVolume(volumeRead);
     lastVolumeUpdate = currentTime;
+  }
+
+  // Continuously update static noise if playing and volume is greater than zero
+  if (isStaticPlaying && !isPlayingMorse && currentVolume > 0) {
+    updateStaticPattern();
   }
 }
 
@@ -80,22 +127,100 @@ void AudioManager::stopMorseTone() {
 
 void AudioManager::playStaticNoise(int signalStrength) {
   isPlayingMorse = false;
+  isStaticPlaying = true;
+  currentSignalStrength = signalStrength;
 
   // Ensure PWM is attached
   ledcAttachPin(Pins::SPEAKER, Audio::SPEAKER_CHANNEL);
 
-  // Generate random noise within the frequency range
-  int noiseFrequency = random(MIN_STATIC_FREQ, MAX_STATIC_FREQ + 1);
+  // Update the static noise pattern
+  updateStaticPattern();
+}
 
+void AudioManager::updateStaticPattern() {
+  // Don't process anything if volume is zero
+  if (currentVolume <= 0) {
+    return;
+  }
+
+  unsigned long currentTime = millis();
+
+  // Calculate noise characteristics based on signal strength
   // Invert signalStrength mapping - stronger signal = less static
-  int scaledVolume = map(signalStrength, 0, 255, currentVolume, 0);
+  int staticIntensity = map(currentSignalStrength, 0, 255, 255, 0);
 
+  // Check if we need to update the static pattern
+  if (currentTime - lastStaticPatternUpdate >= STATIC_PATTERN_CHANGE_INTERVAL) {
+    // Update base frequency periodically for a more natural sound
+    // This should be independent of volume control
+
+    // Calculate the midpoint of our static frequency range
+    int midFrequency = (MIN_STATIC_FREQ + MAX_STATIC_FREQ) / 2;
+
+    // If we've drifted too far from the center range, apply a correction
+    // to pull back toward the center of our desired frequency range
+    if (staticBaseFrequency > midFrequency + 50) {
+      // If too high, bias toward decreasing
+      staticBaseFrequency += random(-8, 4);
+    } else if (staticBaseFrequency < midFrequency - 50) {
+      // If too low, bias toward increasing
+      staticBaseFrequency += random(-4, 8);
+    } else {
+      // Within reasonable range, use balanced random adjustment
+      staticBaseFrequency += random(-5, 6);
+    }
+
+    // Hard boundaries to ensure we stay in range
+    staticBaseFrequency = constrain(staticBaseFrequency, MIN_STATIC_FREQ, MAX_STATIC_FREQ);
+
+    // Periodically reset to center range to prevent long-term drift
+    // Reset roughly every 10 seconds (200 updates at 50ms intervals)
+    if (random(200) == 0) {
+      staticBaseFrequency = midFrequency + random(-25, 26);
+    }
+
+    lastStaticPatternUpdate = currentTime;
+
+    // Determine if we should start a new crackle - based on signal strength only, not volume
+    if (!isCrackling && random(0, 100) < map(staticIntensity, 0, 255, 0, MAX_CRACKLE_CHANCE)) {
+      isCrackling = true;
+      crackleEndTime = currentTime + random(CRACKLE_DURATION_MIN, CRACKLE_DURATION_MAX);
+    }
+  }
+
+  int noiseFrequency;
+  int volumeLevel;
+
+  // Handle crackles that persist over multiple updates
+  if (isCrackling) {
+    if (currentTime < crackleEndTime) {
+      // During crackle - use higher frequency and variable volume
+      // Frequency range for crackles should be fixed, independent of volume
+      noiseFrequency = random(MIN_STATIC_FREQ * 2, MAX_STATIC_FREQ * 3);
+    } else {
+      // Crackle has ended
+      isCrackling = false;
+      noiseFrequency = staticBaseFrequency;
+    }
+  } else {
+    // Normal static noise with small random variations
+    // Frequency variations should be independent of volume
+    int randomOffset = random(-20, 21);
+    noiseFrequency = staticBaseFrequency + randomOffset;
+    noiseFrequency = constrain(noiseFrequency, MIN_STATIC_FREQ, MAX_STATIC_FREQ);
+  }
+
+  // Calculate volume separately from frequency
+  volumeLevel = calculateStaticVolume();
+
+  // Apply the frequency and volume
   ledcWriteTone(Audio::SPEAKER_CHANNEL, noiseFrequency);
-  ledcWrite(Audio::SPEAKER_CHANNEL, scaledVolume);
+  ledcWrite(Audio::SPEAKER_CHANNEL, volumeLevel);
 }
 
 void AudioManager::stop() {
   isPlayingMorse = false;
+  isStaticPlaying = false;
   ledcWrite(Audio::SPEAKER_CHANNEL, 0);
   ledcDetachPin(Pins::SPEAKER);
 }
