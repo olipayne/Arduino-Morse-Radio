@@ -1,3 +1,12 @@
+## [1.7.7](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.7.6...v1.7.7) (2025-03-16)
+
+
+### Bug Fixes
+
+* usb to keep ota working ([a0b8bf8](https://github.com/olipayne/Arduino-Morse-Radio/commit/a0b8bf80721e67ce1dc3b6313dd5a09ba66d3ede))
+
+
+
 ## [1.7.6](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.7.5...v1.7.6) (2025-03-16)
 
 
@@ -32,15 +41,6 @@
 
 * ota working i think ([44acd4e](https://github.com/olipayne/Arduino-Morse-Radio/commit/44acd4e34cad53a2a1af5556d633787c3ac16a0f))
 * ota working i think ([16cea4c](https://github.com/olipayne/Arduino-Morse-Radio/commit/16cea4ce02d37a0728632cb0eecce877fc2f9674))
-
-
-
-## [1.7.2](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.7.1...v1.7.2) (2025-03-15)
-
-
-### Bug Fixes
-
-* wifi html ([a575c63](https://github.com/olipayne/Arduino-Morse-Radio/commit/a575c63635ada2ddc25793e94e43de6524a59b18))
 
 
 
