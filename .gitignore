@@ -14,3 +14,11 @@ node_modules
 *.hex
 *.map
 *.d
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
