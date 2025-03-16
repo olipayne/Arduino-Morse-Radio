@@ -32,16 +32,16 @@ jobs:
       - name: Install PlatformIO Core
         run: pip install --upgrade platformio
 
-      - name: Build Release Binary
+      # First, verify that the build works before doing anything else
+      - name: Verify Release Build
         run: pio run -e release
-        id: release_build
+        id: verify_release_build
 
-      - name: Build Debug Binary
+      - name: Verify Debug Build
         run: pio run -e debug
-        id: debug_build
+        id: verify_debug_build
 
-      # If both builds succeed, we move on to determine the next version and create a release
-      
+      # If we made it here, builds are successful
       - name: Calculate Next Version
         id: semver
         run: |
@@ -92,7 +92,40 @@ jobs:
             echo "skip_release=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Merge Binaries
+      # Update Version.h with the new clean version number
+      - name: Update Version.h
+        if: steps.check-version.outputs.skip_release == 'false'
+        run: |
+          VERSION="v${{ steps.semver.outputs.new_version }}"
+          
+          # Make sure the include directory exists
+          mkdir -p include
+          
+          # Create Version.h with the clean version number
+          echo '#ifndef VERSION_H' > include/Version.h
+          echo '#define VERSION_H' >> include/Version.h
+          echo '' >> include/Version.h
+          echo '// Automatically generated for release - do not edit manually' >> include/Version.h
+          echo "#define FIRMWARE_VERSION \"$VERSION\"" >> include/Version.h
+          echo '' >> include/Version.h
+          echo '#endif // VERSION_H' >> include/Version.h
+          
+          # Show the generated file
+          cat include/Version.h
+
+      # Now rebuild with the updated Version.h
+      - name: Build Final Release Binary
+        if: steps.check-version.outputs.skip_release == 'false'
+        run: pio run -e release
+        id: final_release_build
+
+      - name: Build Final Debug Binary
+        if: steps.check-version.outputs.skip_release == 'false'
+        run: pio run -e debug
+        id: final_debug_build
+
+      # Process the binaries for release
+      - name: Process Release Binaries
         if: steps.check-version.outputs.skip_release == 'false'
         run: |
           VERSION="v${{ steps.semver.outputs.new_version }}"
@@ -149,6 +182,14 @@ jobs:
           echo "changelog<<EOF" >> $GITHUB_OUTPUT
           echo -e "$CHANGELOG" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create Tag
+        if: steps.check-version.outputs.skip_release == 'false'
+        run: |
+          VERSION="v${{ steps.semver.outputs.new_version }}"
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git tag -a $VERSION -m "Release $VERSION"
 
       - name: Create Release
         if: steps.check-version.outputs.skip_release == 'false'
