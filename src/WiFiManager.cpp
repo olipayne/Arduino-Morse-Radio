@@ -190,13 +190,6 @@ const char* WiFiManager::CSS_STYLES = R"(
         border-bottom: 1px solid var(--border-color);
     }
 
-    .wave-band h2::after {
-        content: attr(data-freq-range);
-        font-size: 0.8em;
-        font-weight: normal;
-        opacity: 0.7;
-    }
-
     /* Wave band specific styles */
     .wave-band.long-wave {
         background: var(--long-wave-bg);
@@ -770,20 +763,6 @@ String WiFiManager::generateStationTable() const {
   WaveBand currentBand = WaveBand::LONG_WAVE;
   bool firstBand = true;
 
-  // Helper function to get frequency range for each band
-  auto getFreqRange = [](WaveBand band) -> String {
-    switch (band) {
-      case WaveBand::LONG_WAVE:
-        return "150-285 kHz";
-      case WaveBand::MEDIUM_WAVE:
-        return "520-1610 kHz";
-      case WaveBand::SHORT_WAVE:
-        return "2.3-26.1 MHz";
-      default:
-        return "";
-    }
-  };
-
   // Helper function to get CSS class for each band
   auto getBandClass = [](WaveBand band) -> String {
     switch (band) {
@@ -798,43 +777,77 @@ String WiFiManager::generateStationTable() const {
     }
   };
 
+  // Initialize sections for each wave band
+  String longWaveHtml =
+      "<div class='wave-band long-wave' role='region' aria-label='Long Wave'><h2>Long Wave</h2>";
+  String mediumWaveHtml =
+      "<div class='wave-band medium-wave' role='region' aria-label='Medium Wave'><h2>Medium "
+      "Wave</h2>";
+  String shortWaveHtml =
+      "<div class='wave-band short-wave' role='region' aria-label='Short Wave'><h2>Short Wave</h2>";
+
+  // Track if each band has stations
+  bool hasLongWave = false;
+  bool hasMediumWave = false;
+  bool hasShortWave = false;
+
+  // First collect stations for each band
   for (size_t i = 0; i < stationManager.getStationCount(); i++) {
     const Station* station = stationManager.getStation(i);
     if (!station) continue;
 
-    if (station->getBand() != currentBand) {
-      if (!firstBand) html += "</div>";
-      currentBand = station->getBand();
-      String bandName = String(toString(currentBand));
-      html += "<div class='wave-band " + getBandClass(currentBand) +
-              "' role='region' aria-label='" + bandName + "'>";
-      html += "<h2 data-freq-range='" + getFreqRange(currentBand) + "'>" + bandName + "</h2>";
-      firstBand = false;
+    String stationHtml =
+        "<div class='station' role='group' aria-label='Station " + String(i + 1) + "'>";
+    stationHtml += "<div class='station-header'>";
+    stationHtml += "<h3 class='station-name'>" + String(station->getName()) + "</h3>";
+    stationHtml += "<div class='enable-toggle'>";
+    stationHtml += "<input type='checkbox' id='enable_" + String(i) + "' name='enable_" +
+                   String(i) + "' " + (station->isEnabled() ? "checked" : "") +
+                   " aria-label='Enable station'>";
+    stationHtml += "<label for='enable_" + String(i) + "'>Enabled</label>";
+    stationHtml += "</div>";
+    stationHtml += "</div>";
+
+    stationHtml += "<div class='input-group' role='group' aria-label='Frequency control'>";
+    stationHtml += "<input type='number' id='freq_" + String(i) + "' name='freq_" + String(i) +
+                   "' value='" + String(station->getFrequency()) +
+                   "' aria-label='Station frequency'>";
+    stationHtml += "<button type='button' class='tune-button' onclick='setFrequency(\"freq_" +
+                   String(i) + "\")' aria-label='Set current tuning value'>Set</button>";
+    stationHtml += "</div>";
+
+    stationHtml += "<input type='text' name='msg_" + String(i) + "' value='" +
+                   String(station->getMessage()) +
+                   "' placeholder='Message' aria-label='Station message'>";
+    stationHtml += "</div>";
+
+    // Add to the appropriate band
+    switch (station->getBand()) {
+      case WaveBand::LONG_WAVE:
+        longWaveHtml += stationHtml;
+        hasLongWave = true;
+        break;
+      case WaveBand::MEDIUM_WAVE:
+        mediumWaveHtml += stationHtml;
+        hasMediumWave = true;
+        break;
+      case WaveBand::SHORT_WAVE:
+        shortWaveHtml += stationHtml;
+        hasShortWave = true;
+        break;
     }
-
-    html += "<div class='station' role='group' aria-label='Station " + String(i + 1) + "'>";
-    html += "<div class='station-header'>";
-    html += "<h3 class='station-name'>" + String(station->getName()) + "</h3>";
-    html += "<div class='enable-toggle'>";
-    html += "<input type='checkbox' id='enable_" + String(i) + "' name='enable_" + String(i) +
-            "' " + (station->isEnabled() ? "checked" : "") + " aria-label='Enable station'>";
-    html += "<label for='enable_" + String(i) + "'>Enabled</label>";
-    html += "</div>";
-    html += "</div>";
-
-    html += "<div class='input-group' role='group' aria-label='Frequency control'>";
-    html += "<input type='number' id='freq_" + String(i) + "' name='freq_" + String(i) +
-            "' value='" + String(station->getFrequency()) + "' aria-label='Station frequency'>";
-    html += "<button type='button' class='tune-button' onclick='setFrequency(\"freq_" + String(i) +
-            "\")' aria-label='Set current tuning value'>Set</button>";
-    html += "</div>";
-
-    html += "<input type='text' name='msg_" + String(i) + "' value='" +
-            String(station->getMessage()) + "' placeholder='Message' aria-label='Station message'>";
-    html += "</div>";
   }
 
-  if (!firstBand) html += "</div>";
+  // Add closing div tags
+  longWaveHtml += "</div>";
+  mediumWaveHtml += "</div>";
+  shortWaveHtml += "</div>";
+
+  // Add each section to the final HTML if it has stations
+  if (hasLongWave) html += longWaveHtml;
+  if (hasMediumWave) html += mediumWaveHtml;
+  if (hasShortWave) html += shortWaveHtml;
+
   return html;
 }
 
