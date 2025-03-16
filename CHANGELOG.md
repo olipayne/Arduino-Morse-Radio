@@ -1,3 +1,12 @@
+## [1.7.10](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.7.9...v1.7.10) (2025-03-16)
+
+
+### Bug Fixes
+
+* attempt at versioning ([ed81aa5](https://github.com/olipayne/Arduino-Morse-Radio/commit/ed81aa5e6ae321c0d7971ee7aa6556c837e2fbc1))
+
+
+
 ## [1.7.9](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.7.8...v1.7.9) (2025-03-16)
 
 
@@ -31,15 +40,6 @@
 ### Bug Fixes
 
 * ota cleanup ([7c577ed](https://github.com/olipayne/Arduino-Morse-Radio/commit/7c577ed604f120984b660d0dcb33485f6f4a6248))
-
-
-
-## [1.7.5](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.7.4...v1.7.5) (2025-03-16)
-
-
-### Bug Fixes
-
-* built an OTA file duh ([db8b89f](https://github.com/olipayne/Arduino-Morse-Radio/commit/db8b89f1fbca8bf3434b556f0ad8723fe2b994f9))
 
 
 
