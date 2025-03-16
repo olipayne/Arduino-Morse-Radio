@@ -1,3 +1,12 @@
+## [1.7.4](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.7.3...v1.7.4) (2025-03-16)
+
+
+### Bug Fixes
+
+* divide by zero and logging ([b6a0bda](https://github.com/olipayne/Arduino-Morse-Radio/commit/b6a0bda272bfe9fd81899c9cd343ce08b355e09b))
+
+
+
 ## [1.7.3](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.7.2...v1.7.3) (2025-03-15)
 
 
@@ -32,15 +41,6 @@
 ### Features
 
 * tests and adjust timing a bit ([2cfbe0a](https://github.com/olipayne/Arduino-Morse-Radio/commit/2cfbe0ab584b30867e88ae182d94475c30695608))
-
-
-
-## [1.6.3](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.6.2...v1.6.3) (2025-03-15)
-
-
-### Bug Fixes
-
-* swap medium/short wave and medium/fast decode speed logic for toggle switches ([33fc957](https://github.com/olipayne/Arduino-Morse-Radio/commit/33fc9572774fa8de1a5698a3def872ccf4e97099))
 
 
 
