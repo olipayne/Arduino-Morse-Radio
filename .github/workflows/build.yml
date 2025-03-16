@@ -92,6 +92,21 @@ jobs:
             echo "skip_release=false" >> $GITHUB_OUTPUT
           fi
 
+      # Temporarily disable the extra_scripts.py file to prevent it from overwriting our Version.h
+      - name: Disable extra_scripts
+        if: steps.check-version.outputs.skip_release == 'false'
+        run: |
+          if [ -f "extra_scripts.py" ]; then
+            mv extra_scripts.py extra_scripts.py.bak
+            echo "Temporarily disabled extra_scripts.py"
+          fi
+          
+          # Also check and update platformio.ini to remove extra_scripts reference
+          if grep -q "extra_scripts" platformio.ini; then
+            sed -i 's/extra_scripts.*/# Temporarily disabled: extra_scripts = extra_scripts.py/' platformio.ini
+            echo "Removed extra_scripts from platformio.ini"
+          fi
+
       # Update Version.h with the new clean version number
       - name: Update Version.h
         if: steps.check-version.outputs.skip_release == 'false'
@@ -131,6 +146,10 @@ jobs:
           VERSION="v${{ steps.semver.outputs.new_version }}"
           echo "Building version: ${VERSION}"
           
+          # Double-check Version.h to make sure it wasn't overwritten
+          echo "Checking Version.h content:"
+          cat include/Version.h
+          
           # Merge release binary
           ~/.platformio/packages/tool-esptoolpy/esptool.py --chip esp32s3 merge_bin --output .pio/build/release/merged-flash.bin --flash_mode dio --flash_size=keep 0x0 .pio/build/release/bootloader.bin 0x8000 .pio/build/release/partitions.bin 0x10000 .pio/build/release/firmware.bin
           mv .pio/build/release/merged-flash.bin .pio/build/release/firmware-${VERSION}-release.bin
@@ -142,6 +161,21 @@ jobs:
           # Create OTA-specific binaries (firmware only, no bootloader or partition table)
           cp .pio/build/release/firmware.bin .pio/build/release/firmware-${VERSION}-release-ota.bin
           cp .pio/build/debug/firmware.bin .pio/build/debug/firmware-${VERSION}-debug-ota.bin
+
+      # Restore extra_scripts.py if we disabled it
+      - name: Restore extra_scripts
+        if: steps.check-version.outputs.skip_release == 'false'
+        run: |
+          if [ -f "extra_scripts.py.bak" ]; then
+            mv extra_scripts.py.bak extra_scripts.py
+            echo "Restored extra_scripts.py"
+          fi
+          
+          # Also restore platformio.ini if we modified it
+          if grep -q "# Temporarily disabled: extra_scripts" platformio.ini; then
+            sed -i 's/# Temporarily disabled: extra_scripts/extra_scripts/' platformio.ini
+            echo "Restored extra_scripts in platformio.ini"
+          fi
 
       - name: Generate Changelog
         if: steps.check-version.outputs.skip_release == 'false'
