@@ -62,7 +62,7 @@ jobs:
           cp .pio/build/debug/firmware.bin .pio/build/debug/firmware-${VERSION}-debug-ota.bin
 
       - name: Upload release assets
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: |
             .pio/build/release/firmware-${{ steps.get_version.outputs.VERSION }}-release.bin
