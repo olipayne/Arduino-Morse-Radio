@@ -1,56 +1,62 @@
 import subprocess
 import os
 
-def get_git_version():
+def get_version():
     """
-    Get version information from git:
-    - If running in GitHub Actions with a release tag, use that tag
-    - If on a tag, use the tag name
-    - Otherwise use commit hash with branch info for development builds
+    Get version information:
+    - Read from VERSION file for the base version
+    - Add git info for development builds
     """
-    # Check if we're running in GitHub Actions for a release
-    if 'GITHUB_REF' in os.environ and os.environ['GITHUB_REF'].startswith('refs/tags/'):
-        version = os.environ['GITHUB_REF'].replace('refs/tags/', '')
-        print(f"Using GitHub release tag: {version}")
-        return version
-        
+    # Read base version from VERSION file
     try:
-        # Check if we're on a tag
+        with open("VERSION", "r") as f:
+            base_version = f.read().strip()
+    except FileNotFoundError:
+        base_version = "unknown"
+    
+    try:
+        # Check if we're on a tag that matches the VERSION file
         describe_cmd = ["git", "describe", "--tags", "--exact-match"]
         tag_version = subprocess.check_output(describe_cmd, stderr=subprocess.DEVNULL).decode().strip()
-        print(f"On release tag: {tag_version}")
-        return tag_version
+        
+        # Remove 'v' prefix if present for comparison
+        clean_tag = tag_version.lstrip('v')
+        if clean_tag == base_version:
+            print(f"Release build: v{base_version}")
+            return f"v{base_version}"
     except subprocess.CalledProcessError:
-        # Not on a tag - use commit hash for development builds
+        pass
+    
+    # Not on a matching tag - add development info
+    try:
+        # Get short commit hash
+        commit_hash = subprocess.check_output(["git", "rev-parse", "--short=8", "HEAD"]).decode().strip()
+        
+        # Get branch name
         try:
-            # Get short commit hash
-            commit_hash = subprocess.check_output(["git", "rev-parse", "--short=8", "HEAD"]).decode().strip()
-            
-            # Get branch name
-            try:
-                branch = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).decode().strip()
-                if branch == "HEAD":  # Detached HEAD state
-                    branch = "detached"
-            except subprocess.CalledProcessError:
-                branch = "unknown"
-            
-            # Check if working directory is dirty
-            try:
-                subprocess.check_output(["git", "diff-index", "--quiet", "HEAD"])
-                dirty = ""
-            except subprocess.CalledProcessError:
-                dirty = "-dirty"
-            
-            version = f"dev-{branch}-{commit_hash}{dirty}"
-            print(f"Development build: {version}")
-            return version
-            
+            branch = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).decode().strip()
+            if branch == "HEAD":  # Detached HEAD state
+                branch = "detached"
         except subprocess.CalledProcessError:
-            # Fallback if git commands fail
-            return "unknown"
+            branch = "unknown"
+        
+        # Check if working directory is dirty
+        try:
+            subprocess.check_output(["git", "diff-index", "--quiet", "HEAD"])
+            dirty = ""
+        except subprocess.CalledProcessError:
+            dirty = "-dirty"
+        
+        version = f"v{base_version}-dev-{branch}-{commit_hash}{dirty}"
+        print(f"Development build: {version}")
+        return version
+        
+    except subprocess.CalledProcessError:
+        # Fallback if git commands fail
+        return f"v{base_version}-dev"
 
 def generate_version_header():
-    version = get_git_version()
+    version = get_version()
     
     # Create header content
     header = f"""#ifndef VERSION_H
