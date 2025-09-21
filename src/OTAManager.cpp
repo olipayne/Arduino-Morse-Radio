@@ -159,6 +159,7 @@ bool OTAManager::downloadAndInstall(const String& version) {
   HTTPClient http;
   http.begin(downloadURL);
   http.setTimeout(HTTP_TIMEOUT);
+  http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);  // Follow GitHub's CDN redirects
 
   int httpCode = http.GET();
 
