@@ -334,7 +334,7 @@ void PowerManager::displayBatteryStatus() {
 
 void PowerManager::displayBatteryLevel() {
   float voltage = getBatteryVoltage();
-  
+
   // Turn off all LEDs first
   digitalWrite(Pins::LW_LED, LOW);
   digitalWrite(Pins::MW_LED, LOW);
@@ -409,7 +409,10 @@ void PowerManager::checkActivity() {
     if (currentTime - lastActivityTime >= INACTIVITY_TIMEOUT) {
       // Only enter deep sleep if power switch is still ON
       if (digitalRead(Pins::POWER_SWITCH) == HIGH) {
-        // enterDeepSleep(SleepReason::INACTIVITY);
+#ifndef DEBUG_SERIAL_OUTPUT
+        // Enable deep sleep on inactivity for release builds only
+        enterDeepSleep(SleepReason::INACTIVITY);
+#endif
       }
     }
   }
