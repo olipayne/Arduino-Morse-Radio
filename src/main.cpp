@@ -150,6 +150,9 @@ void systemUpdateCallback() {
   static unsigned long lastButtonPress = 0;
   const unsigned long debounceTime = Timing::DEBOUNCE_DELAY;
 
+  // Check for OTA boot sequence (3 WiFi button presses within 5 seconds of boot)
+  PowerManager::getInstance().checkOTABootSequence();
+
   // Check WiFi toggle button with debounce
   handleWiFiButton(lastButtonPress, debounceTime);
 

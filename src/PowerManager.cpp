@@ -1,4 +1,6 @@
 #include "PowerManager.h"
+#include "OTAConfig.h"
+#include "OTAManager.h"
 #include "PotentiometerReader.h"  // Include PotentiometerReader header
 #include "driver/gpio.h"
 #include "driver/rtc_io.h"
@@ -19,6 +21,9 @@ PotentiometerReader volumePot(Pins::VOLUME_POT);
 
 void PowerManager::begin() {
   btStop();
+
+  // Record boot time for OTA sequence detection
+  bootTime = millis();
 
   // Initialize UMS3
   ums3.begin();
@@ -417,3 +422,92 @@ void PowerManager::checkActivity() {
     }
   }
 }
+
+void PowerManager::checkOTABootSequence() {
+  if (!isInOTABootWindow()) {
+    return;
+  }
+
+  // Check if WiFi button is pressed
+  if (digitalRead(Pins::WIFI_BUTTON) == LOW) {
+    unsigned long currentTime = millis();
+
+    // Debounce the button press
+    if (currentTime - lastWiFiButtonPress > BUTTON_DEBOUNCE) {
+      wifiButtonPressCount++;
+      lastWiFiButtonPress = currentTime;
+
+#ifdef DEBUG_SERIAL_OUTPUT
+      Serial.printf("WiFi button press %d/3\n", wifiButtonPressCount);
+#endif
+
+      // If we've detected 3 presses, trigger OTA update
+      if (wifiButtonPressCount >= 3) {
+#ifdef DEBUG_SERIAL_OUTPUT
+        Serial.println(F("OTA boot sequence detected! Starting update..."));
+#endif
+
+        // Configure WiFi credentials from OTAConfig
+        auto& otaManager = OTAManager::getInstance();
+        otaManager.clearWiFiCredentials();
+
+        // Add all configured WiFi networks
+        for (size_t i = 0; i < OTAConfig::WIFI_NETWORK_COUNT; i++) {
+          otaManager.addWiFiCredentials(OTAConfig::WIFI_NETWORKS[i].ssid,
+                                        OTAConfig::WIFI_NETWORKS[i].password);
+        }
+
+        // Start the update process
+        OTAManager::UpdateResult result = otaManager.checkAndUpdate();
+
+        // Handle the result
+        switch (result) {
+          case OTAManager::UpdateResult::SUCCESS:
+            // Device will reboot automatically
+            break;
+          case OTAManager::UpdateResult::NO_UPDATE_NEEDED:
+#ifdef DEBUG_SERIAL_OUTPUT
+            Serial.println(F("No update needed"));
+#endif
+            break;
+          case OTAManager::UpdateResult::WIFI_FAILED:
+#ifdef DEBUG_SERIAL_OUTPUT
+            Serial.println(F("WiFi connection failed"));
+#endif
+            // Flash all LEDs to indicate failure
+            for (int i = 0; i < 5; i++) {
+              digitalWrite(Pins::LW_LED, HIGH);
+              digitalWrite(Pins::MW_LED, HIGH);
+              digitalWrite(Pins::SW_LED, HIGH);
+              delay(200);
+              digitalWrite(Pins::LW_LED, LOW);
+              digitalWrite(Pins::MW_LED, LOW);
+              digitalWrite(Pins::SW_LED, LOW);
+              delay(200);
+            }
+            break;
+          case OTAManager::UpdateResult::VERSION_CHECK_FAILED:
+          case OTAManager::UpdateResult::DOWNLOAD_FAILED:
+          case OTAManager::UpdateResult::INSTALL_FAILED:
+          case OTAManager::UpdateResult::NETWORK_ERROR:
+#ifdef DEBUG_SERIAL_OUTPUT
+            Serial.println(F("OTA update failed"));
+#endif
+            // Flash error pattern
+            for (int i = 0; i < 10; i++) {
+              digitalWrite(Pins::LW_LED, HIGH);
+              delay(100);
+              digitalWrite(Pins::LW_LED, LOW);
+              delay(100);
+            }
+            break;
+        }
+
+        // Reset the counter to prevent multiple attempts
+        wifiButtonPressCount = 0;
+      }
+    }
+  }
+}
+
+bool PowerManager::isInOTABootWindow() const { return (millis() - bootTime) < OTA_BOOT_WINDOW; }

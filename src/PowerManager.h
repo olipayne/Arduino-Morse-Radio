@@ -6,7 +6,6 @@
 #include "Config.h"
 #include "MorseCode.h"
 #include "PotentiometerReader.h"
-#include "WiFiManager.h"
 
 class PowerManager {
  public:
@@ -42,6 +41,10 @@ class PowerManager {
   // LED task control methods (moved from private)
   void startLEDTask();
   void stopLEDTask();
+
+  // OTA update functionality
+  void checkOTABootSequence();
+  bool isInOTABootWindow() const;
 
  private:
   PowerManager() : tuningPot(Pins::TUNING_POT), volumePot(Pins::VOLUME_POT) {}
@@ -82,6 +85,13 @@ class PowerManager {
 
   // Hardware instance
   UMS3 ums3;
+
+  // OTA boot sequence detection
+  unsigned long bootTime = 0;
+  int wifiButtonPressCount = 0;
+  unsigned long lastWiFiButtonPress = 0;
+  static constexpr unsigned long OTA_BOOT_WINDOW = 5000;  // 5 seconds
+  static constexpr unsigned long BUTTON_DEBOUNCE = 200;   // 200ms debounce
 };
 
 #endif
