@@ -72,11 +72,11 @@ class WiFiManager {
   static constexpr uint8_t AP_CHANNEL = 1;
   static constexpr uint8_t MAX_CONNECTIONS = 4;
 
-  // HTML templates
-  static const char* HTML_HEADER;
-  static const char* HTML_FOOTER;
-  static const char* CSS_STYLES;
-  static const char* JAVASCRIPT_CODE;
+  // HTML templates stored in PROGMEM
+  static const char HTML_HEADER[];
+  static const char HTML_FOOTER[];
+  static const char CSS_STYLES[];
+  static const char JAVASCRIPT_CODE[];
 };
 
 #endif

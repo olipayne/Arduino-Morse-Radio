@@ -18,29 +18,40 @@ const Audio::MorseTimings Audio::MORSE_SLOW = createTimings(500);
 const Audio::MorseTimings Audio::MORSE_MEDIUM = createTimings(350);
 const Audio::MorseTimings Audio::MORSE_FAST = createTimings(200);
 
+// String constants stored in PROGMEM
+static const char str_slow[] PROGMEM = "Slow";
+static const char str_medium[] PROGMEM = "Medium";
+static const char str_fast[] PROGMEM = "Fast";
+static const char str_unknown[] PROGMEM = "Unknown";
+
 const char* toString(MorseSpeed speed) {
   switch (speed) {
     case MorseSpeed::SLOW:
-      return "Slow";
+      return str_slow;
     case MorseSpeed::MEDIUM:
-      return "Medium";
+      return str_medium;
     case MorseSpeed::FAST:
-      return "Fast";
+      return str_fast;
     default:
-      return "Unknown";
+      return str_unknown;
   }
 }
+
+// Wave band string constants stored in PROGMEM
+static const char str_long_wave[] PROGMEM = "Long Wave";
+static const char str_medium_wave[] PROGMEM = "Medium Wave";
+static const char str_short_wave[] PROGMEM = "Short Wave";
 
 const char* toString(WaveBand band) {
   switch (band) {
     case WaveBand::LONG_WAVE:
-      return "Long Wave";
+      return str_long_wave;
     case WaveBand::MEDIUM_WAVE:
-      return "Medium Wave";
+      return str_medium_wave;
     case WaveBand::SHORT_WAVE:
-      return "Short Wave";
+      return str_short_wave;
     default:
-      return "Unknown";
+      return str_unknown;
   }
 }
 

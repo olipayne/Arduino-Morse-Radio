@@ -3,8 +3,8 @@
 #include <ElegantOTA.h>
 #include "Version.h"  // Include the auto-generated version header
 
-// Define static members
-const char* WiFiManager::HTML_HEADER = R"(
+// Define static members - stored in PROGMEM to save RAM
+const char WiFiManager::HTML_HEADER[] PROGMEM = R"(
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,7 +14,7 @@ const char* WiFiManager::HTML_HEADER = R"(
     <meta name="theme-color" content="#2196F3">
     <style>)";
 
-const char* WiFiManager::CSS_STYLES = R"(
+const char WiFiManager::CSS_STYLES[] PROGMEM = R"(
     :root {
         --primary-color: #2196F3;
         --success-color: #4CAF50;
@@ -385,11 +385,11 @@ const char* WiFiManager::CSS_STYLES = R"(
     }
 )";
 
-const char* WiFiManager::HTML_FOOTER = R"(
+const char WiFiManager::HTML_FOOTER[] PROGMEM = R"(
     </body>
 </html>)";
 
-const char* WiFiManager::JAVASCRIPT_CODE = R"(
+const char WiFiManager::JAVASCRIPT_CODE[] PROGMEM = R"(
     function updateTuningValue() {
         fetch('/tuning')
             .then(response => response.json())
@@ -533,7 +533,7 @@ void WiFiManager::stop() {
     wifiEnabled = false;
     digitalWrite(LED_BUILTIN, LOW);
 #ifdef DEBUG_SERIAL_OUTPUT
-    Serial.println("WiFi stopped");
+    Serial.println(F("WiFi stopped"));
 #endif
   }
 }
@@ -551,21 +551,22 @@ void WiFiManager::startAP() {
     startTime = millis();
 
 #ifdef DEBUG_SERIAL_OUTPUT
-    Serial.println("WiFi AP started: " + ssid);
-    Serial.print("AP IP address: ");
+    Serial.print(F("WiFi AP started: "));
+    Serial.println(ssid);
+    Serial.print(F("AP IP address: "));
     Serial.println(WiFi.softAPIP());
-    Serial.print("Free heap: ");
+    Serial.print(F("Free heap: "));
     Serial.println(ESP.getFreeHeap());
-    Serial.print("Flash size: ");
+    Serial.print(F("Flash size: "));
     Serial.println(ESP.getFlashChipSize());
-    Serial.print("Sketch size: ");
+    Serial.print(F("Sketch size: "));
     Serial.println(ESP.getSketchSize());
-    Serial.print("Free sketch space: ");
+    Serial.print(F("Free sketch space: "));
     Serial.println(ESP.getFreeSketchSpace());
 #endif
   } else {
 #ifdef DEBUG_SERIAL_OUTPUT
-    Serial.println("Failed to start WiFi AP");
+    Serial.println(F("Failed to start WiFi AP"));
 #endif
   }
 }
@@ -892,14 +893,18 @@ void WiFiManager::flashLED() {
 }
 
 String WiFiManager::generateHTML(const String& content) const {
-  String html = String(HTML_HEADER);
-  html += CSS_STYLES;
-  html += "</style>";
-  html += "<script>";
-  html += JAVASCRIPT_CODE;
-  html += "</script>";
-  html += "</head><body>";
+  String html;
+  html.reserve(8192);  // Reserve space to prevent fragmentation
+  
+  // Read from PROGMEM
+  html += FPSTR(HTML_HEADER);
+  html += FPSTR(CSS_STYLES);
+  html += F("</style>");
+  html += F("<script>");
+  html += FPSTR(JAVASCRIPT_CODE);
+  html += F("</script>");
+  html += F("</head><body>");
   html += content;
-  html += HTML_FOOTER;
+  html += FPSTR(HTML_FOOTER);
   return html;
 }

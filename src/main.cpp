@@ -34,21 +34,21 @@ class RadioSystem {
   void begin() {
 #ifdef DEBUG_SERIAL_OUTPUT
     Serial.begin(115200);
-    Serial.println("\nRadio Starting...");
-    Serial.print("Firmware version: ");
+    Serial.println(F("\nRadio Starting..."));
+    Serial.print(F("Firmware version: "));
     Serial.println(FIRMWARE_VERSION);
 #endif
     setCpuFrequencyMhz(240);
 
 #ifdef DEBUG_SERIAL_OUTPUT
-    Serial.print("CPU Frequency set to ");
+    Serial.print(F("CPU Frequency set to "));
     Serial.print(getCpuFrequencyMhz());
-    Serial.println(" MHz");
+    Serial.println(F(" MHz"));
 
     // Simple system information
     const esp_partition_t* running = esp_ota_get_running_partition();
     if (running != NULL) {
-      Serial.printf("Running from partition: %s\n", running->label);
+      Serial.printf_P(PSTR("Running from partition: %s\n"), running->label);
     }
 #endif
     initializeSubsystems();
@@ -114,7 +114,7 @@ class RadioSystem {
     SpeedManager::getInstance().begin();
     SignalManager::getInstance().begin();
 #ifdef DEBUG_SERIAL_OUTPUT
-    Serial.println("All subsystems initialized");
+    Serial.println(F("All subsystems initialized"));
 #endif
   }
 
@@ -142,7 +142,7 @@ void batteryCheckCallback() {
   power.updatePowerLED();
 
 #ifdef DEBUG_SERIAL_OUTPUT
-  Serial.printf("Battery Voltage: %.2fV\n", voltage);
+  Serial.printf_P(PSTR("Battery Voltage: %.2fV\n"), voltage);
 #endif
 }
 

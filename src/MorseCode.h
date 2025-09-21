@@ -15,6 +15,7 @@ class MorseCode {
   void begin();
   void update();  // Call this in the main loop
   void startMessage(const String& message);
+  void startMessage(const char* message);
   void stop();
 
   void setSpeed(MorseSpeed speed) { ConfigManager::getInstance().setMorseSpeed(speed); }
