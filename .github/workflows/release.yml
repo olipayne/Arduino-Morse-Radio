@@ -51,12 +51,16 @@ jobs:
           VERSION=${{ steps.get_version.outputs.VERSION }}
           echo "Building version: ${VERSION}"
           
+          # Debug: Check which esptool we're using
+          which esptool.py
+          esptool.py version
+          
           # Use pip-installed esptool to merge binaries
-          esptool.py --chip esp32s3 merge_bin --output .pio/build/release/merged-flash.bin --flash_mode dio --flash_size=keep 0x0 .pio/build/release/bootloader.bin 0x8000 .pio/build/release/partitions.bin 0x10000 .pio/build/release/firmware.bin
+          python -m esptool --chip esp32s3 merge_bin --output .pio/build/release/merged-flash.bin --flash_mode dio --flash_size=keep 0x0 .pio/build/release/bootloader.bin 0x8000 .pio/build/release/partitions.bin 0x10000 .pio/build/release/firmware.bin
           mv .pio/build/release/merged-flash.bin .pio/build/release/firmware-${VERSION}-release.bin
 
           # Merge debug binary
-          esptool.py --chip esp32s3 merge_bin --output .pio/build/debug/merged-flash.bin --flash_mode dio --flash_size=keep 0x0 .pio/build/debug/bootloader.bin 0x8000 .pio/build/debug/partitions.bin 0x10000 .pio/build/debug/firmware.bin
+          python -m esptool --chip esp32s3 merge_bin --output .pio/build/debug/merged-flash.bin --flash_mode dio --flash_size=keep 0x0 .pio/build/debug/bootloader.bin 0x8000 .pio/build/debug/partitions.bin 0x10000 .pio/build/debug/firmware.bin
           mv .pio/build/debug/merged-flash.bin .pio/build/debug/firmware-${VERSION}-debug.bin
           
           # Create OTA-specific binaries (firmware only, no bootloader or partition table)
