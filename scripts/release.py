@@ -6,9 +6,10 @@ This script automates the release process:
 1. Reads current version from VERSION file
 2. Bumps version based on user choice (patch/minor/major)
 3. Updates VERSION file
-4. Commits the change
-5. Creates and pushes git tag
-6. Triggers GitHub Actions to build and publish binaries
+4. Generates include/Version.h file with the new version
+5. Commits the changes (VERSION + Version.h)
+6. Creates and pushes git tag
+7. Triggers GitHub Actions to build and publish binaries
 
 Usage:
     python scripts/release.py patch   # 1.10.3 -> 1.10.4
@@ -111,6 +112,21 @@ def update_version_file(new_version):
     version_file.write_text(new_version + "\n")
     print(f"Updated VERSION file to {new_version}")
 
+def generate_version_header():
+    """Generate the Version.h file from the current VERSION file."""
+    try:
+        # Import the version module
+        sys.path.append(str(Path(__file__).parent))
+        import version
+        
+        # Generate the header file
+        git_version = version.generate_version_header()
+        print(f"Generated Version.h with version: {git_version}")
+        return git_version
+    except Exception as e:
+        print(f"ERROR: Failed to generate Version.h: {e}")
+        sys.exit(1)
+
 def main():
     if len(sys.argv) != 2:
         print("Usage: python scripts/release.py <patch|minor|major>")
@@ -160,16 +176,20 @@ def main():
         print("\n4️⃣ Updating VERSION file...")
         update_version_file(new_version)
         
-        # Commit the version bump
-        print("\n5️⃣ Committing version bump...")
-        run_command("git add VERSION")
+        # Generate Version.h file
+        print("\n5️⃣ Generating Version.h file...")
+        generate_version_header()
+        
+        # Commit the version bump and Version.h
+        print("\n6️⃣ Committing version bump...")
+        run_command("git add VERSION include/Version.h")
         run_command(f'git commit -m "chore: bump version to v{new_version}"')
         
         # Create and push tag
-        print("\n6️⃣ Creating git tag...")
+        print("\n7️⃣ Creating git tag...")
         run_command(f"git tag v{new_version}")
         
-        print("\n7️⃣ Pushing to GitHub...")
+        print("\n8️⃣ Pushing to GitHub...")
         run_command("git push origin main")
         run_command(f"git push origin v{new_version}")
         
@@ -184,8 +204,9 @@ def main():
         print(f"\n❌ Release failed: {e}")
         print("\n🔄 You may need to clean up manually:")
         print("   - Check git status: git status")
-        print("   - Remove tag if created: git tag -d v{new_version}")
+        print(f"   - Remove tag if created: git tag -d v{new_version}")
         print("   - Reset VERSION file if needed")
+        print("   - Reset include/Version.h if needed")
         sys.exit(1)
 
 if __name__ == "__main__":
