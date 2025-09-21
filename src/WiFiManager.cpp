@@ -17,24 +17,23 @@ const char WiFiManager::HTML_HEADER[] PROGMEM = R"(
 const char WiFiManager::CSS_STYLES[] PROGMEM = R"(
     :root {
         --primary-color: #2196F3;
+        --secondary-color: #757575;
         --success-color: #4CAF50;
         --error-color: #f44336;
-        --background-color: #f5f5f5;
+        --warning-color: #ff9800;
+        --background-color: #f8f9fa;
         --card-background: #ffffff;
-        --text-color: #333333;
-        --border-color: #e0e0e0;
-        --spacing-unit: 16px;
-        --border-radius: 8px;
+        --text-color: #212529;
+        --text-muted: #6c757d;
+        --border-color: #dee2e6;
+        --spacing: 1rem;
+        --border-radius: 0.5rem;
+        --shadow: 0 2px 4px rgba(0,0,0,0.1);
         
         /* Wave band colors - matching LED colors */
-        --long-wave-color: #e53935;  /* Warm red */
-        --medium-wave-color: #fdd835; /* Bright yellow */
-        --short-wave-color: #1e88e5;  /* Clear blue */
-        
-        /* Wave band background colors - soft tints of the LED colors */
-        --long-wave-bg: #ffebee;    /* Very light red */
-        --medium-wave-bg: #fffde7;  /* Very light yellow */
-        --short-wave-bg: #e3f2fd;   /* Very light blue */
+        --long-wave-color: #dc3545;
+        --medium-wave-color: #ffc107;
+        --short-wave-color: #0d6efd;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -42,12 +41,8 @@ const char WiFiManager::CSS_STYLES[] PROGMEM = R"(
             --background-color: #121212;
             --card-background: #1e1e1e;
             --text-color: #ffffff;
-            --border-color: #333333;
-            
-            /* Dark mode wave band background colors */
-            --long-wave-bg: rgba(229, 57, 53, 0.15);    /* Dark red */
-            --medium-wave-bg: rgba(253, 216, 53, 0.15); /* Dark yellow */
-            --short-wave-bg: rgba(30, 136, 229, 0.15);  /* Dark blue */
+            --text-muted: #adb5bd;
+            --border-color: #495057;
         }
     }
 
@@ -58,64 +53,153 @@ const char WiFiManager::CSS_STYLES[] PROGMEM = R"(
     }
 
     body { 
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        line-height: 1.5;
-        max-width: 800px; 
-        margin: 0 auto; 
-        padding: var(--spacing-unit);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        line-height: 1.6;
         background-color: var(--background-color);
         color: var(--text-color);
-        padding-bottom: calc(var(--spacing-unit) * 5);
-        padding-top: calc(var(--spacing-unit) * 4);
+        min-height: 100vh;
     }
 
-    .station { 
+    .container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: var(--spacing);
+        padding-bottom: calc(var(--spacing) * 6);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .header {
+        text-align: center;
+        padding: calc(var(--spacing) * 2) 0;
+        border-bottom: 1px solid var(--border-color);
+        margin-bottom: var(--spacing);
+    }
+
+    .status-bar {
         background: var(--card-background);
-        padding: var(--spacing-unit);
-        margin: var(--spacing-unit) 0;
+        padding: calc(var(--spacing) * 0.75);
         border-radius: var(--border-radius);
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        box-shadow: var(--shadow);
+        margin-bottom: var(--spacing);
+        text-align: center;
+        font-size: 0.9em;
+        color: var(--text-muted);
+    }
+
+    .nav {
+        display: flex;
+        gap: calc(var(--spacing) * 0.5);
+        margin-bottom: calc(var(--spacing) * 1.5);
+    }
+
+    .nav a {
+        flex: 1;
+        padding: calc(var(--spacing) * 0.75);
+        text-decoration: none;
+        color: var(--text-color);
+        background: var(--card-background);
+        border-radius: var(--border-radius);
+        text-align: center;
+        font-weight: 500;
         border: 1px solid var(--border-color);
+        transition: all 0.2s ease;
+    }
+
+    .nav a.active {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+    }
+
+    .nav a:hover:not(.active) {
+        background: var(--border-color);
+    }
+
+    .card {
+        background: var(--card-background);
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+        margin-bottom: var(--spacing);
+        overflow: hidden;
+    }
+
+    .card-header {
+        padding: var(--spacing);
+        border-bottom: 1px solid var(--border-color);
+        background: rgba(0,0,0,0.02);
+    }
+
+    .card-body {
+        padding: var(--spacing);
+    }
+
+    .station {
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius);
+        margin-bottom: calc(var(--spacing) * 0.75);
+        overflow: hidden;
     }
 
     .station-header {
         display: flex;
-        flex-wrap: wrap;
-        gap: var(--spacing-unit);
+        justify-content: space-between;
         align-items: center;
-        margin-bottom: var(--spacing-unit);
+        padding: calc(var(--spacing) * 0.75);
+        background: rgba(0,0,0,0.02);
+        border-bottom: 1px solid var(--border-color);
     }
 
     .station-name {
-        flex: 1;
-        font-size: 1.2em;
         font-weight: 600;
-    }
-
-    .input-group {
-        display: flex;
-        gap: 8px;
-        margin-bottom: var(--spacing-unit);
-    }
-
-    input, button {
-        font-size: 16px; /* Prevents iOS zoom on focus */
-        border-radius: var(--border-radius);
-        padding: 12px;
-        border: 1px solid var(--border-color);
-        background: var(--card-background);
         color: var(--text-color);
     }
 
-    input[type="checkbox"] {
-        width: 24px;
-        height: 24px;
-        margin: 0;
-        accent-color: var(--primary-color);
+    .station-body {
+        padding: var(--spacing);
+    }
+
+    .form-group {
+        margin-bottom: var(--spacing);
+    }
+
+    .form-row {
+        display: flex;
+        gap: calc(var(--spacing) * 0.5);
+        align-items: center;
+    }
+
+    label {
+        display: block;
+        margin-bottom: calc(var(--spacing) * 0.25);
+        font-weight: 500;
+        color: var(--text-color);
+        font-size: 0.9em;
+    }
+
+    input, button {
+        font-size: 16px;
+        border-radius: var(--border-radius);
+        padding: calc(var(--spacing) * 0.75);
+        border: 1px solid var(--border-color);
+        background: var(--card-background);
+        color: var(--text-color);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+    }
+
+    input[type="text"], input[type="number"] {
+        width: 100%;
     }
 
     input[type="number"] {
-        width: 120px;
         -moz-appearance: textfield;
     }
 
@@ -124,155 +208,109 @@ const char WiFiManager::CSS_STYLES[] PROGMEM = R"(
         -webkit-appearance: none;
     }
 
-    input[type="text"] {
-        width: 100%;
+    input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        margin: 0;
+        accent-color: var(--primary-color);
     }
 
-    .enable-toggle {
+    .toggle {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: calc(var(--spacing) * 0.5);
     }
 
-    .enable-toggle label {
-        font-size: 1em;
-        margin: 0;
-    }
-
-    button { 
+    button {
         background: var(--primary-color);
         color: white;
         border: none;
         font-weight: 500;
         cursor: pointer;
-        transition: opacity 0.2s, transform 0.1s;
+        transition: all 0.2s ease;
         min-height: 44px;
-        padding: 0 24px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
     }
 
-    button:hover { 
-        opacity: 0.9;
+    button:hover {
+        background: #1976d2;
+        transform: translateY(-1px);
     }
 
     button:active {
-        transform: scale(0.98);
+        transform: translateY(0);
     }
 
-    .tune-button {
-        white-space: nowrap;
-        min-width: 100px;
+    .btn-secondary {
+        background: var(--secondary-color);
     }
 
-    .wave-band { 
-        padding: var(--spacing-unit);
-        margin: var(--spacing-unit) 0;
-        border-radius: var(--border-radius);
-        background: var(--card-background);
-        border: 1px solid var(--border-color);
-        position: relative;
-        overflow: hidden;
+    .btn-secondary:hover {
+        background: #616161;
     }
 
-    .wave-band::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        width: 4px;
-    }
-
-    .wave-band h2 {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-unit);
-        margin-bottom: var(--spacing-unit);
-        padding-bottom: var(--spacing-unit);
-        border-bottom: 1px solid var(--border-color);
-    }
-
-    /* Wave band specific styles */
-    .wave-band.long-wave {
-        background: var(--long-wave-bg);
-    }
-    .wave-band.long-wave::before {
-        background: var(--long-wave-color);
-    }
-    .wave-band.long-wave h2 {
-        color: var(--long-wave-color);
-    }
-
-    .wave-band.medium-wave {
-        background: var(--medium-wave-bg);
-    }
-    .wave-band.medium-wave::before {
-        background: var(--medium-wave-color);
-    }
-    .wave-band.medium-wave h2 {
-        color: var(--medium-wave-color);
-    }
-
-    .wave-band.short-wave {
-        background: var(--short-wave-bg);
-    }
-    .wave-band.short-wave::before {
-        background: var(--short-wave-color);
-    }
-    .wave-band.short-wave h2 {
-        color: var(--short-wave-color);
-    }
-
-    /* Station cards within wave bands */
-    .wave-band .station {
-        background: var(--card-background);
-        border-color: var(--border-color);
-    }
-
-    .status { 
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        background: var(--card-background);
-        padding: var(--spacing-unit);
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        text-align: center;
-        z-index: 1000;
-        font-weight: 500;
-        color: var(--primary-color);
-        backdrop-filter: blur(8px);
-    }
-
-    .save-button-container {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        background: var(--card-background);
-        padding: var(--spacing-unit);
-        box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
-        z-index: 1000;
-        backdrop-filter: blur(8px);
-    }
-
-    .save-button-container button {
-        width: 100%;
-        max-width: 800px;
-        margin: 0 auto;
+    .btn-success {
         background: var(--success-color);
     }
 
-    .save-button-container button:disabled {
+    .btn-success:hover {
+        background: #388e3c;
+    }
+
+    .wave-band {
+        margin-bottom: calc(var(--spacing) * 1.5);
+    }
+
+    .wave-band h2 {
+        font-size: 1.1em;
+        font-weight: 600;
+        margin-bottom: var(--spacing);
+        padding: calc(var(--spacing) * 0.5);
+        border-left: 4px solid;
+        background: rgba(0,0,0,0.02);
+    }
+
+    .wave-band.long-wave h2 {
+        border-left-color: var(--long-wave-color);
+        color: var(--long-wave-color);
+    }
+
+    .wave-band.medium-wave h2 {
+        border-left-color: var(--medium-wave-color);
+        color: var(--medium-wave-color);
+    }
+
+    .wave-band.short-wave h2 {
+        border-left-color: var(--short-wave-color);
+        color: var(--short-wave-color);
+    }
+
+    .save-area {
+        margin-top: auto;
+        padding-top: calc(var(--spacing) * 2);
+        border-top: 1px solid var(--border-color);
+    }
+
+    .save-button {
+        width: 100%;
+        padding: calc(var(--spacing) * 1);
+        font-size: 1.1em;
+        font-weight: 600;
+    }
+
+    .save-button:disabled {
         opacity: 0.5;
         cursor: not-allowed;
     }
 
-    .save-button-container button.saving {
+    .save-button.saving {
         position: relative;
         color: transparent;
     }
 
-    .save-button-container button.saving::after {
+    .save-button.saving::after {
         content: 'Saving...';
         position: absolute;
         left: 50%;
@@ -281,20 +319,72 @@ const char WiFiManager::CSS_STYLES[] PROGMEM = R"(
         color: white;
     }
 
+    .calibration-display {
+        text-align: center;
+        padding: calc(var(--spacing) * 2);
+        background: var(--card-background);
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius);
+        margin-bottom: calc(var(--spacing) * 1.5);
+    }
+
+    .tuning-value {
+        font-size: 2em;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin-bottom: calc(var(--spacing) * 0.5);
+    }
+
+    .calibration-help {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: var(--border-radius);
+        padding: var(--spacing);
+        margin-bottom: calc(var(--spacing) * 1.5);
+        font-size: 0.9em;
+        line-height: 1.5;
+    }
+
+    .frequency-display {
+        font-weight: 600;
+        color: var(--primary-color);
+        font-size: 1.1em;
+    }
+
+    .floating-save {
+        position: fixed;
+        bottom: calc(var(--spacing) * 2);
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1000;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        border-radius: var(--border-radius);
+        backdrop-filter: blur(8px);
+    }
+
+    .floating-save .save-button {
+        padding: calc(var(--spacing) * 1);
+        font-size: 1.1em;
+        font-weight: 600;
+        min-width: 200px;
+        border-radius: var(--border-radius);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
     .toast {
         position: fixed;
-        top: calc(var(--spacing-unit) * 4);
+        top: calc(var(--spacing) * 2);
         left: 50%;
         transform: translateX(-50%);
         background: var(--success-color);
         color: white;
-        padding: 12px 24px;
+        padding: calc(var(--spacing) * 0.75) var(--spacing);
         border-radius: var(--border-radius);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        z-index: 2000;
+        box-shadow: var(--shadow);
+        z-index: 1000;
         font-weight: 500;
         opacity: 0;
-        transition: 0.3s ease-in-out;
+        transition: opacity 0.3s ease;
         pointer-events: none;
     }
 
@@ -307,81 +397,64 @@ const char WiFiManager::CSS_STYLES[] PROGMEM = R"(
     }
 
     h1 {
-        color: var(--text-color);
-        border-bottom: 2px solid var(--primary-color);
-        padding-bottom: var(--spacing-unit);
-        margin: 0 0 var(--spacing-unit) 0;
         font-size: 1.5em;
-        font-weight: 600;
+        font-weight: 700;
+        margin: 0;
+        color: var(--text-color);
     }
 
     h2 {
-        color: var(--text-color);
-        margin: 0 0 var(--spacing-unit) 0;
-        font-size: 1.3em;
+        font-size: 1.2em;
         font-weight: 600;
+        margin: 0 0 var(--spacing) 0;
+        color: var(--text-color);
     }
 
-    @media (max-width: 600px) {
-        :root {
-            --spacing-unit: 12px;
-        }
+    .text-muted {
+        color: var(--text-muted);
+        font-size: 0.9em;
+    }
 
-        body {
-            padding: 12px;
-            padding-bottom: calc(var(--spacing-unit) * 5);
-            padding-top: calc(var(--spacing-unit) * 4);
+    /* Mobile-first responsive design */
+    @media (max-width: 480px) {
+        .container {
+            padding: calc(var(--spacing) * 0.75);
         }
-
-        .station-header {
+        
+        .form-row {
             flex-direction: column;
-            align-items: flex-start;
-            gap: 8px;
+            align-items: stretch;
         }
-
-        .input-group {
+        
+        .nav {
             flex-direction: column;
         }
-
-        .tune-button {
-            width: 100%;
-        }
-
-        input[type="number"] {
-            width: 100%;
-        }
-
-        .enable-toggle {
-            width: 100%;
-            justify-content: space-between;
+        
+        .nav a {
+            padding: calc(var(--spacing) * 1);
         }
     }
 
     @media (hover: none) {
         button:hover {
-            opacity: 1;
+            transform: none;
         }
     }
 
-    /* Improved focus styles for accessibility */
-    :focus {
+    /* Focus styles for accessibility */
+    :focus-visible {
         outline: 2px solid var(--primary-color);
         outline-offset: 2px;
     }
 
-    :focus:not(:focus-visible) {
-        outline: none;
-    }
-
-    /* Loading indicator for the save button */
-    @keyframes saving-pulse {
-        0% { opacity: 1; }
+    /* Loading animation */
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
         50% { opacity: 0.5; }
-        100% { opacity: 1; }
     }
 
     .saving {
-        animation: saving-pulse 1.5s infinite;
+        animation: pulse 1.5s infinite;
     }
 )";
 
@@ -391,10 +464,13 @@ const char WiFiManager::HTML_FOOTER[] PROGMEM = R"(
 
 const char WiFiManager::JAVASCRIPT_CODE[] PROGMEM = R"(
     function updateTuningValue() {
+        const element = document.getElementById('currentTuning');
+        if (!element) return;
+        
         fetch('/tuning')
             .then(response => response.json())
             .then(data => {
-                document.getElementById('currentTuning').textContent = data.value;
+                element.textContent = data.value;
             })
             .catch(error => console.error('Error fetching tuning value:', error));
     }
@@ -404,11 +480,44 @@ const char WiFiManager::JAVASCRIPT_CODE[] PROGMEM = R"(
             .then(response => response.json())
             .then(data => {
                 const input = document.getElementById(inputId);
-                input.value = data.value;
-                input.style.backgroundColor = '#e8f5e9';
-                setTimeout(() => input.style.backgroundColor = '', 500);
+                if (input) {
+                    input.value = data.value;
+                    input.style.backgroundColor = '#e8f5e9';
+                    setTimeout(() => input.style.backgroundColor = '', 500);
+                    
+                    // Save the frequency immediately
+                    const stationIndex = inputId.replace('freq_', '');
+                    saveFrequency(stationIndex, data.value);
+                }
             })
             .catch(error => console.error('Error setting frequency:', error));
+    }
+
+    function saveFrequency(stationIndex, frequency) {
+        const data = {
+            station: parseInt(stationIndex),
+            frequency: parseInt(frequency)
+        };
+
+        fetch('/save-frequency', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Frequency saved: ' + frequency);
+            } else {
+                showToast('Failed to save frequency', true);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('Error saving frequency', true);
+        });
     }
 
     function showToast(message, isError = false) {
@@ -597,9 +706,11 @@ void WiFiManager::handle() {
 
 void WiFiManager::setupServer() {
   server.on("/", HTTP_GET, [this]() { handleRoot(); });
-  server.on("/save", HTTP_POST, [this]() { handleSaveConfig(); });
-  server.on("/tuning", HTTP_GET, [this]() { handleGetTuningValue(); });
   server.on("/stations", HTTP_GET, [this]() { handleStationConfig(); });
+  server.on("/calibration", HTTP_GET, [this]() { handleCalibration(); });
+  server.on("/save", HTTP_POST, [this]() { handleSaveConfig(); });
+  server.on("/save-frequency", HTTP_POST, [this]() { handleSaveFrequency(); });
+  server.on("/tuning", HTTP_GET, [this]() { handleGetTuningValue(); });
   server.on("/api/status", HTTP_GET, [this]() { handleAPI(); });
   server.onNotFound([this]() { handleNotFound(); });
 
@@ -641,8 +752,14 @@ void WiFiManager::setupMDNS() {
   }
 }
 
-void WiFiManager::handleRoot() {
-  server.send(200, "text/html", generateHTML(generateConfigPage()));
+void WiFiManager::handleRoot() { server.send(200, "text/html", generateHTML(generateHomePage())); }
+
+void WiFiManager::handleStationConfig() {
+  server.send(200, "text/html", generateHTML(generateStationPage()));
+}
+
+void WiFiManager::handleCalibration() {
+  server.send(200, "text/html", generateHTML(generateCalibrationPage()));
 }
 
 void WiFiManager::handleGetTuningValue() {
@@ -650,6 +767,44 @@ void WiFiManager::handleGetTuningValue() {
   String response = "{\"value\":" + String(tuningValue) + "}";
   server.send(200, "application/json", response);
   startTime = millis();  // Reset the timeout counter
+}
+
+void WiFiManager::handleSaveFrequency() {
+  String jsonData = server.arg("plain");
+
+#ifdef DEBUG_SERIAL_OUTPUT
+  Serial.println("Received frequency data: " + jsonData);
+#endif
+
+  JsonDocument doc;
+  DeserializationError error = deserializeJson(doc, jsonData);
+
+  if (error) {
+#ifdef DEBUG_SERIAL_OUTPUT
+    Serial.println("Failed to parse frequency JSON");
+#endif
+    server.send(400, "application/json", "{\"success\":false,\"message\":\"Invalid JSON\"}");
+    return;
+  }
+
+  int stationIndex = doc["station"];
+  int frequency = doc["frequency"];
+
+  auto& stationManager = StationManager::getInstance();
+  Station* station = stationManager.getStation(stationIndex);
+
+  if (station) {
+    station->setFrequency(frequency);
+    stationManager.saveToPreferences();
+
+#ifdef DEBUG_SERIAL_OUTPUT
+    Serial.printf("Updated station %d frequency to %d\n", stationIndex, frequency);
+#endif
+
+    server.send(200, "application/json", "{\"success\":true,\"message\":\"Frequency saved\"}");
+  } else {
+    server.send(400, "application/json", "{\"success\":false,\"message\":\"Invalid station\"}");
+  }
 }
 
 void WiFiManager::handleSaveConfig() {
@@ -740,89 +895,127 @@ void WiFiManager::handleSaveConfig() {
   server.send(200, "application/json", responseStr);
 }
 
-String WiFiManager::generateConfigPage() const {
-  String html =
-      "<div class='status' role='status' aria-live='polite'>Current Tuning Value: <span "
-      "id='currentTuning'>-</span> | Firmware: " +
-      String(FIRMWARE_VERSION) + "</div>";
-  html += "<h1>Radio Configuration</h1>";
-  html +=
-      "<form method='POST' action='/save' id='configForm' aria-label='Radio station configuration "
-      "form'>";
-  html += generateStationTable();
-  html += "<div class='save-button-container'>";
-  html +=
-      "<button type='submit' aria-label='Save all station configurations'>Save "
-      "Configuration</button>";
-  html += "</div>";
-  html += "</form>";
+String WiFiManager::generateHomePage() const {
+  String html;
+  html.reserve(1024);
+
+  html += F("<div class='container'>");
+  html += F("<div class='header'>");
+  html += F("<h1>Radio Configuration</h1>");
+  html += F("<div class='text-muted'>Firmware: ");
+  html += String(FIRMWARE_VERSION);
+  html += F("</div>");
+  html += F("</div>");
+
+  html += F("<div class='status-bar'>");
+  html += F("Current Tuning: <span id='currentTuning'>-</span>");
+  html += F("</div>");
+
+  html += F("<div class='nav'>");
+  html += F("<a href='/stations' class='nav-link'>Messages</a>");
+  html += F("<a href='/calibration' class='nav-link'>Tuning</a>");
+  html += F("</div>");
+
+  html += F("<div class='card'>");
+  html += F("<div class='card-header'>");
+  html += F("<h2>Welcome</h2>");
+  html += F("</div>");
+  html += F("<div class='card-body'>");
+  html += F("<p>Configure your radio station messages and tune each station frequency.</p>");
+  html += F("<p><strong>Messages:</strong> Set custom morse code messages for each station</p>");
+  html += F(
+      "<p><strong>Tuning:</strong> Set the potentiometer position for each station frequency</p>");
+  html += F("</div>");
+  html += F("</div>");
+
+  html += F("</div>");
   return html;
 }
 
-String WiFiManager::generateStationTable() const {
+String WiFiManager::generateStationPage() const {
+  String html;
+  html.reserve(4096);
+
+  html += F("<div class='container'>");
+  html += F("<div class='header'>");
+  html += F("<h1>Station Configuration</h1>");
+  html += F("</div>");
+
+  html += F("<div class='nav'>");
+  html += F("<a href='/' class='nav-link'>Home</a>");
+  html += F("<a href='/stations' class='nav-link active'>Messages</a>");
+  html += F("<a href='/calibration' class='nav-link'>Tuning</a>");
+  html += F("</div>");
+
+  html += F("<form method='POST' action='/save' id='stationForm'>");
+  html += generateStationList();
+  html += F("</form>");
+
+  html += F("<div class='floating-save'>");
+  html +=
+      F("<button type='submit' form='stationForm' class='save-button btn-success'>💾 Save "
+        "Messages</button>");
+  html += F("</div>");
+  html += F("</div>");
+
+  return html;
+}
+
+String WiFiManager::generateStationList() const {
   String html;
   auto& stationManager = StationManager::getInstance();
 
-  WaveBand currentBand = WaveBand::LONG_WAVE;
-  bool firstBand = true;
-
-  // Helper function to get CSS class for each band
-  auto getBandClass = [](WaveBand band) -> String {
-    switch (band) {
-      case WaveBand::LONG_WAVE:
-        return "long-wave";
-      case WaveBand::MEDIUM_WAVE:
-        return "medium-wave";
-      case WaveBand::SHORT_WAVE:
-        return "short-wave";
-      default:
-        return "";
-    }
-  };
-
   // Initialize sections for each wave band
-  String longWaveHtml =
-      "<div class='wave-band long-wave' role='region' aria-label='Long Wave'><h2>Long Wave</h2>";
-  String mediumWaveHtml =
-      "<div class='wave-band medium-wave' role='region' aria-label='Medium Wave'><h2>Medium "
-      "Wave</h2>";
-  String shortWaveHtml =
-      "<div class='wave-band short-wave' role='region' aria-label='Short Wave'><h2>Short Wave</h2>";
+  String longWaveHtml = F("<div class='wave-band long-wave'><h2>Long Wave</h2>");
+  String mediumWaveHtml = F("<div class='wave-band medium-wave'><h2>Medium Wave</h2>");
+  String shortWaveHtml = F("<div class='wave-band short-wave'><h2>Short Wave</h2>");
 
   // Track if each band has stations
   bool hasLongWave = false;
   bool hasMediumWave = false;
   bool hasShortWave = false;
 
-  // First collect stations for each band
+  // Generate stations for each band
   for (size_t i = 0; i < stationManager.getStationCount(); i++) {
     const Station* station = stationManager.getStation(i);
     if (!station) continue;
 
-    String stationHtml =
-        "<div class='station' role='group' aria-label='Station " + String(i + 1) + "'>";
-    stationHtml += "<div class='station-header'>";
-    stationHtml += "<h3 class='station-name'>" + String(station->getName()) + "</h3>";
-    stationHtml += "<div class='enable-toggle'>";
-    stationHtml += "<input type='checkbox' id='enable_" + String(i) + "' name='enable_" +
-                   String(i) + "' " + (station->isEnabled() ? "checked" : "") +
-                   " aria-label='Enable station'>";
-    stationHtml += "<label for='enable_" + String(i) + "'>Enabled</label>";
-    stationHtml += "</div>";
-    stationHtml += "</div>";
+    String stationHtml = F("<div class='station'>");
+    stationHtml += F("<div class='station-header'>");
+    stationHtml += F("<div class='station-name'>");
+    stationHtml += String(station->getName());
+    stationHtml += F("</div>");
+    stationHtml += F("<div class='toggle'>");
+    stationHtml += F("<input type='checkbox' id='enable_");
+    stationHtml += String(i);
+    stationHtml += F("' name='enable_");
+    stationHtml += String(i);
+    stationHtml += F("' ");
+    stationHtml += station->isEnabled() ? F("checked") : F("");
+    stationHtml += F(">");
+    stationHtml += F("<label for='enable_");
+    stationHtml += String(i);
+    stationHtml += F("'>Enabled</label>");
+    stationHtml += F("</div>");
+    stationHtml += F("</div>");
 
-    stationHtml += "<div class='input-group' role='group' aria-label='Frequency control'>";
-    stationHtml += "<input type='number' id='freq_" + String(i) + "' name='freq_" + String(i) +
-                   "' value='" + String(station->getFrequency()) +
-                   "' aria-label='Station frequency'>";
-    stationHtml += "<button type='button' class='tune-button' onclick='setFrequency(\"freq_" +
-                   String(i) + "\")' aria-label='Set current tuning value'>Set</button>";
-    stationHtml += "</div>";
-
-    stationHtml += "<input type='text' name='msg_" + String(i) + "' value='" +
-                   String(station->getMessage()) +
-                   "' placeholder='Message' aria-label='Station message'>";
-    stationHtml += "</div>";
+    stationHtml += F("<div class='station-body'>");
+    stationHtml += F("<div class='form-group'>");
+    stationHtml += F("<label>Message</label>");
+    stationHtml += F("<input type='text' name='msg_");
+    stationHtml += String(i);
+    stationHtml += F("' value='");
+    stationHtml += String(station->getMessage());
+    stationHtml += F("' placeholder='Enter your morse code message'>");
+    stationHtml += F("</div>");
+    stationHtml += F("<!-- Hidden frequency input to maintain save functionality -->");
+    stationHtml += F("<input type='hidden' name='freq_");
+    stationHtml += String(i);
+    stationHtml += F("' value='");
+    stationHtml += String(station->getFrequency());
+    stationHtml += F("'>");
+    stationHtml += F("</div>");
+    stationHtml += F("</div>");
 
     // Add to the appropriate band
     switch (station->getBand()) {
@@ -841,16 +1034,117 @@ String WiFiManager::generateStationTable() const {
     }
   }
 
-  // Add closing div tags
-  longWaveHtml += "</div>";
-  mediumWaveHtml += "</div>";
-  shortWaveHtml += "</div>";
+  // Close wave band divs
+  longWaveHtml += F("</div>");
+  mediumWaveHtml += F("</div>");
+  shortWaveHtml += F("</div>");
 
   // Add each section to the final HTML if it has stations
   if (hasLongWave) html += longWaveHtml;
   if (hasMediumWave) html += mediumWaveHtml;
   if (hasShortWave) html += shortWaveHtml;
 
+  return html;
+}
+
+String WiFiManager::generateCalibrationPage() const {
+  String html;
+  html.reserve(4096);
+
+  html += F("<div class='container'>");
+  html += F("<div class='header'>");
+  html += F("<h1>Station Tuning</h1>");
+  html += F("</div>");
+
+  html += F("<div class='nav'>");
+  html += F("<a href='/' class='nav-link'>Home</a>");
+  html += F("<a href='/stations' class='nav-link'>Messages</a>");
+  html += F("<a href='/calibration' class='nav-link active'>Tuning</a>");
+  html += F("</div>");
+
+  html += F("<div class='calibration-help'>");
+  html += F("<strong>Tuning Instructions:</strong><br>");
+  html +=
+      F("Turn the tuning knob to the desired position for each station, then click 'Set' to save "
+        "that frequency. ");
+  html += F("The current potentiometer reading is shown in real-time.");
+  html += F("</div>");
+
+  html += F("<div class='calibration-display'>");
+  html += F("<div class='tuning-value' id='currentTuning'>-</div>");
+  html += F("<div class='text-muted'>Current Potentiometer Reading</div>");
+  html += F("</div>");
+
+  // Generate station list for calibration
+  auto& stationManager = StationManager::getInstance();
+
+  // Initialize sections for each wave band
+  String longWaveHtml = F("<div class='wave-band long-wave'><h2>Long Wave</h2>");
+  String mediumWaveHtml = F("<div class='wave-band medium-wave'><h2>Medium Wave</h2>");
+  String shortWaveHtml = F("<div class='wave-band short-wave'><h2>Short Wave</h2>");
+
+  bool hasLongWave = false;
+  bool hasMediumWave = false;
+  bool hasShortWave = false;
+
+  for (size_t i = 0; i < stationManager.getStationCount(); i++) {
+    const Station* station = stationManager.getStation(i);
+    if (!station || !station->isEnabled()) continue;
+
+    String stationHtml = F("<div class='station'>");
+    stationHtml += F("<div class='station-header'>");
+    stationHtml += F("<div class='station-name'>");
+    stationHtml += String(station->getName());
+    stationHtml += F("</div>");
+    stationHtml += F("<div class='frequency-display'>");
+    stationHtml += String(station->getFrequency());
+    stationHtml += F("</div>");
+    stationHtml += F("</div>");
+
+    stationHtml += F("<div class='station-body'>");
+    stationHtml += F("<div class='form-group'>");
+    stationHtml += F("<div class='form-row'>");
+    stationHtml += F("<input type='number' id='freq_");
+    stationHtml += String(i);
+    stationHtml += F("' value='");
+    stationHtml += String(station->getFrequency());
+    stationHtml += F("' readonly>");
+    stationHtml += F("<button type='button' class='btn-primary' onclick='setFrequency(\"freq_");
+    stationHtml += String(i);
+    stationHtml += F("\")'>Set Current</button>");
+    stationHtml += F("</div>");
+    stationHtml += F("</div>");
+    stationHtml += F("</div>");
+    stationHtml += F("</div>");
+
+    // Add to the appropriate band
+    switch (station->getBand()) {
+      case WaveBand::LONG_WAVE:
+        longWaveHtml += stationHtml;
+        hasLongWave = true;
+        break;
+      case WaveBand::MEDIUM_WAVE:
+        mediumWaveHtml += stationHtml;
+        hasMediumWave = true;
+        break;
+      case WaveBand::SHORT_WAVE:
+        shortWaveHtml += stationHtml;
+        hasShortWave = true;
+        break;
+    }
+  }
+
+  // Close wave band divs
+  longWaveHtml += F("</div>");
+  mediumWaveHtml += F("</div>");
+  shortWaveHtml += F("</div>");
+
+  // Add each section to the final HTML if it has stations
+  if (hasLongWave) html += longWaveHtml;
+  if (hasMediumWave) html += mediumWaveHtml;
+  if (hasShortWave) html += shortWaveHtml;
+
+  html += F("</div>");
   return html;
 }
 
@@ -868,10 +1162,6 @@ void WiFiManager::handleNotFound() {
   message += "URI: " + server.uri() + "\n";
   message += "Method: " + String(server.method() == HTTP_GET ? "GET" : "POST") + "\n";
   server.send(404, "text/plain", message);
-}
-
-void WiFiManager::handleStationConfig() {
-  server.send(200, "text/html", generateHTML(generateStationTable()));
 }
 
 void WiFiManager::handleAPI() { server.send(200, "application/json", generateStatusJson()); }
@@ -895,7 +1185,7 @@ void WiFiManager::flashLED() {
 String WiFiManager::generateHTML(const String& content) const {
   String html;
   html.reserve(8192);  // Reserve space to prevent fragmentation
-  
+
   // Read from PROGMEM
   html += FPSTR(HTML_HEADER);
   html += FPSTR(CSS_STYLES);

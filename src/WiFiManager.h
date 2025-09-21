@@ -46,16 +46,20 @@ class WiFiManager {
 
   // Web handlers
   void handleRoot();
-  void handleSaveConfig();
-  void handleGetTuningValue();
   void handleStationConfig();
+  void handleCalibration();
+  void handleSaveConfig();
+  void handleSaveFrequency();
+  void handleGetTuningValue();
   void handleAPI();
   void handleNotFound();
 
   // HTML generation
   String generateHTML(const String& content) const;
-  String generateConfigPage() const;
-  String generateStationTable() const;
+  String generateHomePage() const;
+  String generateStationPage() const;
+  String generateStationList() const;
+  String generateCalibrationPage() const;
   String generateStatusJson() const;
 
   // Server instance
