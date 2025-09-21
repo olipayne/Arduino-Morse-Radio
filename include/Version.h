@@ -2,6 +2,6 @@
 #define VERSION_H
 
 // Automatically generated from Git - do not edit manually
-#define FIRMWARE_VERSION "v1.10.1"
+#define FIRMWARE_VERSION "v1.10.2"
 
 #endif // VERSION_H
