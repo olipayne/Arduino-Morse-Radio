@@ -31,8 +31,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pio-
 
-      - name: Install PlatformIO Core
-        run: pip install --upgrade platformio
+      - name: Install PlatformIO Core and esptool
+        run: |
+          pip install --upgrade platformio
+          pip install esptool
 
       - name: Extract version from tag
         id: get_version
@@ -49,13 +51,12 @@ jobs:
           VERSION=${{ steps.get_version.outputs.VERSION }}
           echo "Building version: ${VERSION}"
           
-          # Fix permissions and merge release binary
-          chmod +x ~/.platformio/packages/tool-esptoolpy/esptool.py
-          python ~/.platformio/packages/tool-esptoolpy/esptool.py --chip esp32s3 merge_bin --output .pio/build/release/merged-flash.bin --flash_mode dio --flash_size=keep 0x0 .pio/build/release/bootloader.bin 0x8000 .pio/build/release/partitions.bin 0x10000 .pio/build/release/firmware.bin
+          # Use pip-installed esptool to merge binaries
+          esptool.py --chip esp32s3 merge_bin --output .pio/build/release/merged-flash.bin --flash_mode dio --flash_size=keep 0x0 .pio/build/release/bootloader.bin 0x8000 .pio/build/release/partitions.bin 0x10000 .pio/build/release/firmware.bin
           mv .pio/build/release/merged-flash.bin .pio/build/release/firmware-${VERSION}-release.bin
 
           # Merge debug binary
-          python ~/.platformio/packages/tool-esptoolpy/esptool.py --chip esp32s3 merge_bin --output .pio/build/debug/merged-flash.bin --flash_mode dio --flash_size=keep 0x0 .pio/build/debug/bootloader.bin 0x8000 .pio/build/debug/partitions.bin 0x10000 .pio/build/debug/firmware.bin
+          esptool.py --chip esp32s3 merge_bin --output .pio/build/debug/merged-flash.bin --flash_mode dio --flash_size=keep 0x0 .pio/build/debug/bootloader.bin 0x8000 .pio/build/debug/partitions.bin 0x10000 .pio/build/debug/firmware.bin
           mv .pio/build/debug/merged-flash.bin .pio/build/debug/firmware-${VERSION}-debug.bin
           
           # Create OTA-specific binaries (firmware only, no bootloader or partition table)
