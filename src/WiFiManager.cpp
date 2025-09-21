@@ -26,14 +26,25 @@ const char WiFiManager::CSS_STYLES[] PROGMEM = R"(
         --text-color: #212529;
         --text-muted: #6c757d;
         --border-color: #dee2e6;
+        --primary-hover: #1976d2;
+        --secondary-hover: #616161;
+        --success-hover: #388e3c;
         --spacing: 1rem;
         --border-radius: 0.5rem;
         --shadow: 0 2px 4px rgba(0,0,0,0.1);
+        --focus-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+        --floating-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        --button-shadow: 0 2px 8px rgba(0,0,0,0.1);
         
         /* Wave band colors - matching LED colors */
         --long-wave-color: #dc3545;
         --medium-wave-color: #ffc107;
         --short-wave-color: #0d6efd;
+        
+        /* Header and help section backgrounds */
+        --header-background: rgba(0,0,0,0.02);
+        --help-background: #f8f9fa;
+        --help-border: #e9ecef;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -43,6 +54,16 @@ const char WiFiManager::CSS_STYLES[] PROGMEM = R"(
             --text-color: #ffffff;
             --text-muted: #adb5bd;
             --border-color: #495057;
+            --header-background: rgba(255,255,255,0.05);
+            --help-background: #2d2d2d;
+            --help-border: #404040;
+            --primary-hover: #1565c0;
+            --secondary-hover: #757575;
+            --success-hover: #2e7d32;
+            --shadow: 0 2px 4px rgba(255,255,255,0.05);
+            --focus-shadow: 0 0 0 3px rgba(33, 150, 243, 0.2);
+            --floating-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            --button-shadow: 0 2px 8px rgba(0,0,0,0.2);
         }
     }
 
@@ -129,7 +150,7 @@ const char WiFiManager::CSS_STYLES[] PROGMEM = R"(
     .card-header {
         padding: var(--spacing);
         border-bottom: 1px solid var(--border-color);
-        background: rgba(0,0,0,0.02);
+        background: var(--header-background);
     }
 
     .card-body {
@@ -148,7 +169,7 @@ const char WiFiManager::CSS_STYLES[] PROGMEM = R"(
         justify-content: space-between;
         align-items: center;
         padding: calc(var(--spacing) * 0.75);
-        background: rgba(0,0,0,0.02);
+        background: var(--header-background);
         border-bottom: 1px solid var(--border-color);
     }
 
@@ -192,7 +213,7 @@ const char WiFiManager::CSS_STYLES[] PROGMEM = R"(
     input:focus {
         outline: none;
         border-color: var(--primary-color);
-        box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+        box-shadow: var(--focus-shadow);
     }
 
     input[type="text"], input[type="number"] {
@@ -235,7 +256,7 @@ const char WiFiManager::CSS_STYLES[] PROGMEM = R"(
     }
 
     button:hover {
-        background: #1976d2;
+        background: var(--primary-hover);
         transform: translateY(-1px);
     }
 
@@ -248,7 +269,7 @@ const char WiFiManager::CSS_STYLES[] PROGMEM = R"(
     }
 
     .btn-secondary:hover {
-        background: #616161;
+        background: var(--secondary-hover);
     }
 
     .btn-success {
@@ -256,7 +277,7 @@ const char WiFiManager::CSS_STYLES[] PROGMEM = R"(
     }
 
     .btn-success:hover {
-        background: #388e3c;
+        background: var(--success-hover);
     }
 
     .wave-band {
@@ -269,7 +290,7 @@ const char WiFiManager::CSS_STYLES[] PROGMEM = R"(
         margin-bottom: var(--spacing);
         padding: calc(var(--spacing) * 0.5);
         border-left: 4px solid;
-        background: rgba(0,0,0,0.02);
+        background: var(--header-background);
     }
 
     .wave-band.long-wave h2 {
@@ -336,13 +357,14 @@ const char WiFiManager::CSS_STYLES[] PROGMEM = R"(
     }
 
     .calibration-help {
-        background: #f8f9fa;
-        border: 1px solid #e9ecef;
+        background: var(--help-background);
+        border: 1px solid var(--help-border);
         border-radius: var(--border-radius);
         padding: var(--spacing);
         margin-bottom: calc(var(--spacing) * 1.5);
         font-size: 0.9em;
         line-height: 1.5;
+        color: var(--text-color);
     }
 
     .frequency-display {
@@ -357,7 +379,7 @@ const char WiFiManager::CSS_STYLES[] PROGMEM = R"(
         left: 50%;
         transform: translateX(-50%);
         z-index: 1000;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        box-shadow: var(--floating-shadow);
         border-radius: var(--border-radius);
         backdrop-filter: blur(8px);
     }
@@ -368,7 +390,7 @@ const char WiFiManager::CSS_STYLES[] PROGMEM = R"(
         font-weight: 600;
         min-width: 200px;
         border-radius: var(--border-radius);
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        box-shadow: var(--button-shadow);
     }
 
     .toast {
@@ -482,8 +504,12 @@ const char WiFiManager::JAVASCRIPT_CODE[] PROGMEM = R"(
                 const input = document.getElementById(inputId);
                 if (input) {
                     input.value = data.value;
-                    input.style.backgroundColor = '#e8f5e9';
-                    setTimeout(() => input.style.backgroundColor = '', 500);
+                    input.style.backgroundColor = 'var(--success-color)';
+                    input.style.opacity = '0.3';
+                    setTimeout(() => {
+                        input.style.backgroundColor = '';
+                        input.style.opacity = '';
+                    }, 500);
                     
                     // Save the frequency immediately
                     const stationIndex = inputId.replace('freq_', '');
