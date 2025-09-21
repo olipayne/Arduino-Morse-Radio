@@ -539,11 +539,17 @@ const char WiFiManager::JAVASCRIPT_CODE[] PROGMEM = R"(
     function handleFormSubmit(event) {
         event.preventDefault();
         const form = event.target;
-        const submitButton = form.querySelector('button[type="submit"]');
+        // Look for submit button inside form first, then outside (for floating button)
+        let submitButton = form.querySelector('button[type="submit"]');
+        if (!submitButton) {
+            submitButton = document.querySelector('button[form="' + form.id + '"]');
+        }
         
         // Disable button and show saving state
-        submitButton.disabled = true;
-        submitButton.classList.add('saving');
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.classList.add('saving');
+        }
         
         // Collect form data into a structured object
         const stations = [];
@@ -595,8 +601,10 @@ const char WiFiManager::JAVASCRIPT_CODE[] PROGMEM = R"(
         })
         .finally(() => {
             // Re-enable button and remove saving state
-            submitButton.disabled = false;
-            submitButton.classList.remove('saving');
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.classList.remove('saving');
+            }
         });
     }
 
