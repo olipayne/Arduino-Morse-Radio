@@ -298,11 +298,32 @@ bool OTAManager::isNewerVersion(const String& remoteVersion, const String& curre
   int remoteMajor, remoteMinor, remotePatch;
   int currentMajor, currentMinor, currentPatch;
 
+  // Clean up version strings - remove 'v' prefix if present
+  String cleanRemote = remoteVersion;
+  String cleanCurrent = currentVersion;
+
+  if (cleanRemote.startsWith("v")) {
+    cleanRemote = cleanRemote.substring(1);
+  }
+  if (cleanCurrent.startsWith("v")) {
+    cleanCurrent = cleanCurrent.substring(1);
+  }
+
+#ifdef DEBUG_SERIAL_OUTPUT
+  Serial.printf("Comparing versions: current='%s' vs remote='%s'\n", cleanCurrent.c_str(),
+                cleanRemote.c_str());
+#endif
+
   // Parse remote version
-  sscanf(remoteVersion.c_str(), "%d.%d.%d", &remoteMajor, &remoteMinor, &remotePatch);
+  sscanf(cleanRemote.c_str(), "%d.%d.%d", &remoteMajor, &remoteMinor, &remotePatch);
 
   // Parse current version
-  sscanf(currentVersion.c_str(), "%d.%d.%d", &currentMajor, &currentMinor, &currentPatch);
+  sscanf(cleanCurrent.c_str(), "%d.%d.%d", &currentMajor, &currentMinor, &currentPatch);
+
+#ifdef DEBUG_SERIAL_OUTPUT
+  Serial.printf("Parsed: current=%d.%d.%d vs remote=%d.%d.%d\n", currentMajor, currentMinor,
+                currentPatch, remoteMajor, remoteMinor, remotePatch);
+#endif
 
   if (remoteMajor > currentMajor) return true;
   if (remoteMajor < currentMajor) return false;
