@@ -20,6 +20,7 @@ class WaveBandManager {
   // LED control
   void updateLEDs();
   void setLEDBrightness(uint8_t brightness);
+  void turnOffAllBandLEDs();
 
  private:
   WaveBandManager() = default;
@@ -30,7 +31,6 @@ class WaveBandManager {
   void initializePins();
 
   // LED state tracking
-  void turnOffAllBandLEDs();
   void updateBandLED(WaveBand band);
 
   // Internal state

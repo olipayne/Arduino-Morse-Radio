@@ -26,6 +26,7 @@ class WiFiManager {
   void stop();
   bool isEnabled() const { return wifiEnabled; }
   void updateStatusLED();
+  bool hasConnectedClients() const { return WiFi.softAPgetStationNum() > 0; }
 
  private:
   WiFiManager()

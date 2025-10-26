@@ -2,6 +2,7 @@
 #include <ArduinoJson.h>
 #include <ElegantOTA.h>
 #include "Version.h"  // Include the auto-generated version header
+#include "WaveBandManager.h"
 
 // Define static members - stored in PROGMEM to save RAM
 const char WiFiManager::HTML_HEADER[] PROGMEM = R"(
@@ -775,8 +776,8 @@ const char WiFiManager::JAVASCRIPT_CODE[] PROGMEM = R"(
 
 void WiFiManager::begin() {
   pinMode(Pins::WIFI_BUTTON, INPUT_PULLUP);
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, LOW);
+  pinMode(Pins::SW_LED, OUTPUT);
+  digitalWrite(Pins::SW_LED, LOW);
 
   // Initialize timer for system tasks
   esp_timer_create_args_t timer_config = {.callback = nullptr,
@@ -801,7 +802,11 @@ void WiFiManager::stop() {
     WiFi.softAPdisconnect(true);
     WiFi.mode(WIFI_OFF);
     wifiEnabled = false;
-    digitalWrite(LED_BUILTIN, LOW);
+    digitalWrite(Pins::SW_LED, LOW);
+    
+    // Restore the wave band LED state
+    WaveBandManager::getInstance().updateLEDs();
+    
 #ifdef DEBUG_SERIAL_OUTPUT
     Serial.println(F("WiFi stopped"));
 #endif
@@ -809,6 +814,13 @@ void WiFiManager::stop() {
 }
 
 void WiFiManager::startAP() {
+  // Stop morse radio functionality when WiFi starts
+  AudioManager::getInstance().stop();
+  MorseCode::getInstance().stop();
+  
+  // Turn off all wave band LEDs (we'll repurpose SW_LED for WiFi status)
+  WaveBandManager::getInstance().turnOffAllBandLEDs();
+  
   WiFi.mode(WIFI_AP);
 
   String ssid = "Radio_" + String((uint32_t)ESP.getEfuseMac(), HEX);
@@ -819,6 +831,7 @@ void WiFiManager::startAP() {
 
     wifiEnabled = true;
     startTime = millis();
+    lastLedFlash = millis();
 
 #ifdef DEBUG_SERIAL_OUTPUT
     Serial.print(F("WiFi AP started: "));
@@ -1447,10 +1460,17 @@ void WiFiManager::handleImportMessages() {
 
 void WiFiManager::updateStatusLED() {
   if (wifiEnabled) {
-    unsigned long currentTime = millis();
-    if (currentTime - lastLedFlash >= LED_FLASH_INTERVAL) {
-      flashLED();
-      lastLedFlash = currentTime;
+    // Check if any clients are connected
+    if (hasConnectedClients()) {
+      // Solid LED when clients are connected
+      digitalWrite(Pins::SW_LED, HIGH);
+    } else {
+      // Flash LED when no clients are connected
+      unsigned long currentTime = millis();
+      if (currentTime - lastLedFlash >= LED_FLASH_INTERVAL) {
+        flashLED();
+        lastLedFlash = currentTime;
+      }
     }
   }
 }
@@ -1458,7 +1478,7 @@ void WiFiManager::updateStatusLED() {
 void WiFiManager::flashLED() {
   static bool ledState = false;
   ledState = !ledState;
-  digitalWrite(LED_BUILTIN, ledState);
+  digitalWrite(Pins::SW_LED, ledState);
 }
 
 String WiFiManager::generateHTML(const String& content) const {

@@ -156,18 +156,32 @@ void systemUpdateCallback() {
   // Check WiFi toggle button with debounce
   handleWiFiButton(lastButtonPress, debounceTime);
 
-  // Update tuning and find the closest station
-  updateTuningAndStation();
-
-  // Handle other manager updates
-  AudioManager::getInstance().handlePlayback();
+  // Handle WiFi operations
   WiFiManager::getInstance().handle();
-  WaveBandManager::getInstance().updateLEDs();
-  SpeedManager::getInstance().update();
+
+  // Skip morse radio functionality when WiFi is enabled
+  if (!WiFiManager::getInstance().isEnabled()) {
+    // Update tuning and find the closest station
+    updateTuningAndStation();
+
+    // Handle audio playback
+    AudioManager::getInstance().handlePlayback();
+
+    // Update wave band LEDs
+    WaveBandManager::getInstance().updateLEDs();
+
+    // Update morse speed
+    SpeedManager::getInstance().update();
+  }
 }
 
 // Helper functions to break down the systemUpdateCallback
 void handleWiFiButton(unsigned long& lastButtonPress, const unsigned long debounceTime) {
+  // Skip normal WiFi button handling during OTA boot window
+  if (PowerManager::getInstance().isInOTABootWindow()) {
+    return;
+  }
+  
   if (digitalRead(Pins::WIFI_BUTTON) == LOW) {
     unsigned long currentTime = millis();
     if (currentTime - lastButtonPress > debounceTime) {
