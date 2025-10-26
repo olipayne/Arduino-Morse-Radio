@@ -113,14 +113,14 @@ def update_version_file(new_version):
     print(f"Updated VERSION file to {new_version}")
 
 def generate_version_header():
-    """Generate the Version.h file from the current VERSION file."""
+    """Generate the Version.h file from the current VERSION file with clean release version."""
     try:
         # Import the version module
         sys.path.append(str(Path(__file__).parent))
         import version
         
-        # Generate the header file
-        git_version = version.generate_version_header()
+        # Generate the header file with force_release=True for clean version string
+        git_version = version.generate_version_header(force_release=True)
         print(f"Generated Version.h with version: {git_version}")
         return git_version
     except Exception as e:

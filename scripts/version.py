@@ -1,11 +1,12 @@
 import subprocess
 import os
 
-def get_version():
+def get_version(force_release=False):
     """
     Get version information:
     - Read from VERSION file for the base version
     - Add git info for development builds
+    - If force_release=True, return clean version without dev suffix
     """
     # Read base version from VERSION file
     try:
@@ -13,6 +14,11 @@ def get_version():
             base_version = f.read().strip()
     except FileNotFoundError:
         base_version = "unknown"
+    
+    # If we're doing a release build, return clean version
+    if force_release:
+        print(f"Release build (forced): v{base_version}")
+        return f"v{base_version}"
     
     try:
         # Check if we're on a tag that matches the VERSION file
@@ -55,8 +61,14 @@ def get_version():
         # Fallback if git commands fail
         return f"v{base_version}-dev"
 
-def generate_version_header():
-    version = get_version()
+def generate_version_header(force_release=False):
+    """
+    Generate Version.h file with version information.
+    
+    Args:
+        force_release: If True, generate clean release version without dev suffix
+    """
+    version = get_version(force_release=force_release)
     
     # Create header content
     header = f"""#ifndef VERSION_H
