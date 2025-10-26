@@ -393,6 +393,45 @@ const char WiFiManager::CSS_STYLES[] PROGMEM = R"(
         box-shadow: var(--button-shadow);
     }
 
+    .import-export-section {
+        margin-top: calc(var(--spacing) * 2);
+        padding: var(--spacing);
+        padding-bottom: calc(var(--spacing) * 5);
+        border-top: 1px solid var(--border-color);
+        margin-bottom: calc(var(--spacing) * 2);
+    }
+
+    .import-export-buttons {
+        display: flex;
+        gap: calc(var(--spacing) * 0.75);
+        margin-top: calc(var(--spacing) * 0.75);
+    }
+
+    .import-export-buttons button {
+        flex: 1;
+        font-size: 0.95em;
+    }
+
+    .btn-export {
+        background: var(--secondary-color);
+    }
+
+    .btn-export:hover {
+        background: var(--secondary-hover);
+    }
+
+    .btn-import {
+        background: var(--primary-color);
+    }
+
+    .btn-import:hover {
+        background: var(--primary-hover);
+    }
+
+    #importFile {
+        display: none;
+    }
+
     .toast {
         position: fixed;
         top: calc(var(--spacing) * 2);
@@ -634,6 +673,88 @@ const char WiFiManager::JAVASCRIPT_CODE[] PROGMEM = R"(
         });
     }
 
+    function exportMessages() {
+        fetch('/api/messages')
+            .then(response => response.json())
+            .then(data => {
+                // Create a blob from the JSON data
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                
+                // Create a temporary link and trigger download
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'radio-messages-' + new Date().toISOString().split('T')[0] + '.json';
+                document.body.appendChild(a);
+                a.click();
+                
+                // Clean up
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                showToast('Messages exported successfully');
+            })
+            .catch(error => {
+                console.error('Error exporting messages:', error);
+                showToast('Error exporting messages', true);
+            });
+    }
+
+    function importMessages() {
+        const input = document.getElementById('importFile');
+        if (!input || !input.files || input.files.length === 0) {
+            showToast('Please select a file to import', true);
+            return;
+        }
+
+        const file = input.files[0];
+        const reader = new FileReader();
+
+        reader.onload = function(e) {
+            try {
+                const jsonData = JSON.parse(e.target.result);
+                
+                fetch('/api/messages', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(jsonData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast(data.message);
+                        // Reload the page to show updated messages
+                        setTimeout(() => window.location.reload(), 1500);
+                    } else {
+                        showToast(data.message, true);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error importing messages:', error);
+                    showToast('Error importing messages', true);
+                });
+            } catch (error) {
+                console.error('Error parsing JSON:', error);
+                showToast('Invalid JSON file', true);
+            }
+        };
+
+        reader.onerror = function() {
+            showToast('Error reading file', true);
+        };
+
+        reader.readAsText(file);
+    }
+
+    function triggerFileInput() {
+        const input = document.getElementById('importFile');
+        if (input) {
+            input.click();
+        }
+    }
+
     // Update tuning value every 500ms
     setInterval(updateTuningValue, 500);
 
@@ -642,6 +763,12 @@ const char WiFiManager::JAVASCRIPT_CODE[] PROGMEM = R"(
         const form = document.querySelector('form');
         if (form) {
             form.addEventListener('submit', handleFormSubmit);
+        }
+        
+        // Add import file input change handler
+        const importInput = document.getElementById('importFile');
+        if (importInput) {
+            importInput.addEventListener('change', importMessages);
         }
     });
 )";
@@ -746,6 +873,8 @@ void WiFiManager::setupServer() {
   server.on("/save-frequency", HTTP_POST, [this]() { handleSaveFrequency(); });
   server.on("/tuning", HTTP_GET, [this]() { handleGetTuningValue(); });
   server.on("/api/status", HTTP_GET, [this]() { handleAPI(); });
+  server.on("/api/messages", HTTP_GET, [this]() { handleExportMessages(); });
+  server.on("/api/messages", HTTP_POST, [this]() { handleImportMessages(); });
   server.onNotFound([this]() { handleNotFound(); });
 
   // Add OTA event handlers
@@ -983,7 +1112,19 @@ String WiFiManager::generateStationPage() const {
 
   html += F("<form method='POST' action='/save' id='stationForm'>");
   html += generateStationList();
+  
+  html += F("<div class='import-export-section'>");
+  html += F("<h2>Import / Export</h2>");
+  html += F("<p class='text-muted'>Export messages to backup or share with other devices. Import to restore or sync messages.</p>");
+  html += F("<div class='import-export-buttons'>");
+  html += F("<button type='button' onclick='exportMessages()' class='btn-export'>📥 Export</button>");
+  html += F("<button type='button' onclick='triggerFileInput()' class='btn-import'>📤 Import</button>");
+  html += F("</div>");
+  html += F("</div>");
+  
   html += F("</form>");
+  
+  html += F("<input type='file' id='importFile' accept='application/json,.json'>");
 
   html += F("<div class='floating-save'>");
   html +=
@@ -1199,6 +1340,110 @@ void WiFiManager::handleNotFound() {
 }
 
 void WiFiManager::handleAPI() { server.send(200, "application/json", generateStatusJson()); }
+
+void WiFiManager::handleExportMessages() {
+  auto& stationManager = StationManager::getInstance();
+  JsonDocument doc;
+  JsonArray stations = doc["stations"].to<JsonArray>();
+
+  for (size_t i = 0; i < stationManager.getStationCount(); i++) {
+    const Station* station = stationManager.getStation(i);
+    if (!station) continue;
+
+    JsonObject stationObj = stations.add<JsonObject>();
+    stationObj["index"] = i;
+    stationObj["name"] = station->getName();
+    stationObj["message"] = station->getMessage();
+    stationObj["enabled"] = station->isEnabled();
+
+    // Add wave band as string for readability
+    switch (station->getBand()) {
+      case WaveBand::LONG_WAVE:
+        stationObj["band"] = "LONG_WAVE";
+        break;
+      case WaveBand::MEDIUM_WAVE:
+        stationObj["band"] = "MEDIUM_WAVE";
+        break;
+      case WaveBand::SHORT_WAVE:
+        stationObj["band"] = "SHORT_WAVE";
+        break;
+    }
+  }
+
+  String response;
+  serializeJson(doc, response);
+  server.send(200, "application/json", response);
+
+#ifdef DEBUG_SERIAL_OUTPUT
+  Serial.println("Exported messages: " + response);
+#endif
+}
+
+void WiFiManager::handleImportMessages() {
+  String jsonData = server.arg("plain");
+
+#ifdef DEBUG_SERIAL_OUTPUT
+  Serial.println("Received import data: " + jsonData);
+#endif
+
+  JsonDocument doc;
+  DeserializationError error = deserializeJson(doc, jsonData);
+
+  if (error) {
+#ifdef DEBUG_SERIAL_OUTPUT
+    Serial.println("Failed to parse import JSON");
+#endif
+    server.send(400, "application/json", "{\"success\":false,\"message\":\"Invalid JSON\"}");
+    return;
+  }
+
+  auto& stationManager = StationManager::getInstance();
+  JsonArray stations = doc["stations"];
+  
+  if (!stations) {
+    server.send(400, "application/json", "{\"success\":false,\"message\":\"No stations array found\"}");
+    return;
+  }
+
+  bool success = true;
+  String message = "Messages imported successfully";
+  int importedCount = 0;
+
+  for (JsonObject stationObj : stations) {
+    int index = stationObj["index"];
+    Station* station = stationManager.getStation(index);
+    
+    if (station && stationObj["message"].is<const char*>()) {
+      const char* newMessage = stationObj["message"];
+      station->setMessage(newMessage);
+      
+      if (stationObj["enabled"].is<bool>()) {
+        station->setEnabled(stationObj["enabled"]);
+      }
+      
+      importedCount++;
+#ifdef DEBUG_SERIAL_OUTPUT
+      Serial.printf("Imported message for station %d: %s\n", index, newMessage);
+#endif
+    }
+  }
+
+  if (importedCount > 0) {
+    stationManager.saveToPreferences();
+    message = String(importedCount) + " messages imported successfully";
+  } else {
+    success = false;
+    message = "No valid messages found to import";
+  }
+
+  JsonDocument response;
+  response["success"] = success;
+  response["message"] = message;
+
+  String responseStr;
+  serializeJson(response, responseStr);
+  server.send(200, "application/json", responseStr);
+}
 
 void WiFiManager::updateStatusLED() {
   if (wifiEnabled) {

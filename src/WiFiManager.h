@@ -53,6 +53,8 @@ class WiFiManager {
   void handleGetTuningValue();
   void handleAPI();
   void handleNotFound();
+  void handleExportMessages();
+  void handleImportMessages();
 
   // HTML generation
   String generateHTML(const String& content) const;
