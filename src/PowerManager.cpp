@@ -25,6 +25,9 @@ void PowerManager::begin() {
 
   // Record boot time for OTA sequence detection
   bootTime = millis();
+  
+  // Initialize activity timer to current time (so timeout starts from boot)
+  lastActivityTime = millis();
 
   // Initialize UMS3
   ums3.begin();
@@ -443,7 +446,13 @@ void PowerManager::configureADC() {
 }
 
 void PowerManager::checkActivity() {
-  if (!checkForInputChanges()) {
+  bool activityDetected = checkForInputChanges();
+  
+  if (activityDetected) {
+    // Reset activity timer when any activity is detected
+    lastActivityTime = millis();
+  } else {
+    // No activity detected, check if timeout has elapsed
     unsigned long currentTime = millis();
     if (currentTime - lastActivityTime >= INACTIVITY_TIMEOUT) {
       // Only enter deep sleep if power switch is still ON
