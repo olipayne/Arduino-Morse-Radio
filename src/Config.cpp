@@ -58,7 +58,9 @@ const char* toString(WaveBand band) {
 void ConfigManager::begin() { load(); }
 
 void ConfigManager::save() {
-  preferences.begin("config", false);
+  if (!preferences.begin("config", false)) {
+    return;
+  }
   preferences.putUChar("morseSpeed", static_cast<uint8_t>(morseSpeed));
   preferences.putUChar("waveBand", static_cast<uint8_t>(currentBand));
   preferences.putUInt("frequency", morseFrequency);
@@ -67,7 +69,9 @@ void ConfigManager::save() {
 }
 
 void ConfigManager::load() {
-  preferences.begin("config", true);
+  if (!preferences.begin("config", true)) {
+    return;
+  }
   morseSpeed = static_cast<MorseSpeed>(
       preferences.getUChar("morseSpeed", static_cast<uint8_t>(MorseSpeed::MEDIUM)));
   currentBand = static_cast<WaveBand>(

@@ -38,6 +38,12 @@ class RadioSystem {
     Serial.print(F("Firmware version: "));
     Serial.println(FIRMWARE_VERSION);
 #endif
+    // Defer CPU frequency setting until after critical initialization
+    // This allows boot to complete faster at default speed, then scale up
+    
+    initializeSubsystems();
+    
+    // Set CPU frequency after subsystems are initialized for better boot performance
     setCpuFrequencyMhz(240);
 
 #ifdef DEBUG_SERIAL_OUTPUT
@@ -51,7 +57,6 @@ class RadioSystem {
       Serial.printf_P(PSTR("Running from partition: %s\n"), running->label);
     }
 #endif
-    initializeSubsystems();
     initializeTasks();
   }
 
@@ -72,7 +77,8 @@ class RadioSystem {
     PowerManager::getInstance().checkActivity();
 
     ts.execute();
-    delay(1);  // Small delay to prevent overwhelming the CPU
+    // Use yield() instead of delay(1) for better responsiveness and lower latency
+    yield();
   }
 
   static void handleStationTuning(Station* station, int signalStrength) {

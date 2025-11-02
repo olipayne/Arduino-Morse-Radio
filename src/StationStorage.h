@@ -20,7 +20,8 @@ class StationStorage {
   StationStorage(const StationStorage&) = delete;
   StationStorage& operator=(const StationStorage&) = delete;
 
-  String generatePreferenceKey(const char* prefix, size_t index) const;
+  // Optimized: Generate preference keys without String allocations
+  void generatePreferenceKey(char* buffer, size_t bufferSize, const char* prefix, size_t index) const;
 };
 
 #endif

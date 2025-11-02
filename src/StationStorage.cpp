@@ -1,22 +1,29 @@
 #include "StationStorage.h"
 #include "Config.h"
+#include <cstdio>
 
-String StationStorage::generatePreferenceKey(const char* prefix, size_t index) const {
-  return String(prefix) + String(index);
+// Optimized: Generate preference keys without String allocations
+void StationStorage::generatePreferenceKey(char* buffer, size_t bufferSize, const char* prefix, size_t index) const {
+  snprintf(buffer, bufferSize, "%s%zu", prefix, index);
 }
 
 void StationStorage::saveStations(const std::vector<Station>& stations) {
   Preferences prefs;
-  prefs.begin("stations", false);
+  if (!prefs.begin("stations", false)) {
+    return;
+  }
+
+  char keyBuffer[32];  // Buffer for key generation (e.g., "freq0", "msg15", etc.)
 
   for (size_t i = 0; i < stations.size(); i++) {
-    String freqKey = generatePreferenceKey("freq", i);
-    String msgKey = generatePreferenceKey("msg", i);
-    String enabledKey = generatePreferenceKey("enabled", i);
+    generatePreferenceKey(keyBuffer, sizeof(keyBuffer), "freq", i);
+    prefs.putInt(keyBuffer, stations[i].getFrequency());
 
-    prefs.putInt(freqKey.c_str(), stations[i].getFrequency());
-    prefs.putString(msgKey.c_str(), stations[i].getMessage());
-    prefs.putBool(enabledKey.c_str(), stations[i].isEnabled());
+    generatePreferenceKey(keyBuffer, sizeof(keyBuffer), "msg", i);
+    prefs.putString(keyBuffer, stations[i].getMessage());
+
+    generatePreferenceKey(keyBuffer, sizeof(keyBuffer), "enabled", i);
+    prefs.putBool(keyBuffer, stations[i].isEnabled());
   }
 
   prefs.end();
@@ -24,16 +31,21 @@ void StationStorage::saveStations(const std::vector<Station>& stations) {
 
 void StationStorage::loadStations(std::vector<Station>& stations) {
   Preferences prefs;
-  prefs.begin("stations", true);
+  if (!prefs.begin("stations", true)) {
+    return;
+  }
+
+  char keyBuffer[32];  // Buffer for key generation
 
   for (size_t i = 0; i < stations.size(); i++) {
-    String freqKey = generatePreferenceKey("freq", i);
-    String msgKey = generatePreferenceKey("msg", i);
-    String enabledKey = generatePreferenceKey("enabled", i);
+    generatePreferenceKey(keyBuffer, sizeof(keyBuffer), "freq", i);
+    int freq = prefs.getInt(keyBuffer, stations[i].getFrequency());
 
-    int freq = prefs.getInt(freqKey.c_str(), stations[i].getFrequency());
-    String msg = prefs.getString(msgKey.c_str(), stations[i].getMessage());
-    bool enabled = prefs.getBool(enabledKey.c_str(), true);  // Default to enabled
+    generatePreferenceKey(keyBuffer, sizeof(keyBuffer), "msg", i);
+    String msg = prefs.getString(keyBuffer, stations[i].getMessage());
+
+    generatePreferenceKey(keyBuffer, sizeof(keyBuffer), "enabled", i);
+    bool enabled = prefs.getBool(keyBuffer, true);  // Default to enabled
 
     stations[i].setFrequency(freq);
     stations[i].setMessage(msg);

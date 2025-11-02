@@ -98,13 +98,20 @@ void AudioManager::handlePlayback() {
   unsigned long currentTime = millis();
 
   // Update volume at regular intervals to avoid constant ADC reads
+  // Cache the volume reading and only update if interval has passed
   if (currentTime - lastVolumeUpdate >= VOLUME_UPDATE_INTERVAL) {
     int volumeRead = PowerManager::getInstance().readADC(Pins::VOLUME_POT);
-    setVolume(volumeRead);
+    // Only call setVolume if the reading actually changed (reduces unnecessary processing)
+    static int lastVolumeRead = -1;
+    if (abs(volumeRead - lastVolumeRead) > 10) {  // Only update if change is significant
+      setVolume(volumeRead);
+      lastVolumeRead = volumeRead;
+    }
     lastVolumeUpdate = currentTime;
   }
 
   // Continuously update static noise if playing and volume is greater than zero
+  // Skip updates if volume is zero to save power
   if (isStaticPlaying && !isPlayingMorse && currentVolume > 0) {
     updateStaticPattern();
   }
@@ -145,12 +152,12 @@ void AudioManager::updateStaticPattern() {
 
   unsigned long currentTime = millis();
 
-  // Calculate noise characteristics based on signal strength
-  // Invert signalStrength mapping - stronger signal = less static
-  int staticIntensity = map(currentSignalStrength, 0, 255, 255, 0);
-
   // Check if we need to update the static pattern
+  // Only update at intervals to reduce CPU usage and power consumption
   if (currentTime - lastStaticPatternUpdate >= STATIC_PATTERN_CHANGE_INTERVAL) {
+    // Calculate noise characteristics based on signal strength
+    // Invert signalStrength mapping - stronger signal = less static
+    int staticIntensity = map(currentSignalStrength, 0, 255, 255, 0);
     // Update base frequency periodically for a more natural sound
     // This should be independent of volume control
 

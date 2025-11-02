@@ -20,6 +20,7 @@ PotentiometerReader tuningPot(Pins::TUNING_POT);
 PotentiometerReader volumePot(Pins::VOLUME_POT);
 
 void PowerManager::begin() {
+  // Stop Bluetooth if running (quick check, low overhead if already stopped)
   btStop();
 
   // Record boot time for OTA sequence detection
@@ -127,35 +128,59 @@ void PowerManager::LEDTaskCode(void* parameter) {
       (uint8_t)(LEDConfig::MAX_BRIGHTNESS * (0.2f + (batteryPercent / 100.0f) * 0.8f));
   lastBatteryReadTime = startTime;
 
+  // Cache previous values to only update LED when they change
+  bool lastUsbConnected = powerManager->ums3.getVbusPresent();
+  uint8_t lastBrightness = 0;
+  bool lastFlashState = false;
+
   while (true) {
     bool usbConnected = powerManager->ums3.getVbusPresent();
     uint32_t currentTime = millis();
+    bool needsUpdate = false;
+    uint8_t newBrightness = lastBrightness;
 
     // Update battery reading every 10 seconds
     if (currentTime - lastBatteryReadTime >= 10000) {
-      cachedBatteryVoltage = powerManager->getBatteryVoltage();
+      float newVoltage = powerManager->getBatteryVoltage();
+      // Only recalculate if voltage changed significantly (save CPU cycles)
+      if (abs(newVoltage - cachedBatteryVoltage) > 0.01f) {
+        cachedBatteryVoltage = newVoltage;
 
-      // Calculate base brightness from battery level (20-100% of max)
-      batteryPercent = constrain((cachedBatteryVoltage - LEDConfig::BATTERY_MIN_V) /
-                                     (LEDConfig::BATTERY_MAX_V - LEDConfig::BATTERY_MIN_V) * 100.0f,
-                                 0.0f, 100.0f);
+        // Calculate base brightness from battery level (20-100% of max)
+        batteryPercent = constrain((cachedBatteryVoltage - LEDConfig::BATTERY_MIN_V) /
+                                       (LEDConfig::BATTERY_MAX_V - LEDConfig::BATTERY_MIN_V) * 100.0f,
+                                   0.0f, 100.0f);
 
-      baseBrightness =
-          (uint8_t)(LEDConfig::MAX_BRIGHTNESS * (0.2f + (batteryPercent / 100.0f) * 0.8f));
-
+        baseBrightness =
+            (uint8_t)(LEDConfig::MAX_BRIGHTNESS * (0.2f + (batteryPercent / 100.0f) * 0.8f));
+        needsUpdate = true;
+      }
       lastBatteryReadTime = currentTime;
+    }
+
+    // Only recalculate if USB state changed or update is needed
+    if (usbConnected != lastUsbConnected) {
+      lastUsbConnected = usbConnected;
+      needsUpdate = true;
     }
 
     if (usbConnected) {
       // USB is connected, pulse between battery level and 100%
-      float progress = (float)((currentTime - startTime) % LEDConfig::PULSE_PERIOD_MS) /
-                       LEDConfig::PULSE_PERIOD_MS;
+      // Only update brightness every 100ms during pulse to save CPU (still appears smooth)
+      static uint32_t lastPulseUpdate = 0;
+      if (needsUpdate || (currentTime - lastPulseUpdate >= 100)) {
+        float progress = (float)((currentTime - startTime) % LEDConfig::PULSE_PERIOD_MS) /
+                         LEDConfig::PULSE_PERIOD_MS;
 
-      // Sine wave adjusted to pulse between base brightness and max
-      float pulseRange = LEDConfig::MAX_BRIGHTNESS - baseBrightness;
-      float brightness = baseBrightness + (pulseRange * (sin(progress * 2 * PI) + 1.0f) * 0.5f);
-
-      ledcWrite(PWMChannels::POWER_LED, (uint8_t)brightness);
+        // Sine wave adjusted to pulse between base brightness and max
+        float pulseRange = LEDConfig::MAX_BRIGHTNESS - baseBrightness;
+        newBrightness = baseBrightness + (pulseRange * (sin(progress * 2 * PI) + 1.0f) * 0.5f);
+        if (newBrightness != lastBrightness) {
+          ledcWrite(PWMChannels::POWER_LED, newBrightness);
+          lastBrightness = newBrightness;
+        }
+        lastPulseUpdate = currentTime;
+      }
     } else {
       // USB not connected, show battery level
       // Critical battery level - flash the LED
@@ -163,12 +188,21 @@ void PowerManager::LEDTaskCode(void* parameter) {
         if (currentTime - lastFlashTime >= 1000) {  // 1Hz flash rate
           flashState = !flashState;
           lastFlashTime = currentTime;
+          newBrightness = flashState ? LEDConfig::MAX_BRIGHTNESS : 0;
+          if (newBrightness != lastBrightness) {
+            ledcWrite(PWMChannels::POWER_LED, newBrightness);
+            lastBrightness = newBrightness;
+            lastFlashState = flashState;
+          }
         }
-        ledcWrite(PWMChannels::POWER_LED, flashState ? LEDConfig::MAX_BRIGHTNESS : 0);
       }
       // Normal battery operation - steady brightness indicates level
       else {
-        ledcWrite(PWMChannels::POWER_LED, baseBrightness);
+        newBrightness = baseBrightness;
+        if (newBrightness != lastBrightness) {
+          ledcWrite(PWMChannels::POWER_LED, newBrightness);
+          lastBrightness = newBrightness;
+        }
       }
     }
 
