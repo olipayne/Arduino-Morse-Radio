@@ -85,9 +85,17 @@ class RadioSystem {
     auto& config = ConfigManager::getInstance();
     auto& audio = AudioManager::getInstance();
     auto& morse = MorseCode::getInstance();
+    auto& power = PowerManager::getInstance();
 
     static Station* lastStation = nullptr;
+    static bool lastStationLocked = false;
     bool stationLocked = (signalStrength > 0);
+
+    // Reset idle timer when switching between station and static
+    if (stationLocked != lastStationLocked) {
+      power.resetActivityTimer();
+      lastStationLocked = stationLocked;
+    }
 
     if (stationLocked) {
       if (!config.isMorsePlaying() || station != lastStation) {

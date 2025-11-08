@@ -466,6 +466,10 @@ void PowerManager::checkActivity() {
   }
 }
 
+void PowerManager::resetActivityTimer() {
+  lastActivityTime = millis();
+}
+
 void PowerManager::checkOTABootSequence() {
   if (!isInOTABootWindow()) {
     return;
