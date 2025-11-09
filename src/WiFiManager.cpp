@@ -518,6 +518,97 @@ const char WiFiManager::CSS_STYLES[] PROGMEM = R"(
     .saving {
         animation: pulse 1.5s infinite;
     }
+
+    /* Battery indicator styles */
+    .battery-indicator {
+        display: flex;
+        align-items: center;
+        gap: calc(var(--spacing) * 0.75);
+        padding: calc(var(--spacing) * 1);
+        background: var(--header-background);
+        border-radius: var(--border-radius);
+        margin-bottom: var(--spacing);
+    }
+
+    .battery-icon {
+        position: relative;
+        width: 48px;
+        height: 24px;
+        border: 2px solid var(--text-color);
+        border-radius: 3px;
+        display: flex;
+        align-items: center;
+        padding: 2px;
+    }
+
+    .battery-icon::after {
+        content: '';
+        position: absolute;
+        right: -4px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 3px;
+        height: 12px;
+        background: var(--text-color);
+        border-radius: 0 2px 2px 0;
+    }
+
+    .battery-fill {
+        height: 100%;
+        background: var(--success-color);
+        border-radius: 2px;
+        transition: width 0.5s ease, background-color 0.3s ease;
+    }
+
+    .battery-fill.low {
+        background: var(--warning-color);
+    }
+
+    .battery-fill.critical {
+        background: var(--error-color);
+    }
+
+    .battery-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: calc(var(--spacing) * 0.25);
+    }
+
+    .battery-percentage {
+        font-size: 1.2em;
+        font-weight: 600;
+        color: var(--text-color);
+    }
+
+    .battery-voltage {
+        font-size: 0.9em;
+        color: var(--text-muted);
+    }
+
+    .battery-status {
+        display: flex;
+        align-items: center;
+        gap: calc(var(--spacing) * 0.25);
+        font-size: 0.85em;
+        color: var(--primary-color);
+        font-weight: 500;
+    }
+
+    .charging-icon {
+        display: inline-block;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes charging-pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+    }
+
+    .battery-fill.charging {
+        background: var(--primary-color);
+        animation: charging-pulse 2s infinite;
+    }
 )";
 
 const char WiFiManager::HTML_FOOTER[] PROGMEM = R"(
@@ -789,6 +880,7 @@ void WiFiManager::begin() {
 }
 
 void WiFiManager::toggle() {
+  PowerManager::getInstance().resetActivityTimer(wifiEnabled ? "WiFi Disabled" : "WiFi Enabled");
   if (wifiEnabled) {
     stop();
   } else {
@@ -823,9 +915,9 @@ void WiFiManager::startAP() {
   
   WiFi.mode(WIFI_AP);
 
-  String ssid = "Radio_" + String((uint32_t)ESP.getEfuseMac(), HEX);
+  const char* ssid = "MorseRadio";
 
-  if (WiFi.softAP(ssid.c_str(), nullptr, AP_CHANNEL, false, MAX_CONNECTIONS)) {
+  if (WiFi.softAP(ssid, nullptr, AP_CHANNEL, false, MAX_CONNECTIONS)) {
     setupServer();
     setupMDNS();
 
@@ -860,11 +952,8 @@ void WiFiManager::handle() {
   server.handleClient();
   ElegantOTA.loop();
 
-  // Only check timeout when running on battery power
-  if (!PowerManager::getInstance().isUSBPowered() && millis() - startTime > DEFAULT_TIMEOUT) {
-    stop();
-    return;
-  }
+  // WiFi does not auto-timeout - user must manually toggle it off
+  // (The device itself has a separate inactivity timeout for deep sleep)
 
 #ifdef DEBUG_SERIAL_OUTPUT
   static unsigned long lastStatusCheck = 0;
@@ -882,10 +971,13 @@ void WiFiManager::setupServer() {
   server.on("/", HTTP_GET, [this]() { handleRoot(); });
   server.on("/stations", HTTP_GET, [this]() { handleStationConfig(); });
   server.on("/calibration", HTTP_GET, [this]() { handleCalibration(); });
+  server.on("/settings", HTTP_GET, [this]() { handleSettings(); });
   server.on("/save", HTTP_POST, [this]() { handleSaveConfig(); });
   server.on("/save-frequency", HTTP_POST, [this]() { handleSaveFrequency(); });
+  server.on("/save-settings", HTTP_POST, [this]() { handleSaveSettings(); });
   server.on("/tuning", HTTP_GET, [this]() { handleGetTuningValue(); });
   server.on("/api/status", HTTP_GET, [this]() { handleAPI(); });
+  server.on("/api/battery", HTTP_GET, [this]() { handleBatteryStatus(); });
   server.on("/api/messages", HTTP_GET, [this]() { handleExportMessages(); });
   server.on("/api/messages", HTTP_POST, [this]() { handleImportMessages(); });
   server.onNotFound([this]() { handleNotFound(); });
@@ -928,14 +1020,24 @@ void WiFiManager::setupMDNS() {
   }
 }
 
-void WiFiManager::handleRoot() { server.send(200, "text/html", generateHTML(generateHomePage())); }
+void WiFiManager::handleRoot() { 
+  PowerManager::getInstance().resetActivityTimer("Web Interface - Home Page Viewed");
+  server.send(200, "text/html", generateHTML(generateHomePage())); 
+}
 
 void WiFiManager::handleStationConfig() {
+  PowerManager::getInstance().resetActivityTimer("Web Interface - Station Config Viewed");
   server.send(200, "text/html", generateHTML(generateStationPage()));
 }
 
 void WiFiManager::handleCalibration() {
+  PowerManager::getInstance().resetActivityTimer("Web Interface - Calibration Viewed");
   server.send(200, "text/html", generateHTML(generateCalibrationPage()));
+}
+
+void WiFiManager::handleSettings() {
+  PowerManager::getInstance().resetActivityTimer("Web Interface - Settings Viewed");
+  server.send(200, "text/html", generateHTML(generateSettingsPage()));
 }
 
 void WiFiManager::handleGetTuningValue() {
@@ -943,6 +1045,7 @@ void WiFiManager::handleGetTuningValue() {
   String response = "{\"value\":" + String(tuningValue) + "}";
   server.send(200, "application/json", response);
   startTime = millis();  // Reset the timeout counter
+  PowerManager::getInstance().resetActivityTimer("Web Interface - Tuning Value Request");
 }
 
 void WiFiManager::handleSaveFrequency() {
@@ -977,10 +1080,43 @@ void WiFiManager::handleSaveFrequency() {
     Serial.printf("Updated station %d frequency to %d\n", stationIndex, frequency);
 #endif
 
+    PowerManager::getInstance().resetActivityTimer("Web Interface - Frequency Saved");
     server.send(200, "application/json", "{\"success\":true,\"message\":\"Frequency saved\"}");
   } else {
     server.send(400, "application/json", "{\"success\":false,\"message\":\"Invalid station\"}");
   }
+}
+
+void WiFiManager::handleSaveSettings() {
+  String jsonData = server.arg("plain");
+
+#ifdef DEBUG_SERIAL_OUTPUT
+  Serial.println("Received settings data: " + jsonData);
+#endif
+
+  JsonDocument doc;
+  DeserializationError error = deserializeJson(doc, jsonData);
+
+  if (error) {
+#ifdef DEBUG_SERIAL_OUTPUT
+    Serial.println("Failed to parse settings JSON");
+#endif
+    server.send(400, "application/json", "{\"success\":false,\"message\":\"Invalid JSON\"}");
+    return;
+  }
+
+  unsigned int timeout = doc["inactivityTimeout"];
+  
+  auto& configManager = ConfigManager::getInstance();
+  configManager.setInactivityTimeout(timeout);
+  configManager.save();
+
+#ifdef DEBUG_SERIAL_OUTPUT
+  Serial.printf("Updated device inactivity timeout to %d minutes\n", timeout);
+#endif
+
+  PowerManager::getInstance().resetActivityTimer("Web Interface - Settings Saved");
+  server.send(200, "application/json", "{\"success\":true,\"message\":\"Settings saved\"}");
 }
 
 void WiFiManager::handleSaveConfig() {
@@ -1054,6 +1190,7 @@ void WiFiManager::handleSaveConfig() {
 #ifdef DEBUG_SERIAL_OUTPUT
     Serial.println("Successfully saved to preferences");
 #endif
+    PowerManager::getInstance().resetActivityTimer("Web Interface - Config Saved");
   }
 
 #ifdef DEBUG_SERIAL_OUTPUT
@@ -1090,6 +1227,7 @@ String WiFiManager::generateHomePage() const {
   html += F("<div class='nav'>");
   html += F("<a href='/stations' class='nav-link'>Messages</a>");
   html += F("<a href='/calibration' class='nav-link'>Tuning</a>");
+  html += F("<a href='/settings' class='nav-link'>Settings</a>");
   html += F("</div>");
 
   html += F("<div class='card'>");
@@ -1121,6 +1259,7 @@ String WiFiManager::generateStationPage() const {
   html += F("<a href='/' class='nav-link'>Home</a>");
   html += F("<a href='/stations' class='nav-link active'>Messages</a>");
   html += F("<a href='/calibration' class='nav-link'>Tuning</a>");
+  html += F("<a href='/settings' class='nav-link'>Settings</a>");
   html += F("</div>");
 
   html += F("<form method='POST' action='/save' id='stationForm'>");
@@ -1248,6 +1387,7 @@ String WiFiManager::generateCalibrationPage() const {
   html += F("<a href='/' class='nav-link'>Home</a>");
   html += F("<a href='/stations' class='nav-link'>Messages</a>");
   html += F("<a href='/calibration' class='nav-link active'>Tuning</a>");
+  html += F("<a href='/settings' class='nav-link'>Settings</a>");
   html += F("</div>");
 
   html += F("<div class='calibration-help'>");
@@ -1336,11 +1476,139 @@ String WiFiManager::generateCalibrationPage() const {
   return html;
 }
 
+String WiFiManager::generateSettingsPage() const {
+  String html;
+  html.reserve(2048);
+
+  html += F("<div class='container'>");
+  html += F("<div class='header'>");
+  html += F("<h1>Settings</h1>");
+  html += F("</div>");
+
+  html += F("<div class='nav'>");
+  html += F("<a href='/' class='nav-link'>Home</a>");
+  html += F("<a href='/stations' class='nav-link'>Messages</a>");
+  html += F("<a href='/calibration' class='nav-link'>Tuning</a>");
+  html += F("<a href='/settings' class='nav-link active'>Settings</a>");
+  html += F("</div>");
+
+  html += F("<div class='card'>");
+  html += F("<div class='card-header'>");
+  html += F("<h2>Battery Status</h2>");
+  html += F("</div>");
+  html += F("<div class='card-body'>");
+  html += F("<div class='battery-indicator'>");
+  html += F("<div class='battery-icon'>");
+  html += F("<div class='battery-fill' id='batteryFill' style='width: 0%'></div>");
+  html += F("</div>");
+  html += F("<div class='battery-info'>");
+  html += F("<div class='battery-percentage' id='batteryPercentage'>--%</div>");
+  html += F("<div class='battery-voltage' id='batteryVoltage'>-- V</div>");
+  html += F("<div class='battery-status' id='batteryStatus' style='display: none;'>");
+  html += F("<span class='charging-icon'>⚡</span>");
+  html += F("<span>Charging</span>");
+  html += F("</div>");
+  html += F("</div>");
+  html += F("</div>");
+  html += F("</div>");
+  html += F("</div>");
+
+  html += F("<div class='card'>");
+  html += F("<div class='card-header'>");
+  html += F("<h2>Power Settings</h2>");
+  html += F("</div>");
+  html += F("<div class='card-body'>");
+  html += F("<form id='settingsForm' onsubmit='saveSettings(event)'>");
+  
+  html += F("<div class='form-group'>");
+  html += F("<label for='inactivityTimeout'>Inactivity Timeout (minutes)</label>");
+  html += F("<input type='number' id='inactivityTimeout' name='inactivityTimeout' min='5' max='360' value='");
+  html += String(ConfigManager::getInstance().getInactivityTimeout());
+  html += F("' required>");
+  html += F("<small class='text-muted'>Device will automatically enter deep sleep after this many minutes without any input changes. Range: 5-360 minutes.</small>");
+  html += F("</div>");
+
+  html += F("<button type='submit' class='save-button btn-success'>💾 Save Settings</button>");
+  html += F("</form>");
+  html += F("</div>");
+  html += F("</div>");
+
+  html += F("<script>");
+  html += F("function updateBatteryStatus() {");
+  html += F("  fetch('/api/battery')");
+  html += F("    .then(response => response.json())");
+  html += F("    .then(data => {");
+  html += F("      const fillElement = document.getElementById('batteryFill');");
+  html += F("      const percentageElement = document.getElementById('batteryPercentage');");
+  html += F("      const voltageElement = document.getElementById('batteryVoltage');");
+  html += F("      const statusElement = document.getElementById('batteryStatus');");
+  html += F("      ");
+  html += F("      if (fillElement && percentageElement && voltageElement && statusElement) {");
+  html += F("        percentageElement.textContent = data.percentage + '%';");
+  html += F("        voltageElement.textContent = data.voltage.toFixed(2) + ' V';");
+  html += F("        fillElement.style.width = data.percentage + '%';");
+  html += F("        ");
+  html += F("        fillElement.classList.remove('low', 'critical', 'charging');");
+  html += F("        if (data.isCharging) {");
+  html += F("          fillElement.classList.add('charging');");
+  html += F("          statusElement.style.display = 'flex';");
+  html += F("        } else {");
+  html += F("          statusElement.style.display = 'none';");
+  html += F("          if (data.percentage < 10) {");
+  html += F("            fillElement.classList.add('critical');");
+  html += F("          } else if (data.percentage < 30) {");
+  html += F("            fillElement.classList.add('low');");
+  html += F("          }");
+  html += F("        }");
+  html += F("      }");
+  html += F("    })");
+  html += F("    .catch(error => console.error('Error fetching battery status:', error));");
+  html += F("}");
+  html += F("");
+  html += F("function saveSettings(event) {");
+  html += F("  event.preventDefault();");
+  html += F("  const form = event.target;");
+  html += F("  const submitButton = form.querySelector('button[type=\"submit\"]');");
+  html += F("  submitButton.disabled = true;");
+  html += F("  submitButton.classList.add('saving');");
+  html += F("  const timeout = parseInt(document.getElementById('inactivityTimeout').value);");
+  html += F("  if (timeout < 5 || timeout > 360) {");
+  html += F("    showToast('Timeout must be between 5 and 360 minutes', true);");
+  html += F("    submitButton.disabled = false;");
+  html += F("    submitButton.classList.remove('saving');");
+  html += F("    return;");
+  html += F("  }");
+  html += F("  fetch('/save-settings', {");
+  html += F("    method: 'POST',");
+  html += F("    headers: { 'Content-Type': 'application/json' },");
+  html += F("    body: JSON.stringify({ inactivityTimeout: timeout })");
+  html += F("  })");
+  html += F("  .then(response => response.json())");
+  html += F("  .then(data => {");
+  html += F("    showToast(data.message, !data.success);");
+  html += F("  })");
+  html += F("  .catch(error => {");
+  html += F("    console.error('Error:', error);");
+  html += F("    showToast('Error saving settings', true);");
+  html += F("  })");
+  html += F("  .finally(() => {");
+  html += F("    submitButton.disabled = false;");
+  html += F("    submitButton.classList.remove('saving');");
+  html += F("  });");
+  html += F("}");
+  html += F("");
+  html += F("updateBatteryStatus();");
+  html += F("setInterval(updateBatteryStatus, 5000);");
+  html += F("</script>");
+
+  html += F("</div>");
+  return html;
+}
+
 String WiFiManager::generateStatusJson() const {
   String json = "{";
   json += "\"wifiEnabled\":" + String(wifiEnabled ? "true" : "false") + ",";
-  json += "\"uptime\":" + String((millis() - startTime) / 1000) + ",";
-  json += "\"timeoutIn\":" + String((DEFAULT_TIMEOUT - (millis() - startTime)) / 1000);
+  json += "\"uptime\":" + String((millis() - startTime) / 1000);
   json += "}";
   return json;
 }
@@ -1353,6 +1621,26 @@ void WiFiManager::handleNotFound() {
 }
 
 void WiFiManager::handleAPI() { server.send(200, "application/json", generateStatusJson()); }
+
+void WiFiManager::handleBatteryStatus() {
+  auto& powerManager = PowerManager::getInstance();
+  float voltage = powerManager.getBatteryVoltage();
+  bool isCharging = powerManager.isUSBPowered();
+  
+  // Calculate battery percentage for LiPo (3.2V - 4.2V range)
+  float percentage = constrain((voltage - LEDConfig::BATTERY_MIN_V) / 
+                                (LEDConfig::BATTERY_MAX_V - LEDConfig::BATTERY_MIN_V) * 100.0f,
+                                0.0f, 100.0f);
+  
+  // Create JSON response
+  String json = "{";
+  json += "\"voltage\":" + String(voltage, 2) + ",";
+  json += "\"percentage\":" + String((int)percentage) + ",";
+  json += "\"isCharging\":" + String(isCharging ? "true" : "false");
+  json += "}";
+  
+  server.send(200, "application/json", json);
+}
 
 void WiFiManager::handleExportMessages() {
   auto& stationManager = StationManager::getInstance();

@@ -22,7 +22,6 @@ class PowerManager {
   static constexpr float MAX_BATTERY_VOLTAGE = 4.2;            // Fully charged LiPo
   static constexpr float FULLY_CHARGED_THRESHOLD = 4.15;       // Very close to full charge
   static constexpr float MIN_BATTERY_VOLTAGE = 3.2;            // Absolute minimum - protect battery
-  static constexpr unsigned long INACTIVITY_TIMEOUT = 7200000;  // 2 hours
   static constexpr int POTENTIOMETER_THRESHOLD = 100;
 
   // Public methods
@@ -30,7 +29,7 @@ class PowerManager {
   void checkPowerSwitch();
   void checkActivity();
   bool checkForInputChanges();
-  void resetActivityTimer();
+  void resetActivityTimer(const char* reason = nullptr);
   float getBatteryVoltage();
   bool isLowBattery();
   bool isUSBPowered() { return ums3.getVbusPresent(); }

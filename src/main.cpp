@@ -93,13 +93,14 @@ class RadioSystem {
 
     // Reset idle timer when switching between station and static
     if (stationLocked != lastStationLocked) {
-      power.resetActivityTimer();
       lastStationLocked = stationLocked;
     }
 
     if (stationLocked) {
       if (!config.isMorsePlaying() || station != lastStation) {
         if (station != lastStation) {
+          // Reset idle timer when user switches to a different station
+          power.resetActivityTimer("Station Changed");
           audio.stop();
         }
         morse.startMessage(station->getMessage());

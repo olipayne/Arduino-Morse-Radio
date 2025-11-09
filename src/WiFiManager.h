@@ -49,10 +49,13 @@ class WiFiManager {
   void handleRoot();
   void handleStationConfig();
   void handleCalibration();
+  void handleSettings();
   void handleSaveConfig();
   void handleSaveFrequency();
+  void handleSaveSettings();
   void handleGetTuningValue();
   void handleAPI();
+  void handleBatteryStatus();
   void handleNotFound();
   void handleExportMessages();
   void handleImportMessages();
@@ -63,6 +66,7 @@ class WiFiManager {
   String generateStationPage() const;
   String generateStationList() const;
   String generateCalibrationPage() const;
+  String generateSettingsPage() const;
   String generateStatusJson() const;
 
   // Server instance
@@ -74,7 +78,6 @@ class WiFiManager {
   esp_timer_handle_t timer;  // Timer handle for OTA operations
 
   // Constants
-  static constexpr unsigned long DEFAULT_TIMEOUT = 120000;  // 2 minutes
   static constexpr unsigned long LED_FLASH_INTERVAL = 500;
   static constexpr uint8_t AP_CHANNEL = 1;
   static constexpr uint8_t MAX_CONNECTIONS = 4;

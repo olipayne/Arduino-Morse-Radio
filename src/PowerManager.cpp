@@ -27,7 +27,7 @@ void PowerManager::begin() {
   bootTime = millis();
   
   // Initialize activity timer to current time (so timeout starts from boot)
-  lastActivityTime = millis();
+  resetActivityTimer("System Boot");
 
   // Initialize UMS3
   ums3.begin();
@@ -285,18 +285,12 @@ bool PowerManager::checkForInputChanges() {
   checkPowerSwitch();
 
   bool activity = false;
+  const char* activityReason = nullptr;
 
-  // Check potentiometers using filtered readings
+  // Update potentiometer values but don't track them as activity
+  // (station changes are tracked explicitly in main.cpp)
   int currentTuning = readADC(Pins::TUNING_POT);
   int currentVolume = readADC(Pins::VOLUME_POT);
-
-  if (abs(currentTuning - lastTuningValue) > POTENTIOMETER_THRESHOLD) {
-    activity = true;
-  }
-
-  if (abs(currentVolume - lastVolumeValue) > POTENTIOMETER_THRESHOLD) {
-    activity = true;
-  }
 
   // Check digital inputs for state changes
   bool currentLWState = digitalRead(Pins::LW_BAND_SWITCH) == LOW;
@@ -307,22 +301,27 @@ bool PowerManager::checkForInputChanges() {
 
   if (currentLWState != lastLWState) {
     activity = true;
+    activityReason = "Long Wave Switch";
   }
 
   if (currentMWState != lastMWState) {
     activity = true;
+    activityReason = "Medium Wave Switch";
   }
 
   if (currentSlowState != lastSlowState) {
     activity = true;
+    activityReason = "Slow Decode Switch";
   }
 
   if (currentMedState != lastMedState) {
     activity = true;
+    activityReason = "Medium Decode Switch";
   }
 
   if (currentWiFiState != lastWiFiState) {
     activity = true;
+    activityReason = "WiFi Button";
   }
 
   // Update stored states
@@ -333,6 +332,11 @@ bool PowerManager::checkForInputChanges() {
   lastSlowState = currentSlowState;
   lastMedState = currentMedState;
   lastWiFiState = currentWiFiState;
+
+  // Reset timer with reason if activity was detected
+  if (activity && activityReason != nullptr) {
+    resetActivityTimer(activityReason);
+  }
 
   return activity;
 }
@@ -446,28 +450,45 @@ void PowerManager::configureADC() {
 }
 
 void PowerManager::checkActivity() {
-  bool activityDetected = checkForInputChanges();
+  // Check for input changes (will reset timer internally if activity detected)
+  checkForInputChanges();
   
-  if (activityDetected) {
-    // Reset activity timer when any activity is detected
-    lastActivityTime = millis();
-  } else {
-    // No activity detected, check if timeout has elapsed
-    unsigned long currentTime = millis();
-    if (currentTime - lastActivityTime >= INACTIVITY_TIMEOUT) {
-      // Only enter deep sleep if power switch is still ON
-      if (digitalRead(Pins::POWER_SWITCH) == HIGH) {
+  // Check if timeout has elapsed
+  unsigned long currentTime = millis();
+  // Get timeout from ConfigManager and convert minutes to milliseconds
+  unsigned long inactivityTimeoutMs = ConfigManager::getInstance().getInactivityTimeout() * 60000UL;
+  if (currentTime - lastActivityTime >= inactivityTimeoutMs) {
+    // Only enter deep sleep if power switch is still ON
+    if (digitalRead(Pins::POWER_SWITCH) == HIGH) {
 #ifndef DEBUG_SERIAL_OUTPUT
-        // Enable deep sleep on inactivity for release builds only
-        enterDeepSleep(SleepReason::INACTIVITY);
+      // Enable deep sleep on inactivity for release builds only
+#ifdef DEBUG_SERIAL_OUTPUT
+      Serial.println(F("Entering deep sleep due to inactivity"));
 #endif
+      enterDeepSleep(SleepReason::INACTIVITY);
+#else
+      // In debug mode, just log the timeout
+      static bool timeoutLogged = false;
+      if (!timeoutLogged) {
+        Serial.println(F("Inactivity timeout reached (deep sleep disabled in debug mode)"));
+        timeoutLogged = true;
       }
+#endif
     }
   }
 }
 
-void PowerManager::resetActivityTimer() {
+void PowerManager::resetActivityTimer(const char* reason) {
   lastActivityTime = millis();
+  
+#ifdef DEBUG_SERIAL_OUTPUT
+  if (reason != nullptr) {
+    Serial.print(F("Activity timer reset: "));
+    Serial.println(reason);
+  } else {
+    Serial.println(F("Activity timer reset"));
+  }
+#endif
 }
 
 void PowerManager::checkOTABootSequence() {

@@ -65,6 +65,7 @@ void ConfigManager::save() {
   preferences.putUChar("waveBand", static_cast<uint8_t>(currentBand));
   preferences.putUInt("frequency", morseFrequency);
   preferences.putUInt("volume", speakerVolume);
+  preferences.putUInt("inactTimeout", inactivityTimeoutMinutes);
   preferences.end();
 }
 
@@ -78,6 +79,7 @@ void ConfigManager::load() {
       preferences.getUChar("waveBand", static_cast<uint8_t>(WaveBand::SHORT_WAVE)));
   morseFrequency = preferences.getUInt("frequency", Audio::DEFAULT_MORSE_FREQ);
   speakerVolume = preferences.getUInt("volume", Audio::DEFAULT_VOLUME);
+  inactivityTimeoutMinutes = preferences.getUInt("inactTimeout", 120);
   preferences.end();
 }
 
@@ -86,6 +88,7 @@ void ConfigManager::reset() {
   currentBand = WaveBand::SHORT_WAVE;
   morseFrequency = Audio::DEFAULT_MORSE_FREQ;
   speakerVolume = Audio::DEFAULT_VOLUME;
+  inactivityTimeoutMinutes = 120;
   wifiEnabled = false;
   morsePlaying = false;
   morseToneOn = false;
@@ -110,3 +113,13 @@ void ConfigManager::setWaveBand(WaveBand band) { currentBand = band; }
 void ConfigManager::setMorseFrequency(unsigned int freq) { morseFrequency = freq; }
 
 void ConfigManager::setSpeakerVolume(unsigned int vol) { speakerVolume = vol; }
+
+void ConfigManager::setInactivityTimeout(unsigned int minutes) {
+  // Clamp the value between 5 and 360 minutes
+  if (minutes < 5) {
+    minutes = 5;
+  } else if (minutes > 360) {
+    minutes = 360;
+  }
+  inactivityTimeoutMinutes = minutes;
+}

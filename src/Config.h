@@ -162,6 +162,7 @@ class ConfigManager {
   bool isWifiEnabled() const { return wifiEnabled; }
   bool isMorsePlaying() const { return morsePlaying; }
   bool isMorseToneOn() const { return morseToneOn; }
+  unsigned int getInactivityTimeout() const { return inactivityTimeoutMinutes; }
   const Audio::MorseTimings& getCurrentMorseTimings() const;
 
   // Setters
@@ -172,6 +173,7 @@ class ConfigManager {
   void setWifiEnabled(bool enabled);
   void setMorsePlaying(bool playing) { morsePlaying = playing; }
   void setMorseToneOn(bool on) { morseToneOn = on; }
+  void setInactivityTimeout(unsigned int minutes);
 
  private:
   ConfigManager() {}
@@ -185,6 +187,7 @@ class ConfigManager {
   WaveBand currentBand = WaveBand::SHORT_WAVE;
   unsigned int morseFrequency = Audio::DEFAULT_MORSE_FREQ;
   unsigned int speakerVolume = Audio::DEFAULT_VOLUME;
+  unsigned int inactivityTimeoutMinutes = 120;  // Default 120 minutes (2 hours)
   bool wifiEnabled = false;
   bool morsePlaying = false;
   bool morseToneOn = false;
