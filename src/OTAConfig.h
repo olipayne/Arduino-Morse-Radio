@@ -22,7 +22,7 @@ struct WiFiCredential {
 // The updater will try these in order until one connects
 constexpr WiFiCredential WIFI_NETWORKS[] = {{"WillieWiFi", "Passw0rd123"},
                                             {"Reactomatic", "reactomatic1"},
-                                            {"YourWiFiNetwork3", "YourPassword3"}};
+                                            {"Spy Games Public", "APvern7jax"}};
 
 constexpr size_t WIFI_NETWORK_COUNT = sizeof(WIFI_NETWORKS) / sizeof(WIFI_NETWORKS[0]);
 
