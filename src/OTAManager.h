@@ -28,9 +28,9 @@ class OTAManager {
   };
 
   enum class LEDState {
-    WIFI_SEARCH,  // Short wave LED flashing
-    DOWNLOADING,  // Medium wave LED flashing
-    INSTALLING    // Long wave LED flashing
+    WIFI_SEARCH,  // Long wave LED flashing (high position)
+    DOWNLOADING,  // Medium wave LED flashing (middle position)
+    INSTALLING    // Short wave LED flashing (low position)
   };
 
   // Main update process

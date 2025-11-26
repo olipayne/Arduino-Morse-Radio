@@ -1,4 +1,5 @@
 #include "OTAManager.h"
+#include "AudioManager.h"
 #include "PowerManager.h"
 
 void OTAManager::addWiFiCredentials(const char* ssid, const char* password) {
@@ -15,6 +16,12 @@ OTAManager::UpdateResult OTAManager::checkAndUpdate() {
 #ifdef DEBUG_SERIAL_OUTPUT
   Serial.println(F("Starting OTA update check..."));
 #endif
+
+  // Turn off audio and all wave band LEDs before starting
+  AudioManager::getInstance().stop();
+  digitalWrite(Pins::LW_LED, LOW);
+  digitalWrite(Pins::MW_LED, LOW);
+  digitalWrite(Pins::SW_LED, LOW);
 
   // Step 1: Connect to WiFi with LED indication
   setLEDState(LEDState::WIFI_SEARCH);
@@ -264,19 +271,20 @@ void OTAManager::stopLEDTask() {
 void OTAManager::ledTaskCode(void* parameter) {
   OTAManager* manager = static_cast<OTAManager*>(parameter);
 
+  // LED order: Start with LW (high position) and progress down to SW (low position)
   int ledPin;
   switch (manager->currentLEDState) {
     case LEDState::WIFI_SEARCH:
-      ledPin = Pins::SW_LED;
+      ledPin = Pins::LW_LED;  // Start with Long Wave LED (high)
       break;
     case LEDState::DOWNLOADING:
-      ledPin = Pins::MW_LED;
+      ledPin = Pins::MW_LED;  // Medium Wave LED (middle)
       break;
     case LEDState::INSTALLING:
-      ledPin = Pins::LW_LED;
+      ledPin = Pins::SW_LED;  // End with Short Wave LED (low)
       break;
     default:
-      ledPin = Pins::SW_LED;
+      ledPin = Pins::LW_LED;
       break;
   }
 
