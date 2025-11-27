@@ -272,19 +272,24 @@ void OTAManager::ledTaskCode(void* parameter) {
   OTAManager* manager = static_cast<OTAManager*>(parameter);
 
   // LED order: Start with LW (high position) and progress down to SW (low position)
-  int ledPin;
+  // Previous stage LEDs stay on solid, current stage LED flashes
+  int flashingLedPin;
   switch (manager->currentLEDState) {
     case LEDState::WIFI_SEARCH:
-      ledPin = Pins::LW_LED;  // Start with Long Wave LED (high)
+      flashingLedPin = Pins::LW_LED;  // Start with Long Wave LED (high)
+      // No previous LEDs to keep on
       break;
     case LEDState::DOWNLOADING:
-      ledPin = Pins::MW_LED;  // Medium Wave LED (middle)
+      flashingLedPin = Pins::MW_LED;  // Medium Wave LED (middle)
+      digitalWrite(Pins::LW_LED, HIGH);  // Keep LW LED on solid
       break;
     case LEDState::INSTALLING:
-      ledPin = Pins::SW_LED;  // End with Short Wave LED (low)
+      flashingLedPin = Pins::SW_LED;  // End with Short Wave LED (low)
+      digitalWrite(Pins::LW_LED, HIGH);  // Keep LW LED on solid
+      digitalWrite(Pins::MW_LED, HIGH);  // Keep MW LED on solid
       break;
     default:
-      ledPin = Pins::LW_LED;
+      flashingLedPin = Pins::LW_LED;
       break;
   }
 
@@ -292,7 +297,7 @@ void OTAManager::ledTaskCode(void* parameter) {
 
   while (manager->ledTaskRunning) {
     ledState = !ledState;
-    digitalWrite(ledPin, ledState ? HIGH : LOW);
+    digitalWrite(flashingLedPin, ledState ? HIGH : LOW);
     vTaskDelay(pdMS_TO_TICKS(LED_FLASH_INTERVAL));
   }
 

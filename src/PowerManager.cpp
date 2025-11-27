@@ -346,6 +346,15 @@ int PowerManager::readADC(int pin) {
   return analogRead(pin);
 }
 
+int PowerManager::readADCRaw(int pin) {
+  if (pin == Pins::TUNING_POT) {
+    return tuningPot.readRaw();
+  } else if (pin == Pins::VOLUME_POT) {
+    return volumePot.readRaw();
+  }
+  return analogRead(pin);
+}
+
 float PowerManager::getBatteryVoltage() { return ums3.getBatteryVoltage(); }
 
 float PowerManager::getBatteryPercent() { return voltageToPercent(getBatteryVoltage()); }

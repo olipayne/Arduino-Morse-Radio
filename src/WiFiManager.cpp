@@ -1041,7 +1041,7 @@ void WiFiManager::handleSettings() {
 }
 
 void WiFiManager::handleGetTuningValue() {
-  int tuningValue = PowerManager::getInstance().readADC(Pins::TUNING_POT);
+  int tuningValue = PowerManager::getInstance().readADCRaw(Pins::TUNING_POT);
   String response = "{\"value\":" + String(tuningValue) + "}";
   server.send(200, "application/json", response);
   startTime = millis();  // Reset the timeout counter

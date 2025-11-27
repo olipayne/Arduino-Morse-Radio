@@ -34,6 +34,7 @@ class PowerManager {
   void displayBatteryLevel();
   void enterDeepSleep(SleepReason reason = SleepReason::POWER_OFF);
   int readADC(int pin);
+  int readADCRaw(int pin);
 
   // LED task control methods (moved from private)
   void startLEDTask();
