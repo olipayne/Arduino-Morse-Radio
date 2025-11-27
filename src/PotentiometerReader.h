@@ -5,17 +5,23 @@ class PotentiometerReader {
   static constexpr int WINDOW_SIZE = 5;  // Size of moving average window
 
   PotentiometerReader(int pin, int hysteresis = 10)
-      : pin_(pin), hysteresis_(hysteresis), lastStableValue_(0), windowIndex_(0) {
+      : pin_(pin),
+        hysteresis_(hysteresis),
+        lastStableValue_(0),
+        windowIndex_(0),
+        rawWindowIndex_(0) {
     for (int i = 0; i < WINDOW_SIZE; i++) {
       window_[i] = 0;
+      rawWindow_[i] = 0;
     }
   }
 
   void begin() {
     // Initialize all window values with first reading
-    int initial = readRaw();
+    int initial = readRawDirect();
     for (int i = 0; i < WINDOW_SIZE; i++) {
       window_[i] = initial;
+      rawWindow_[i] = initial;
     }
     lastStableValue_ = initial;
   }
@@ -23,7 +29,7 @@ class PotentiometerReader {
   // Get filtered reading with hysteresis and moving average
   int read() {
     // Add new reading to window
-    window_[windowIndex_] = readRaw();
+    window_[windowIndex_] = readRawDirect();
     windowIndex_ = (windowIndex_ + 1) % WINDOW_SIZE;
 
     // Calculate moving average
@@ -52,8 +58,22 @@ class PotentiometerReader {
     return lastStableValue_;
   }
 
-  // Get raw reading without filtering
-  int readRaw() { return analogRead(pin_); }
+  // Get raw reading with moving average smoothing (no hysteresis)
+  int readRaw() {
+    // Add new reading to raw window
+    rawWindow_[rawWindowIndex_] = readRawDirect();
+    rawWindowIndex_ = (rawWindowIndex_ + 1) % WINDOW_SIZE;
+
+    // Calculate moving average
+    long sum = 0;
+    for (int i = 0; i < WINDOW_SIZE; i++) {
+      sum += rawWindow_[i];
+    }
+    return sum / WINDOW_SIZE;
+  }
+
+  // Get direct reading without any filtering
+  int readRawDirect() { return analogRead(pin_); }
 
  private:
   const int pin_;
@@ -61,4 +81,6 @@ class PotentiometerReader {
   int lastStableValue_;
   int window_[WINDOW_SIZE];
   int windowIndex_;
+  int rawWindow_[WINDOW_SIZE];
+  int rawWindowIndex_;
 };
