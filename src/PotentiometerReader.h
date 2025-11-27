@@ -4,7 +4,7 @@ class PotentiometerReader {
  public:
   static constexpr int WINDOW_SIZE = 5;  // Size of moving average window
 
-  PotentiometerReader(int pin, int hysteresis = 20)
+  PotentiometerReader(int pin, int hysteresis = 10)
       : pin_(pin), hysteresis_(hysteresis), lastStableValue_(0), windowIndex_(0) {
     for (int i = 0; i < WINDOW_SIZE; i++) {
       window_[i] = 0;
