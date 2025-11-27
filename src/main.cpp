@@ -5,6 +5,7 @@
 #include <esp_sleep.h>
 
 #include "AudioManager.h"
+#include "ButtonDebouncer.h"
 #include "Config.h"
 #include "MorseCode.h"
 #include "PowerManager.h"
@@ -18,15 +19,18 @@
 // Task Scheduler
 Scheduler ts;
 
+// WiFi button debouncer (50ms debounce, active low)
+ButtonDebouncer wifiButton(Pins::WIFI_BUTTON, 50, true);
+
 // Task forward declarations
 void batteryCheckCallback();
 void systemUpdateCallback();
-void handleWiFiButton(unsigned long& lastButtonPress, const unsigned long debounceTime);
+void handleWiFiButton();
 void updateTuningAndStation();
 
 // Tasks
 Task tBatteryCheck(60000, TASK_FOREVER, &batteryCheckCallback);  // Check battery every minute
-Task tSystemUpdate(20, TASK_FOREVER, &systemUpdateCallback);     // System update every 20ms
+Task tSystemUpdate(10, TASK_FOREVER, &systemUpdateCallback);     // System update every 10ms
 
 // Main system manager class
 class RadioSystem {
@@ -128,6 +132,7 @@ class RadioSystem {
     MorseCode::getInstance().begin();
     SpeedManager::getInstance().begin();
     SignalManager::getInstance().begin();
+    wifiButton.begin();
 #ifdef DEBUG_SERIAL_OUTPUT
     Serial.println(F("All subsystems initialized"));
 #endif
@@ -162,14 +167,14 @@ void batteryCheckCallback() {
 }
 
 void systemUpdateCallback() {
-  static unsigned long lastButtonPress = 0;
-  const unsigned long debounceTime = Timing::DEBOUNCE_DELAY;
+  // Update WiFi button debouncer state
+  wifiButton.update();
 
   // Check for OTA boot sequence (3 WiFi button presses within 5 seconds of boot)
   PowerManager::getInstance().checkOTABootSequence();
 
   // Check WiFi toggle button with debounce
-  handleWiFiButton(lastButtonPress, debounceTime);
+  handleWiFiButton();
 
   // Handle WiFi operations
   WiFiManager::getInstance().handle();
@@ -191,18 +196,15 @@ void systemUpdateCallback() {
 }
 
 // Helper functions to break down the systemUpdateCallback
-void handleWiFiButton(unsigned long& lastButtonPress, const unsigned long debounceTime) {
+void handleWiFiButton() {
   // Skip normal WiFi button handling during OTA boot window
   if (PowerManager::getInstance().isInOTABootWindow()) {
     return;
   }
-  
-  if (digitalRead(Pins::WIFI_BUTTON) == LOW) {
-    unsigned long currentTime = millis();
-    if (currentTime - lastButtonPress > debounceTime) {
-      WiFiManager::getInstance().toggle();
-      lastButtonPress = currentTime;
-    }
+
+  // Toggle WiFi on debounced button press (edge detection)
+  if (wifiButton.wasPressed()) {
+    WiFiManager::getInstance().toggle();
   }
 }
 

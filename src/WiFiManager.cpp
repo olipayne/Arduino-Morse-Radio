@@ -372,6 +372,39 @@ const char WiFiManager::CSS_STYLES[] PROGMEM = R"(
         font-weight: 600;
         color: var(--primary-color);
         font-size: 1.1em;
+        padding: calc(var(--spacing) * 0.5) calc(var(--spacing) * 0.75);
+        border-radius: var(--border-radius);
+        transition: background-color 0.3s ease, color 0.3s ease;
+        min-width: 60px;
+        text-align: center;
+    }
+
+    .tuning-station .station-header {
+        flex-wrap: nowrap;
+        gap: calc(var(--spacing) * 0.75);
+    }
+
+    .tuning-controls {
+        display: flex;
+        align-items: center;
+        gap: calc(var(--spacing) * 0.5);
+    }
+
+    .btn-set {
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        padding: calc(var(--spacing) * 0.5) calc(var(--spacing) * 1);
+        border-radius: var(--border-radius);
+        font-weight: 500;
+        cursor: pointer;
+        min-height: 36px;
+        font-size: 0.9em;
+        white-space: nowrap;
+    }
+
+    .btn-set:hover {
+        background: var(--primary-hover);
     }
 
     .floating-save {
@@ -628,22 +661,21 @@ const char WiFiManager::JAVASCRIPT_CODE[] PROGMEM = R"(
             .catch(error => console.error('Error fetching tuning value:', error));
     }
 
-    function setFrequency(inputId) {
+    function setFrequency(stationIndex) {
         fetch('/tuning')
             .then(response => response.json())
             .then(data => {
-                const input = document.getElementById(inputId);
-                if (input) {
-                    input.value = data.value;
-                    input.style.backgroundColor = 'var(--success-color)';
-                    input.style.opacity = '0.3';
+                const display = document.getElementById('freq_' + stationIndex);
+                if (display) {
+                    display.textContent = data.value;
+                    display.style.backgroundColor = 'var(--success-color)';
+                    display.style.color = 'white';
                     setTimeout(() => {
-                        input.style.backgroundColor = '';
-                        input.style.opacity = '';
+                        display.style.backgroundColor = '';
+                        display.style.color = '';
                     }, 500);
                     
                     // Save the frequency immediately
-                    const stationIndex = inputId.replace('freq_', '');
                     saveFrequency(stationIndex, data.value);
                 }
             })
@@ -1391,11 +1423,7 @@ String WiFiManager::generateCalibrationPage() const {
   html += F("</div>");
 
   html += F("<div class='calibration-help'>");
-  html += F("<strong>Tuning Instructions:</strong><br>");
-  html +=
-      F("Turn the tuning knob to the desired position for each station, then click 'Set' to save "
-        "that frequency. ");
-  html += F("The current potentiometer reading is shown in real-time.");
+  html += F("<strong>How to tune:</strong> Turn the dial to your desired position, then tap <strong>Set</strong> for that station.");
   html += F("</div>");
 
   html += F("<div class='calibration-display'>");
@@ -1419,28 +1447,20 @@ String WiFiManager::generateCalibrationPage() const {
     const Station* station = stationManager.getStation(i);
     if (!station || !station->isEnabled()) continue;
 
-    String stationHtml = F("<div class='station'>");
+    String stationHtml = F("<div class='station tuning-station'>");
     stationHtml += F("<div class='station-header'>");
     stationHtml += F("<div class='station-name'>");
     stationHtml += String(station->getName());
     stationHtml += F("</div>");
-    stationHtml += F("<div class='frequency-display'>");
-    stationHtml += String(station->getFrequency());
-    stationHtml += F("</div>");
-    stationHtml += F("</div>");
-
-    stationHtml += F("<div class='station-body'>");
-    stationHtml += F("<div class='form-group'>");
-    stationHtml += F("<div class='form-row'>");
-    stationHtml += F("<input type='number' id='freq_");
+    stationHtml += F("<div class='tuning-controls'>");
+    stationHtml += F("<span class='frequency-display' id='freq_");
     stationHtml += String(i);
-    stationHtml += F("' value='");
+    stationHtml += F("'>");
     stationHtml += String(station->getFrequency());
-    stationHtml += F("' readonly>");
-    stationHtml += F("<button type='button' class='btn-primary' onclick='setFrequency(\"freq_");
+    stationHtml += F("</span>");
+    stationHtml += F("<button type='button' class='btn-set' onclick='setFrequency(");
     stationHtml += String(i);
-    stationHtml += F("\")'>Set Current</button>");
-    stationHtml += F("</div>");
+    stationHtml += F(")'>Set</button>");
     stationHtml += F("</div>");
     stationHtml += F("</div>");
     stationHtml += F("</div>");
