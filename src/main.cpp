@@ -148,7 +148,7 @@ void batteryCheckCallback() {
   float voltage = power.getBatteryVoltage();
 
   // Force deep sleep if battery is critically low
-  if (voltage <= PowerManager::MIN_BATTERY_VOLTAGE) {
+  if (voltage <= LEDConfig::BATTERY_MIN_V) {
     power.enterDeepSleep(PowerManager::SleepReason::BATTERY_CRITICAL);
     return;
   }

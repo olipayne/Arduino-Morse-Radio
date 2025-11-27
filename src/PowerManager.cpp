@@ -123,10 +123,8 @@ void PowerManager::LEDTaskCode(void* parameter) {
 
   // Get initial battery reading
   float cachedBatteryVoltage = powerManager->getBatteryVoltage();
-  float batteryPercent =
-      constrain((cachedBatteryVoltage - LEDConfig::BATTERY_MIN_V) /
-                    (LEDConfig::BATTERY_MAX_V - LEDConfig::BATTERY_MIN_V) * 100.0f,
-                0.0f, 100.0f);
+  // Use LiPo discharge curve for accurate percentage
+  float batteryPercent = PowerManager::voltageToPercent(cachedBatteryVoltage);
   uint8_t baseBrightness =
       (uint8_t)(LEDConfig::MAX_BRIGHTNESS * (0.2f + (batteryPercent / 100.0f) * 0.8f));
   lastBatteryReadTime = startTime;
@@ -149,10 +147,8 @@ void PowerManager::LEDTaskCode(void* parameter) {
       if (abs(newVoltage - cachedBatteryVoltage) > 0.01f) {
         cachedBatteryVoltage = newVoltage;
 
-        // Calculate base brightness from battery level (20-100% of max)
-        batteryPercent = constrain((cachedBatteryVoltage - LEDConfig::BATTERY_MIN_V) /
-                                       (LEDConfig::BATTERY_MAX_V - LEDConfig::BATTERY_MIN_V) * 100.0f,
-                                   0.0f, 100.0f);
+        // Calculate base brightness from battery level using LiPo discharge curve (20-100% of max)
+        batteryPercent = PowerManager::voltageToPercent(cachedBatteryVoltage);
 
         baseBrightness =
             (uint8_t)(LEDConfig::MAX_BRIGHTNESS * (0.2f + (batteryPercent / 100.0f) * 0.8f));
@@ -352,13 +348,46 @@ int PowerManager::readADC(int pin) {
 
 float PowerManager::getBatteryVoltage() { return ums3.getBatteryVoltage(); }
 
+float PowerManager::getBatteryPercent() { return voltageToPercent(getBatteryVoltage()); }
+
+// LiPo discharge curve lookup tables (defined in header as constexpr)
+constexpr float PowerManager::LIPO_VOLTAGE_TABLE[];
+constexpr float PowerManager::LIPO_PERCENT_TABLE[];
+
+float PowerManager::voltageToPercent(float voltage) {
+  // Handle edge cases
+  if (voltage >= LIPO_VOLTAGE_TABLE[0]) {
+    return 100.0f;
+  }
+  if (voltage <= LIPO_VOLTAGE_TABLE[LIPO_CURVE_POINTS - 1]) {
+    return 0.0f;
+  }
+  
+  // Find the two points to interpolate between
+  // Table is sorted descending (4.2V -> 3.2V)
+  for (int i = 0; i < LIPO_CURVE_POINTS - 1; i++) {
+    if (voltage <= LIPO_VOLTAGE_TABLE[i] && voltage > LIPO_VOLTAGE_TABLE[i + 1]) {
+      // Linear interpolation between the two points
+      float voltageRange = LIPO_VOLTAGE_TABLE[i] - LIPO_VOLTAGE_TABLE[i + 1];
+      float percentRange = LIPO_PERCENT_TABLE[i] - LIPO_PERCENT_TABLE[i + 1];
+      float voltageOffset = LIPO_VOLTAGE_TABLE[i] - voltage;
+      float percentOffset = (voltageOffset / voltageRange) * percentRange;
+      return LIPO_PERCENT_TABLE[i] - percentOffset;
+    }
+  }
+  
+  // Fallback (shouldn't reach here)
+  return 0.0f;
+}
+
 bool PowerManager::isLowBattery() {
   float voltage = getBatteryVoltage();
-  return voltage < LOW_BATTERY_THRESHOLD;
+  return voltage < LEDConfig::BATTERY_LOW_V;
 }
 
 void PowerManager::displayBatteryStatus() {
   float voltage = getBatteryVoltage();
+  float percent = voltageToPercent(voltage);
   bool isPluggedIn = ums3.getVbusPresent();
 
   ums3.setPixelBrightness(10);
@@ -368,11 +397,12 @@ void PowerManager::displayBatteryStatus() {
   } else {
     ums3.setPixelBrightness(10);
   }
-  // Normal battery status display
-  if (voltage >= 4.0) {
-    ums3.setPixelColor(0, 255, 0);  // Fully Charged - Green
-  } else if (voltage >= 3.7) {
-    ums3.setPixelColor(255, 255, 0);  // Moderately Charged - Yellow
+  // Battery status display based on actual percentage
+  // Using LiPo curve: >60% = Green, 25-60% = Yellow, <25% = Red
+  if (percent >= 60.0f) {
+    ums3.setPixelColor(0, 255, 0);  // Good charge - Green
+  } else if (percent >= 25.0f) {
+    ums3.setPixelColor(255, 255, 0);  // Moderate charge - Yellow
   } else {
     ums3.setPixelColor(255, 0, 0);  // Low Battery - Red
   }
@@ -380,27 +410,29 @@ void PowerManager::displayBatteryStatus() {
 
 void PowerManager::displayBatteryLevel() {
   float voltage = getBatteryVoltage();
+  float percent = voltageToPercent(voltage);
 
   // Turn off all LEDs first
   digitalWrite(Pins::LW_LED, LOW);
   digitalWrite(Pins::MW_LED, LOW);
   digitalWrite(Pins::SW_LED, LOW);
 
-  // Display battery level using binary LEDs
-  if (voltage >= 4.0) {
-    // Full battery - all LEDs on
+  // Display battery level using binary LEDs based on actual percentage
+  // >66% = 3 LEDs, 33-66% = 2 LEDs, 10-33% = 1 LED, <10% = 0 LEDs
+  if (percent >= 66.0f) {
+    // High battery - all LEDs on
     digitalWrite(Pins::LW_LED, HIGH);
     digitalWrite(Pins::MW_LED, HIGH);
     digitalWrite(Pins::SW_LED, HIGH);
-  } else if (voltage >= 3.7) {
+  } else if (percent >= 33.0f) {
     // Medium battery - two LEDs on
     digitalWrite(Pins::LW_LED, HIGH);
     digitalWrite(Pins::MW_LED, HIGH);
-  } else if (voltage >= 3.4) {
+  } else if (percent >= 10.0f) {
     // Low battery - one LED on
     digitalWrite(Pins::LW_LED, HIGH);
   }
-  // Below 3.4V - all LEDs off
+  // Below 10% - all LEDs off (critical)
 }
 
 void PowerManager::enterDeepSleep(SleepReason reason) {

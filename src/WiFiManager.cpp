@@ -1625,12 +1625,8 @@ void WiFiManager::handleAPI() { server.send(200, "application/json", generateSta
 void WiFiManager::handleBatteryStatus() {
   auto& powerManager = PowerManager::getInstance();
   float voltage = powerManager.getBatteryVoltage();
+  float percentage = powerManager.getBatteryPercent();  // Uses LiPo discharge curve
   bool isCharging = powerManager.isUSBPowered();
-  
-  // Calculate battery percentage for LiPo (3.2V - 4.2V range)
-  float percentage = constrain((voltage - LEDConfig::BATTERY_MIN_V) / 
-                                (LEDConfig::BATTERY_MAX_V - LEDConfig::BATTERY_MIN_V) * 100.0f,
-                                0.0f, 100.0f);
   
   // Create JSON response
   String json = "{";

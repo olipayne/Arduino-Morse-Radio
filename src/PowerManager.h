@@ -18,10 +18,6 @@ class PowerManager {
   enum class SleepReason { POWER_OFF, INACTIVITY, BATTERY_CRITICAL };
 
   // Constants
-  static constexpr float LOW_BATTERY_THRESHOLD = 3.3;          // LiPo should not go below 3.3V
-  static constexpr float MAX_BATTERY_VOLTAGE = 4.2;            // Fully charged LiPo
-  static constexpr float FULLY_CHARGED_THRESHOLD = 4.15;       // Very close to full charge
-  static constexpr float MIN_BATTERY_VOLTAGE = 3.2;            // Absolute minimum - protect battery
   static constexpr int POTENTIOMETER_THRESHOLD = 100;
 
   // Public methods
@@ -31,6 +27,7 @@ class PowerManager {
   bool checkForInputChanges();
   void resetActivityTimer(const char* reason = nullptr);
   float getBatteryVoltage();
+  float getBatteryPercent();  // Returns battery percentage using LiPo discharge curve
   bool isLowBattery();
   bool isUSBPowered() { return ums3.getVbusPresent(); }
   void updatePowerLED();
@@ -59,6 +56,21 @@ class PowerManager {
   void shutdownAllPins();
   void updatePinStates();
   void updatePowerIndicators(bool powerOn);
+  
+  // LiPo battery percentage calculation using discharge curve lookup table
+  static float voltageToPercent(float voltage);
+  
+  // LiPo discharge curve lookup table (voltage -> percentage)
+  // Based on typical single-cell LiPo discharge characteristics
+  static constexpr int LIPO_CURVE_POINTS = 12;
+  static constexpr float LIPO_VOLTAGE_TABLE[LIPO_CURVE_POINTS] = {
+    4.20f, 4.15f, 4.10f, 4.00f, 3.90f, 3.80f,
+    3.70f, 3.60f, 3.50f, 3.40f, 3.30f, 3.20f
+  };
+  static constexpr float LIPO_PERCENT_TABLE[LIPO_CURVE_POINTS] = {
+    100.0f, 95.0f, 90.0f, 80.0f, 65.0f, 50.0f,
+    35.0f, 20.0f, 12.0f, 6.0f, 2.0f, 0.0f
+  };
 
   // Task handle for LED control
   TaskHandle_t ledTaskHandle = nullptr;
