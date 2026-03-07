@@ -22,3 +22,4 @@ This project uses `release-please` as the only release mechanism.
 - Do not manually bump `VERSION` for normal releases.
 - Do not manually create release tags.
 - `include/Version.h` is generated during builds from `VERSION` and git state.
+- Use conventional commits so release-please can calculate the next version correctly.
