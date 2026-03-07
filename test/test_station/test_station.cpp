@@ -1,6 +1,6 @@
 #include <unity.h>
-#include "Config.h"
-#include "Station.h"
+#include "../mocks/Config.h"
+#include "../mocks/Station.h"
 
 // Test the Station constructor and getters
 void test_station_constructor_and_getters() {

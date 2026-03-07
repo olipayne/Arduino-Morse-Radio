@@ -1,7 +1,12 @@
 #include <unity.h>
-#include "Config.h"
-#include "ConfigManager.h"
-#include "WaveBandManager.h"
+#include "../mocks/Config.h"
+#include "../mocks/ConfigManager.h"
+#include "../mocks/WaveBandManager.h"
+
+ConfigManager& ConfigManager::getInstance() {
+  static ConfigManager instance;
+  return instance;
+}
 
 // Mock Arduino functions
 int _digitalRead_values[50] = {0};
@@ -13,12 +18,6 @@ void digitalWrite(int pin, int value) {
 
 void pinMode(int pin, int mode) {
   // Mock implementation
-}
-
-// Mock ConfigManager implementation
-ConfigManager& ConfigManager::getInstance() {
-  static ConfigManager instance;
-  return instance;
 }
 
 // Test the WaveBandManager update method with the swapped logic

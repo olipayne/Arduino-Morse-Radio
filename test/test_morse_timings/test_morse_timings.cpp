@@ -1,5 +1,6 @@
 #include <unity.h>
-#include "Config.h"
+#include "../mocks/Config.h"
+#include "../mocks/Config.cpp"
 
 void setUp(void) {
   // No setup needed

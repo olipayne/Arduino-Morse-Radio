@@ -1,6 +1,11 @@
 #include <stdio.h>
 #include <unity.h>
-#include "SpeedManager.h"
+#include "../mocks/SpeedManager.h"
+
+ConfigManager& ConfigManager::getInstance() {
+  static ConfigManager instance;
+  return instance;
+}
 
 // Mock Arduino functions
 int digitalReadValues[100] = {0};
@@ -34,30 +39,6 @@ int ledcWriteValue = 0;
 void ledcWrite(uint8_t channel, uint32_t duty) {
   printf("ledcWrite called with channel %d, duty %d\n", channel, duty);
   ledcWriteValue = duty;
-}
-
-// Mock ConfigManager
-MorseSpeed currentSpeed = MorseSpeed::MEDIUM;
-
-// Create a mock implementation of ConfigManager
-class MockConfigManager {
- public:
-  static MockConfigManager& getInstance() {
-    static MockConfigManager instance;
-    return instance;
-  }
-
-  void setMorseSpeed(MorseSpeed speed) {
-    printf("Setting speed to: %d\n", static_cast<int>(speed));
-    currentSpeed = speed;
-  }
-
-  MorseSpeed getMorseSpeed() const { return currentSpeed; }
-};
-
-// Override ConfigManager::getInstance to return our mock
-ConfigManager& ConfigManager::getInstance() {
-  return reinterpret_cast<ConfigManager&>(MockConfigManager::getInstance());
 }
 
 void setUp(void) {
