@@ -17,6 +17,12 @@ This project uses `release-please` as the only release mechanism.
 
 - Enable `Settings -> Actions -> General -> Allow GitHub Actions to create and approve pull requests`.
 
+## Local Hook Setup
+
+- Install `prek`.
+- Run `prek install` in this repository.
+- Local `commit-msg` validation is defined in `prek.toml`.
+
 ## Notes
 
 - Do not manually bump `VERSION` for normal releases.

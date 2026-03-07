@@ -1,21 +1,14 @@
 {
   "name": "radio",
   "version": "1.0.0",
-  "main": "commitlint.config.js",
   "directories": {
     "lib": "lib",
     "test": "test"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "prepare": "husky"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
-  "description": "",
-  "devDependencies": {
-    "husky": "^9.0.0",
-    "@commitlint/cli": "^17.8.1",
-    "@commitlint/config-conventional": "^17.8.1"
-  }
+  "description": ""
 }
