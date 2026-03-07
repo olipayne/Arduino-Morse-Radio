@@ -2,10 +2,11 @@
 #define POWERMANAGER_H
 
 #include <Arduino.h>
-#include <UMS3.h>
 #include "Config.h"
 #include "MorseCode.h"
 #include "PotentiometerReader.h"
+
+class UMS3;
 
 class PowerManager {
  public:
@@ -29,7 +30,7 @@ class PowerManager {
   float getBatteryVoltage();
   float getBatteryPercent();  // Returns battery percentage using LiPo discharge curve
   bool isLowBattery();
-  bool isUSBPowered() { return ums3.getVbusPresent(); }
+  bool isUSBPowered();
   void updatePowerLED();
   void displayBatteryLevel();
   void enterDeepSleep(SleepReason reason = SleepReason::POWER_OFF);
@@ -45,7 +46,8 @@ class PowerManager {
   bool isInOTABootWindow() const;
 
  private:
-  PowerManager() : tuningPot(Pins::TUNING_POT), volumePot(Pins::VOLUME_POT) {}
+  PowerManager();
+  ~PowerManager();
   PowerManager(const PowerManager&) = delete;
   PowerManager& operator=(const PowerManager&) = delete;
 
@@ -97,7 +99,7 @@ class PowerManager {
   PotentiometerReader volumePot;
 
   // Hardware instance
-  UMS3 ums3;
+  UMS3* ums3 = nullptr;
 
   // OTA boot sequence detection
   unsigned long bootTime = 0;

@@ -5,6 +5,11 @@
 #include "driver/gpio.h"
 #include "driver/rtc_io.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcpp"
+#include <UMS3.h>
+#pragma GCC diagnostic pop
+
 // PowerManager implementation
 // The power switch is configured with:
 // - Maximum drive strength pull-up
@@ -15,9 +20,14 @@
 static RTC_DATA_ATTR bool justWentToSleep = false;  // Flag to indicate we just went to sleep
 static RTC_DATA_ATTR bool rtcInitialized = false;   // Flag to track if RTC GPIO is initialized
 
-// Initialize potentiometers
-PotentiometerReader tuningPot(Pins::TUNING_POT);
-PotentiometerReader volumePot(Pins::VOLUME_POT);
+PowerManager::PowerManager() : tuningPot(Pins::TUNING_POT), volumePot(Pins::VOLUME_POT), ums3(new UMS3) {}
+
+PowerManager::~PowerManager() {
+  delete ums3;
+  ums3 = nullptr;
+}
+
+bool PowerManager::isUSBPowered() { return ums3 != nullptr && ums3->getVbusPresent(); }
 
 void PowerManager::begin() {
   // Stop Bluetooth if running (quick check, low overhead if already stopped)
@@ -30,7 +40,7 @@ void PowerManager::begin() {
   resetActivityTimer("System Boot");
 
   // Initialize UMS3
-  ums3.begin();
+  ums3->begin();
 
   // One-time RTC GPIO initialization
   if (!rtcInitialized) {
@@ -73,7 +83,7 @@ void PowerManager::begin() {
   updatePowerIndicators(true);
 
   // Enable the 3.3V 1 power supply
-  ums3.setLDO2Power(true);
+  ums3->setLDO2Power(true);
 
   // Configure ADC for power efficiency
   configureADC();
@@ -130,12 +140,12 @@ void PowerManager::LEDTaskCode(void* parameter) {
   lastBatteryReadTime = startTime;
 
   // Cache previous values to only update LED when they change
-  bool lastUsbConnected = powerManager->ums3.getVbusPresent();
+  bool lastUsbConnected = powerManager->ums3->getVbusPresent();
   uint8_t lastBrightness = 0;
   bool lastFlashState = false;
 
   while (true) {
-    bool usbConnected = powerManager->ums3.getVbusPresent();
+    bool usbConnected = powerManager->ums3->getVbusPresent();
     uint32_t currentTime = millis();
     bool needsUpdate = false;
     uint8_t newBrightness = lastBrightness;
@@ -355,7 +365,7 @@ int PowerManager::readADCRaw(int pin) {
   return analogRead(pin);
 }
 
-float PowerManager::getBatteryVoltage() { return ums3.getBatteryVoltage(); }
+float PowerManager::getBatteryVoltage() { return ums3->getBatteryVoltage(); }
 
 float PowerManager::getBatteryPercent() { return voltageToPercent(getBatteryVoltage()); }
 
@@ -397,23 +407,23 @@ bool PowerManager::isLowBattery() {
 void PowerManager::displayBatteryStatus() {
   float voltage = getBatteryVoltage();
   float percent = voltageToPercent(voltage);
-  bool isPluggedIn = ums3.getVbusPresent();
+  bool isPluggedIn = ums3->getVbusPresent();
 
-  ums3.setPixelBrightness(10);
+  ums3->setPixelBrightness(10);
 
   if (isPluggedIn) {
-    ums3.setPixelBrightness(50);
+    ums3->setPixelBrightness(50);
   } else {
-    ums3.setPixelBrightness(10);
+    ums3->setPixelBrightness(10);
   }
   // Battery status display based on actual percentage
   // Using LiPo curve: >60% = Green, 25-60% = Yellow, <25% = Red
   if (percent >= 60.0f) {
-    ums3.setPixelColor(0, 255, 0);  // Good charge - Green
+    ums3->setPixelColor(0, 255, 0);  // Good charge - Green
   } else if (percent >= 25.0f) {
-    ums3.setPixelColor(255, 255, 0);  // Moderate charge - Yellow
+    ums3->setPixelColor(255, 255, 0);  // Moderate charge - Yellow
   } else {
-    ums3.setPixelColor(255, 0, 0);  // Low Battery - Red
+    ums3->setPixelColor(255, 0, 0);  // Low Battery - Red
   }
 }
 

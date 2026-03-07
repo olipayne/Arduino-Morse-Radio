@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <Preferences.h>
+#include "Esp32ArduinoCompat.h"
 
 /**
  * Pin Configuration Namespace

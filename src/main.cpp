@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include <TaskScheduler.h>
-#include <UMS3.h>
 #include <esp_ota_ops.h>
 #include <esp_sleep.h>
 
