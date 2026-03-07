@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.1.1](https://github.com/olipayne/Arduino-Morse-Radio/compare/v3.1.0...v3.1.1) (2026-03-07)
+
+
+### Bug Fixes
+
+* include Version.h in release-please version bumps ([999b463](https://github.com/olipayne/Arduino-Morse-Radio/commit/999b46368f84f7eb5e2ba9b3a1a9a5b25bc85cd5))
+* mark firmware version define for release-please updates ([ed411c4](https://github.com/olipayne/Arduino-Morse-Radio/commit/ed411c44fdf7dc4f7f818814b61364895d40e6e7))
+
 ## [3.1.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v3.0.2...v3.1.0) (2026-03-07)
 
 
