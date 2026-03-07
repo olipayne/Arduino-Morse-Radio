@@ -7,6 +7,14 @@
 
 
 
+## [3.0.1](https://github.com/olipayne/Arduino-Morse-Radio/compare/v3.0.0...v3.0.1) (2026-03-07)
+
+
+### Bug Fixes
+
+* **deps:** bump PlatformIO libraries to latest patch versions ([770806d](https://github.com/olipayne/Arduino-Morse-Radio/commit/770806db638d08bc4b9c589e3634baab2264d4ed))
+* use repo token secret for release-please publishing ([e408b03](https://github.com/olipayne/Arduino-Morse-Radio/commit/e408b03bb157d1568c5a3661295c6733519c1491))
+
 ## [3.0.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v2.0.0...v3.0.0) (2026-03-07)
 
 
