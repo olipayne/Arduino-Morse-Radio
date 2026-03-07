@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.1.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v3.0.2...v3.1.0) (2026-03-07)
+
+
+### Features
+
+* add metrics ingestion pipeline and restore device responsiveness ([2e5cb93](https://github.com/olipayne/Arduino-Morse-Radio/commit/2e5cb935ad333fec5e08f90357c79b43cf417c0f))
+
+
+### Performance Improvements
+
+* reduce safe idle power overhead in runtime loops ([e028081](https://github.com/olipayne/Arduino-Morse-Radio/commit/e028081953d2766a2b7dd674c7aa2dac1cc794e7))
+
 ## [3.0.2](https://github.com/olipayne/Arduino-Morse-Radio/compare/v3.0.1...v3.0.2) (2026-03-07)
 
 
