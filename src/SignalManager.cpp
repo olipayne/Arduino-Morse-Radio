@@ -18,20 +18,20 @@ void SignalManager::begin() {
 }
 
 void SignalManager::updateLockStatus(bool locked) {
-  // Update lock LED status
+  if (locked == isLocked) {
+    return;
+  }
   digitalWrite(Pins::LOCK_LED, locked ? HIGH : LOW);
   isLocked = locked;
 }
 
 void SignalManager::updateSignalStrength(int strength) {
-  // Map signal strength to PWM value (0-255)
-  int pwmValue = map(strength, 0, 255, 0, 255);
-
-  // Update carrier PWM to indicate signal strength
+  int pwmValue = constrain(strength, 0, 255);
+  if (pwmValue == currentSignalStrength) {
+    return;
+  }
   ledcWrite(PWMChannels::CARRIER, pwmValue);
-
-  // Store current signal strength
-  currentSignalStrength = strength;
+  currentSignalStrength = pwmValue;
 }
 
 void SignalManager::debugPrint(bool locked, const char* stationName, int signalStrength) {

@@ -16,20 +16,30 @@ void SpeedManager::update() {
   bool slowSwitch = (digitalRead(Pins::SLOW_DECODE) == LOW);
   bool medSwitch = (digitalRead(Pins::MED_DECODE) == LOW);
 
-  // Determine the speed based on switch states and set corresponding voltage
+  MorseSpeed targetSpeed = MorseSpeed::MEDIUM;
+  int pwmDuty = 171;
+
   if (slowSwitch) {
     // SLOW switch works as expected
-    config.setMorseSpeed(MorseSpeed::SLOW);
-    ledcWrite(PWMChannels::DECODE, 85);  // 1.1V (33% of 3.3V)
+    targetSpeed = MorseSpeed::SLOW;
+    pwmDuty = 85;  // 1.1V (33% of 3.3V)
   } else if (medSwitch) {
     // Swapped: MED switch now selects FAST speed
     // This is because the hardware was changed from rotary to toggle switches
-    config.setMorseSpeed(MorseSpeed::FAST);
-    ledcWrite(PWMChannels::DECODE, 255);  // 3.3V (100% of 3.3V)
-  } else {
-    // Swapped: Default (no switch pressed) is now MEDIUM speed
-    // This is because the hardware was changed from rotary to toggle switches
-    config.setMorseSpeed(MorseSpeed::MEDIUM);
-    ledcWrite(PWMChannels::DECODE, 171);  // 2.2V (67% of 3.3V)
+    targetSpeed = MorseSpeed::FAST;
+    pwmDuty = 255;  // 3.3V (100% of 3.3V)
   }
+
+  static bool initialized = false;
+  static MorseSpeed lastSpeed = MorseSpeed::MEDIUM;
+  static int lastDuty = 171;
+  if (initialized && targetSpeed == lastSpeed && pwmDuty == lastDuty) {
+    return;
+  }
+
+  config.setMorseSpeed(targetSpeed);
+  ledcWrite(PWMChannels::DECODE, pwmDuty);
+  lastSpeed = targetSpeed;
+  lastDuty = pwmDuty;
+  initialized = true;
 }

@@ -1200,7 +1200,16 @@ void WiFiManager::handleSaveConfig() {
 #endif
 
     if (frequency > 0) {
-      stationManager.updateStation(index, frequency, stationMessage, enabled);
+      Station* stationToUpdate = stationManager.getStation(index);
+      if (stationToUpdate == nullptr || stationMessage == nullptr) {
+        success = false;
+        message = "Invalid station data for station " + String(index);
+        break;
+      }
+
+      stationToUpdate->setFrequency(frequency);
+      stationToUpdate->setMessage(stationMessage);
+      stationToUpdate->setEnabled(enabled);
 #ifdef DEBUG_SERIAL_OUTPUT
       Serial.printf("Updated station %d\n", index);
 #endif
@@ -1727,11 +1736,18 @@ void WiFiManager::handleImportMessages() {
   int importedCount = 0;
 
   for (JsonObject stationObj : stations) {
+    if (!stationObj["index"].is<int>() || !stationObj["message"].is<const char*>()) {
+      continue;
+    }
+
     int index = stationObj["index"];
     Station* station = stationManager.getStation(index);
-    
-    if (station && stationObj["message"].is<const char*>()) {
-      const char* newMessage = stationObj["message"];
+
+    if (station) {
+      const char* newMessage = stationObj["message"].as<const char*>();
+      if (newMessage == nullptr) {
+        continue;
+      }
       station->setMessage(newMessage);
       
       if (stationObj["enabled"].is<bool>()) {
