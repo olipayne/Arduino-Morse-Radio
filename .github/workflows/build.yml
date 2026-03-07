@@ -1,20 +1,31 @@
-name: Build and Release
+name: Build Firmware
 
 on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
-  build-and-release:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Fetch all history for versioning
+          fetch-depth: 0
 
-      - uses: actions/cache@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Cache PlatformIO dependencies
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cache/pip
@@ -25,188 +36,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pio-
 
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.13'
-
       - name: Install PlatformIO Core
         run: pip install --upgrade platformio
 
-      # Calculate the version number
-      - name: Calculate Next Version
-        id: semver
-        run: |
-          # Get the latest tag
-          latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-          echo "Latest tag: $latest_tag"
-          
-          # Remove 'v' prefix
-          latest_version=${latest_tag#v}
-          
-          # Split into major, minor, patch
-          IFS='.' read -r -a version_parts <<< "$latest_version"
-          major="${version_parts[0]}"
-          minor="${version_parts[1]}"
-          patch="${version_parts[2]}"
-          
-          # Check commits since last tag for semantic versioning keywords
-          commits=$(git log --pretty=format:"%s" $latest_tag..HEAD)
-          
-          # Check if we have a major version bump (breaking change)
-          if echo "$commits" | grep -q "BREAKING CHANGE\|feat!:"; then
-            major=$((major + 1))
-            minor=0
-            patch=0
-          # Check if we have a minor version bump (new feature)
-          elif echo "$commits" | grep -q "^feat"; then
-            minor=$((minor + 1))
-            patch=0
-          # Otherwise, bump patch (fixes, docs, etc.)
-          elif [[ -n "$commits" ]]; then
-            patch=$((patch + 1))
-          fi
-          
-          # Set the new version
-          new_version="$major.$minor.$patch"
-          echo "new_version=$new_version" >> $GITHUB_OUTPUT
-          echo "New version will be: v$new_version"
-
-      - name: Check if version already exists
-        id: check-version
-        run: |
-          VERSION="v${{ steps.semver.outputs.new_version }}"
-          if git tag -l $VERSION | grep -q .; then
-            echo "Version $VERSION already exists, skipping release"
-            echo "skip_release=true" >> $GITHUB_OUTPUT
-          else
-            echo "Version $VERSION will be created"
-            echo "skip_release=false" >> $GITHUB_OUTPUT
-          fi
-
-      # Update Version.h with the new version number
-      - name: Update Version.h
-        if: steps.check-version.outputs.skip_release == 'false'
-        run: |
-          VERSION="v${{ steps.semver.outputs.new_version }}"
-          
-          # Make sure the include directory exists
-          mkdir -p include
-          
-          # Create Version.h with the clean version number
-          echo '#ifndef VERSION_H' > include/Version.h
-          echo '#define VERSION_H' >> include/Version.h
-          echo '' >> include/Version.h
-          echo '// Automatically generated for release - do not edit manually' >> include/Version.h
-          echo "#define FIRMWARE_VERSION \"$VERSION\"" >> include/Version.h
-          echo '' >> include/Version.h
-          echo '#endif // VERSION_H' >> include/Version.h
-          
-          # Show the generated file
-          cat include/Version.h
-
-      # Commit the Version.h file
-      - name: Commit Version.h
-        if: steps.check-version.outputs.skip_release == 'false'
-        run: |
-          VERSION="v${{ steps.semver.outputs.new_version }}"
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add include/Version.h
-          git commit -m "chore: update version to $VERSION"
-          echo "Version.h committed with new version $VERSION"
-
-      # Build with the committed Version.h
       - name: Build Release Binary
-        if: steps.check-version.outputs.skip_release == 'false'
         run: pio run -e release
-        id: release_build
 
       - name: Build Debug Binary
-        if: steps.check-version.outputs.skip_release == 'false'
         run: pio run -e debug
-        id: debug_build
-
-      # Process the binaries for release
-      - name: Process Release Binaries
-        if: steps.check-version.outputs.skip_release == 'false'
-        run: |
-          VERSION="v${{ steps.semver.outputs.new_version }}"
-          echo "Building version: ${VERSION}"
-          
-          # Merge release binary
-          ~/.platformio/packages/tool-esptoolpy/esptool.py --chip esp32s3 merge_bin --output .pio/build/release/merged-flash.bin --flash_mode dio --flash_size=keep 0x0 .pio/build/release/bootloader.bin 0x8000 .pio/build/release/partitions.bin 0x10000 .pio/build/release/firmware.bin
-          mv .pio/build/release/merged-flash.bin .pio/build/release/firmware-${VERSION}-release.bin
-
-          # Merge debug binary
-          ~/.platformio/packages/tool-esptoolpy/esptool.py --chip esp32s3 merge_bin --output .pio/build/debug/merged-flash.bin --flash_mode dio --flash_size=keep 0x0 .pio/build/debug/bootloader.bin 0x8000 .pio/build/debug/partitions.bin 0x10000 .pio/build/debug/firmware.bin
-          mv .pio/build/debug/merged-flash.bin .pio/build/debug/firmware-${VERSION}-debug.bin
-          
-          # Create OTA-specific binaries (firmware only, no bootloader or partition table)
-          cp .pio/build/release/firmware.bin .pio/build/release/firmware-${VERSION}-release-ota.bin
-          cp .pio/build/debug/firmware.bin .pio/build/debug/firmware-${VERSION}-debug-ota.bin
-
-      - name: Generate Changelog
-        if: steps.check-version.outputs.skip_release == 'false'
-        id: changelog
-        run: |
-          # Get commits since last tag
-          latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          
-          if [ -z "$latest_tag" ]; then
-            # No tags yet, get all commits
-            COMMITS=$(git log --pretty=format:"* %s (%h)" --reverse)
-          else
-            # Get commits since last tag
-            COMMITS=$(git log --pretty=format:"* %s (%h)" ${latest_tag}..HEAD --reverse)
-          fi
-          
-          # Format changelog by type
-          FEATURES=$(echo "$COMMITS" | grep "^* feat" || echo "")
-          FIXES=$(echo "$COMMITS" | grep "^* fix" || echo "")
-          OTHER=$(echo "$COMMITS" | grep -v "^* feat\|^* fix" || echo "")
-          
-          # Create markdown changelog
-          CHANGELOG="## What's Changed\n\n"
-          
-          if [ -n "$FEATURES" ]; then
-            CHANGELOG+="### 🚀 Features\n$FEATURES\n\n"
-          fi
-          
-          if [ -n "$FIXES" ]; then
-            CHANGELOG+="### 🐛 Bug Fixes\n$FIXES\n\n"
-          fi
-          
-          if [ -n "$OTHER" ]; then
-            CHANGELOG+="### 🔧 Other Changes\n$OTHER\n\n"
-          fi
-          
-          # Set output
-          echo "changelog<<EOF" >> $GITHUB_OUTPUT
-          echo -e "$CHANGELOG" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-      # Create tag and push both commit and tag
-      - name: Create and Push Tag
-        if: steps.check-version.outputs.skip_release == 'false'
-        run: |
-          VERSION="v${{ steps.semver.outputs.new_version }}"
-          git tag -a $VERSION -m "Release $VERSION"
-          git push origin HEAD:main
-          git push origin $VERSION
-
-      - name: Create Release
-        if: steps.check-version.outputs.skip_release == 'false'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ steps.semver.outputs.new_version }}
-          name: Release v${{ steps.semver.outputs.new_version }}
-          body: ${{ steps.changelog.outputs.changelog }}
-          files: |
-            .pio/build/release/firmware-v${{ steps.semver.outputs.new_version }}-release.bin
-            .pio/build/debug/firmware-v${{ steps.semver.outputs.new_version }}-debug.bin
-            .pio/build/release/firmware-v${{ steps.semver.outputs.new_version }}-release-ota.bin
-            .pio/build/debug/firmware-v${{ steps.semver.outputs.new_version }}-debug-ota.bin
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

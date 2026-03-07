@@ -1,22 +1,46 @@
-name: Build and Release Binaries
+name: Release Please
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
 
 jobs:
-  build-and-release:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+
+    steps:
+      - name: Run release-please
+        id: release
+        uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  build-and-upload:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created == 'true' }}
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
+      - name: Checkout release tag
+        uses: actions/checkout@v4
         with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v5
         with:
           python-version: '3.13'
 
@@ -37,47 +61,35 @@ jobs:
           pip install --upgrade platformio
           pip install esptool
 
-      - name: Extract version from tag
-        id: get_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-
       - name: Build Release Binary
         run: pio run -e release
 
       - name: Build Debug Binary
         run: pio run -e debug
 
-      - name: Process Release Binaries
+      - name: Process release binaries
         run: |
-          VERSION=${{ steps.get_version.outputs.VERSION }}
+          VERSION=${{ needs.release-please.outputs.tag_name }}
           echo "Building version: ${VERSION}"
-          
-          # Debug: Check which esptool we're using
-          which esptool.py || echo "esptool.py not in PATH"
-          python -m esptool version
-          
-          # Use pip-installed esptool to merge binaries
+
           python -m esptool --chip esp32s3 merge_bin --output .pio/build/release/merged-flash.bin --flash_mode dio --flash_size=keep 0x0 .pio/build/release/bootloader.bin 0x8000 .pio/build/release/partitions.bin 0x10000 .pio/build/release/firmware.bin
           mv .pio/build/release/merged-flash.bin .pio/build/release/firmware-${VERSION}-release.bin
 
-          # Merge debug binary
           python -m esptool --chip esp32s3 merge_bin --output .pio/build/debug/merged-flash.bin --flash_mode dio --flash_size=keep 0x0 .pio/build/debug/bootloader.bin 0x8000 .pio/build/debug/partitions.bin 0x10000 .pio/build/debug/firmware.bin
           mv .pio/build/debug/merged-flash.bin .pio/build/debug/firmware-${VERSION}-debug.bin
-          
-          # Create OTA-specific binaries (firmware only, no bootloader or partition table)
+
           cp .pio/build/release/firmware.bin .pio/build/release/firmware-${VERSION}-release-ota.bin
           cp .pio/build/debug/firmware.bin .pio/build/debug/firmware-${VERSION}-debug-ota.bin
 
-      - name: Create Release
+      - name: Upload firmware assets to release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ needs.release-please.outputs.tag_name }}
           files: |
-            .pio/build/release/firmware-${{ steps.get_version.outputs.VERSION }}-release.bin
-            .pio/build/debug/firmware-${{ steps.get_version.outputs.VERSION }}-debug.bin
-            .pio/build/release/firmware-${{ steps.get_version.outputs.VERSION }}-release-ota.bin
-            .pio/build/debug/firmware-${{ steps.get_version.outputs.VERSION }}-debug-ota.bin
-          generate_release_notes: true
-          draft: false
-          prerelease: false
+            .pio/build/release/firmware-${{ needs.release-please.outputs.tag_name }}-release.bin
+            .pio/build/debug/firmware-${{ needs.release-please.outputs.tag_name }}-debug.bin
+            .pio/build/release/firmware-${{ needs.release-please.outputs.tag_name }}-release-ota.bin
+            .pio/build/debug/firmware-${{ needs.release-please.outputs.tag_name }}-debug-ota.bin
+          fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
