@@ -39,6 +39,9 @@ jobs:
       - name: Install PlatformIO Core
         run: pip install --upgrade platformio
 
+      - name: Run Native Unit Tests
+        run: pio test -e test
+
       - name: Build Release Binary
         run: pio run -e release
 
