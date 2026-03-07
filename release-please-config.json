@@ -12,7 +12,9 @@
       "include-v-in-tag": true,
       "draft": false,
       "prerelease": false,
-      "extra-files": []
+      "extra-files": [
+        "include/Version.h"
+      ]
     }
   }
 }
