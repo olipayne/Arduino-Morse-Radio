@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.2.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v3.1.1...v3.2.0) (2026-03-07)
+
+
+### Features
+
+* redesign settings battery status for mobile-first use ([bde4d65](https://github.com/olipayne/Arduino-Morse-Radio/commit/bde4d656b748be15f1c8e115fcdccf63a53af357))
+
 ## [3.1.1](https://github.com/olipayne/Arduino-Morse-Radio/compare/v3.1.0...v3.1.1) (2026-03-07)
 
 
