@@ -73,11 +73,12 @@ class RadioSystem {
       return;
     }
 
-    // Update power LED state
-    PowerManager::getInstance().updatePowerLED();
-
-    // Check for inactivity and manage power state
-    PowerManager::getInstance().checkActivity();
+    static unsigned long lastActivityCheck = 0;
+    unsigned long now = millis();
+    if (now - lastActivityCheck >= 50) {
+      PowerManager::getInstance().checkActivity();
+      lastActivityCheck = now;
+    }
 
     ts.execute();
     // Use yield() instead of delay(1) for better responsiveness and lower latency
@@ -156,9 +157,6 @@ void batteryCheckCallback() {
     power.enterDeepSleep(PowerManager::SleepReason::BATTERY_CRITICAL);
     return;
   }
-
-  // Let the LED task handle low battery indication
-  power.updatePowerLED();
 
 #ifdef DEBUG_SERIAL_OUTPUT
   Serial.printf_P(PSTR("Battery Voltage: %.2fV\n"), voltage);

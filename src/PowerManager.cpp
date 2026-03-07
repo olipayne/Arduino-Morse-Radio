@@ -66,7 +66,6 @@ void PowerManager::begin() {
   tuningPot.begin();
   volumePot.begin();
 
-  // Setup LED PWM channel for power LED
   ledcSetup(PWMChannels::POWER_LED, LEDConfig::PWM_FREQUENCY, LEDConfig::PWM_RESOLUTION);
   ledcAttachPin(Pins::POWER_LED, PWMChannels::POWER_LED);
 
@@ -87,10 +86,6 @@ void PowerManager::begin() {
 
   // Configure ADC for power efficiency
   configureADC();
-
-  // Initialize last known values
-  lastTuningValue = readADC(Pins::TUNING_POT);
-  lastVolumeValue = readADC(Pins::VOLUME_POT);
 
   // Initialize digital pin states with debounce
   updatePinStates();
@@ -119,13 +114,9 @@ void PowerManager::LEDTaskCode(void* parameter) {
   // Get pointer to PowerManager instance to access ums3
   PowerManager* powerManager = static_cast<PowerManager*>(parameter);
 
-  // Initialize PWM for LED
-  ledcSetup(PWMChannels::POWER_LED, LEDConfig::PWM_FREQUENCY, LEDConfig::PWM_RESOLUTION);
-  ledcAttachPin(Pins::POWER_LED, PWMChannels::POWER_LED);
-  ledcWrite(PWMChannels::POWER_LED, 0);  // Start with LED off
+  ledcWrite(PWMChannels::POWER_LED, 0);
 
   uint32_t startTime = millis();
-  const TickType_t xFrequency = pdMS_TO_TICKS(20);  // 50Hz update rate
   TickType_t xLastWakeTime = xTaskGetTickCount();
   uint32_t lastFlashTime = 0;
   uint32_t lastBatteryReadTime = 0;
@@ -142,7 +133,6 @@ void PowerManager::LEDTaskCode(void* parameter) {
   // Cache previous values to only update LED when they change
   bool lastUsbConnected = powerManager->ums3->getVbusPresent();
   uint8_t lastBrightness = 0;
-  bool lastFlashState = false;
 
   while (true) {
     bool usbConnected = powerManager->ums3->getVbusPresent();
@@ -201,7 +191,6 @@ void PowerManager::LEDTaskCode(void* parameter) {
           if (newBrightness != lastBrightness) {
             ledcWrite(PWMChannels::POWER_LED, newBrightness);
             lastBrightness = newBrightness;
-            lastFlashState = flashState;
           }
         }
       }
@@ -215,7 +204,7 @@ void PowerManager::LEDTaskCode(void* parameter) {
       }
     }
 
-    vTaskDelayUntil(&xLastWakeTime, xFrequency);
+    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));
   }
 }
 
@@ -236,12 +225,16 @@ void PowerManager::updatePowerLED() {
 }
 
 void PowerManager::shutdownAllPins() {
-  // Turn off all output pins except Power LED (handled by LED task)
+  ledcWrite(PWMChannels::POWER_LED, 0);
   digitalWrite(Pins::BACKLIGHT, LOW);
   digitalWrite(Pins::LW_LED, LOW);
   digitalWrite(Pins::MW_LED, LOW);
   digitalWrite(Pins::SW_LED, LOW);
   digitalWrite(Pins::LOCK_LED, LOW);
+
+  if (ums3 != nullptr) {
+    ums3->setLDO2Power(false);
+  }
 }
 
 void PowerManager::configurePins() {
@@ -287,16 +280,15 @@ void PowerManager::updatePinStates() {
 }
 
 bool PowerManager::checkForInputChanges() {
-  // First check power switch state
-  checkPowerSwitch();
+  static unsigned long lastInputScan = 0;
+  unsigned long now = millis();
+  if (now - lastInputScan < 50) {
+    return false;
+  }
+  lastInputScan = now;
 
   bool activity = false;
   const char* activityReason = nullptr;
-
-  // Update potentiometer values but don't track them as activity
-  // (station changes are tracked explicitly in main.cpp)
-  int currentTuning = readADC(Pins::TUNING_POT);
-  int currentVolume = readADC(Pins::VOLUME_POT);
 
   // Check digital inputs for state changes
   bool currentLWState = digitalRead(Pins::LW_BAND_SWITCH) == LOW;
@@ -331,8 +323,6 @@ bool PowerManager::checkForInputChanges() {
   }
 
   // Update stored states
-  lastTuningValue = currentTuning;
-  lastVolumeValue = currentVolume;
   lastLWState = currentLWState;
   lastMWState = currentMWState;
   lastSlowState = currentSlowState;
@@ -455,6 +445,8 @@ void PowerManager::displayBatteryLevel() {
 }
 
 void PowerManager::enterDeepSleep(SleepReason reason) {
+  stopLEDTask();
+
   // Prepare for sleep
   shutdownAllPins();
 

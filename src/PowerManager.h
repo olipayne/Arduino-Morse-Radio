@@ -82,8 +82,6 @@ class PowerManager {
   bool shouldPulse = false;
   static bool inactivitySleep;
   unsigned long lastActivityTime = 0;
-  int lastTuningValue = 0;
-  int lastVolumeValue = 0;
   uint8_t currentBrightness = 0;
   unsigned long lastFlashUpdate = 0;
 
