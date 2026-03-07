@@ -1,5 +1,6 @@
 #include "OTAManager.h"
 #include "AudioManager.h"
+#include "MetricsManager.h"
 #include "PowerManager.h"
 
 void OTAManager::addWiFiCredentials(const char* ssid, const char* password) {
@@ -29,6 +30,8 @@ OTAManager::UpdateResult OTAManager::checkAndUpdate() {
     stopLEDs();
     return UpdateResult::WIFI_FAILED;
   }
+
+  MetricsManager::getInstance().postMetricsBeforeOTAVersionCheck();
 
   // Step 2: Check for new version
   String latestVersion = getLatestVersion();

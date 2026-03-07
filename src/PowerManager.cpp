@@ -2,6 +2,7 @@
 #include "OTAConfig.h"
 #include "OTAManager.h"
 #include "PotentiometerReader.h"  // Include PotentiometerReader header
+#include "MetricsManager.h"
 #include "driver/gpio.h"
 #include "driver/rtc_io.h"
 
@@ -247,6 +248,7 @@ void PowerManager::configurePins() {
   pinMode(Pins::BACKLIGHT, OUTPUT);
 
   // Configure input pins
+  pinMode(Pins::POWER_SWITCH, INPUT_PULLUP);
   pinMode(Pins::LW_BAND_SWITCH, INPUT_PULLUP);
   pinMode(Pins::MW_BAND_SWITCH, INPUT_PULLUP);
   pinMode(Pins::SLOW_DECODE, INPUT_PULLUP);
@@ -445,6 +447,9 @@ void PowerManager::displayBatteryLevel() {
 }
 
 void PowerManager::enterDeepSleep(SleepReason reason) {
+  MetricsManager::getInstance().recordSleepEntry(static_cast<uint8_t>(reason), isUSBPowered(),
+                                                 getBatteryPercent());
+
   stopLEDTask();
 
   // Prepare for sleep
@@ -464,13 +469,18 @@ void PowerManager::enterDeepSleep(SleepReason reason) {
   // Configure wake-up on GPIO with pull-up (wake on button press - LOW)
   esp_sleep_enable_ext0_wakeup(static_cast<gpio_num_t>(Pins::POWER_SWITCH), 0);
 
+  if (isUSBPowered() && reason != SleepReason::BATTERY_CRITICAL &&
+      OTAConfig::METRICS_ENDPOINT[0] != '\0') {
+    esp_sleep_enable_timer_wakeup(
+        static_cast<uint64_t>(OTAConfig::METRICS_SLEEP_WAKE_INTERVAL_MS) * 1000ULL);
+  }
+
   // Enter deep sleep
   esp_deep_sleep_start();
 }
 
 void PowerManager::checkPowerSwitch() {
-  bool switchPressed =
-      !rtc_gpio_get_level(static_cast<gpio_num_t>(Pins::POWER_SWITCH));  // Active low with pull-up
+  bool switchPressed = (digitalRead(Pins::POWER_SWITCH) == LOW);
 
   // If momentary switch is pressed (connected to ground), go to sleep
   if (switchPressed) {

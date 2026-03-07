@@ -1,6 +1,8 @@
 #ifndef OTA_CONFIG_H
 #define OTA_CONFIG_H
 
+#include <stddef.h>
+
 /**
  * OTA Update Configuration
  *
@@ -35,6 +37,11 @@ constexpr unsigned long BOOT_WINDOW_MS = 5000;            // 5 seconds to trigge
 constexpr unsigned int REQUIRED_BUTTON_PRESSES = 3;       // Number of button presses needed
 constexpr unsigned long BUTTON_DEBOUNCE_MS = 200;         // Button debounce time
 constexpr unsigned long WIFI_CONNECT_TIMEOUT_MS = 30000;  // 30 seconds per WiFi attempt
+
+constexpr const char* METRICS_ENDPOINT =
+    "https://arduino-morse-metrics.olbol.workers.dev/ingest";
+constexpr unsigned long METRICS_SLEEP_WAKE_INTERVAL_MS = 30UL * 60UL * 1000UL;
+constexpr unsigned long METRICS_HTTP_TIMEOUT_MS = 10000;
 
 // LED Flash Configuration
 constexpr unsigned long LED_FLASH_INTERVAL_MS = 500;  // LED flash rate during update

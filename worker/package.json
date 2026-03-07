@@ -1,0 +1,21 @@
+{
+  "name": "arduino-morse-metrics-worker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "setup-schema": "node scripts/setup-schema.mjs",
+    "query-check": "node scripts/query-check.mjs"
+  },
+  "dependencies": {
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260302.0",
+    "@types/pg": "^8.15.5",
+    "typescript": "^5.9.2",
+    "wrangler": "^4.39.0"
+  }
+}

@@ -7,6 +7,7 @@
 #include "ButtonDebouncer.h"
 #include "Config.h"
 #include "MorseCode.h"
+#include "MetricsManager.h"
 #include "PowerManager.h"
 #include "SignalManager.h"
 #include "SpeedManager.h"
@@ -124,6 +125,11 @@ class RadioSystem {
  private:
   void initializeSubsystems() {
     PowerManager::getInstance().begin();
+    MetricsManager::getInstance().begin();
+    if (MetricsManager::getInstance().handleSleepWakeTelemetry()) {
+      return;
+    }
+
     ConfigManager::getInstance().begin();
     AudioManager::getInstance().begin();
     StationManager::getInstance().begin();
@@ -156,6 +162,10 @@ void batteryCheckCallback() {
   if (voltage <= LEDConfig::BATTERY_MIN_V) {
     power.enterDeepSleep(PowerManager::SleepReason::BATTERY_CRITICAL);
     return;
+  }
+
+  if (!WiFiManager::getInstance().isEnabled()) {
+    MetricsManager::getInstance().maybePostPluggedInTelemetry();
   }
 
 #ifdef DEBUG_SERIAL_OUTPUT
