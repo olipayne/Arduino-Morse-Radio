@@ -553,43 +553,69 @@ const char WiFiManager::CSS_STYLES[] PROGMEM = R"(
     }
 
     /* Battery indicator styles */
+    .battery-card .card-body {
+        padding: calc(var(--spacing) * 1.25);
+    }
+
     .battery-indicator {
-        display: flex;
-        align-items: center;
-        gap: calc(var(--spacing) * 0.75);
-        padding: calc(var(--spacing) * 1);
-        background: var(--header-background);
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: calc(var(--spacing) * 0.9);
+        padding: calc(var(--spacing) * 1.25);
+        background: linear-gradient(155deg, var(--header-background), transparent 65%);
+        border: 1px solid var(--border-color);
         border-radius: var(--border-radius);
-        margin-bottom: var(--spacing);
     }
 
-    .battery-icon {
-        position: relative;
-        width: 48px;
-        height: 24px;
-        border: 2px solid var(--text-color);
-        border-radius: 3px;
+    .battery-topline {
         display: flex;
-        align-items: center;
-        padding: 2px;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: calc(var(--spacing) * 0.75);
     }
 
-    .battery-icon::after {
+    .battery-label {
+        font-size: 0.85em;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        font-weight: 600;
+    }
+
+    .battery-percentage {
+        font-size: clamp(2.4rem, 9vw, 3.5rem);
+        line-height: 1;
+        font-weight: 750;
+        color: var(--text-color);
+    }
+
+    .battery-meter {
+        position: relative;
+        width: 100%;
+        height: 34px;
+        border: 2px solid var(--text-color);
+        border-radius: 8px;
+        padding: 3px;
+        background: var(--card-background);
+        overflow: hidden;
+    }
+
+    .battery-meter::after {
         content: '';
         position: absolute;
-        right: -4px;
+        right: 0;
         top: 50%;
-        transform: translateY(-50%);
-        width: 3px;
-        height: 12px;
+        transform: translate(100%, -50%);
+        width: 6px;
+        height: 16px;
+        border-radius: 0 3px 3px 0;
         background: var(--text-color);
-        border-radius: 0 2px 2px 0;
     }
 
     .battery-fill {
         height: 100%;
         background: var(--success-color);
-        border-radius: 2px;
+        border-radius: 4px;
         transition: width 0.5s ease, background-color 0.3s ease;
     }
 
@@ -602,30 +628,47 @@ const char WiFiManager::CSS_STYLES[] PROGMEM = R"(
     }
 
     .battery-info {
-        flex: 1;
         display: flex;
         flex-direction: column;
-        gap: calc(var(--spacing) * 0.25);
-    }
-
-    .battery-percentage {
-        font-size: 1.2em;
-        font-weight: 600;
-        color: var(--text-color);
+        gap: calc(var(--spacing) * 0.45);
     }
 
     .battery-voltage {
-        font-size: 0.9em;
+        font-size: 1.05em;
+        font-weight: 600;
         color: var(--text-muted);
     }
 
     .battery-status {
-        display: flex;
+        display: inline-flex;
         align-items: center;
-        gap: calc(var(--spacing) * 0.25);
+        gap: calc(var(--spacing) * 0.35);
+        width: fit-content;
         font-size: 0.85em;
+        font-weight: 600;
+        padding: calc(var(--spacing) * 0.25) calc(var(--spacing) * 0.6);
+        border-radius: 999px;
+        border: 1px solid var(--border-color);
+        color: var(--text-muted);
+        background: var(--card-background);
+    }
+
+    .battery-status.charging {
         color: var(--primary-color);
-        font-weight: 500;
+        border-color: rgba(33, 150, 243, 0.35);
+        background: rgba(33, 150, 243, 0.08);
+    }
+
+    .battery-status.low {
+        color: #8a4f00;
+        border-color: rgba(255, 152, 0, 0.35);
+        background: rgba(255, 152, 0, 0.12);
+    }
+
+    .battery-status.critical {
+        color: #8f130c;
+        border-color: rgba(244, 67, 54, 0.35);
+        background: rgba(244, 67, 54, 0.12);
     }
 
     .charging-icon {
@@ -641,6 +684,42 @@ const char WiFiManager::CSS_STYLES[] PROGMEM = R"(
     .battery-fill.charging {
         background: var(--primary-color);
         animation: charging-pulse 2s infinite;
+    }
+
+    @media (max-width: 480px) {
+        .battery-card .card-body {
+            padding: calc(var(--spacing) * 0.85);
+        }
+
+        .battery-indicator {
+            min-height: 40vh;
+            align-content: center;
+            gap: calc(var(--spacing) * 1.1);
+            padding: calc(var(--spacing) * 1.1);
+        }
+
+        .battery-topline {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: calc(var(--spacing) * 0.4);
+        }
+
+        .battery-percentage {
+            font-size: clamp(3.2rem, 18vw, 5.2rem);
+        }
+
+        .battery-meter {
+            height: 42px;
+        }
+
+        .battery-voltage {
+            font-size: 1.2em;
+        }
+
+        .battery-status {
+            font-size: 0.95em;
+            padding: calc(var(--spacing) * 0.3) calc(var(--spacing) * 0.75);
+        }
     }
 )";
 
@@ -1521,21 +1600,24 @@ String WiFiManager::generateSettingsPage() const {
   html += F("<a href='/settings' class='nav-link active'>Settings</a>");
   html += F("</div>");
 
-  html += F("<div class='card'>");
+  html += F("<div class='card battery-card'>");
   html += F("<div class='card-header'>");
   html += F("<h2>Battery Status</h2>");
   html += F("</div>");
   html += F("<div class='card-body'>");
   html += F("<div class='battery-indicator'>");
-  html += F("<div class='battery-icon'>");
+  html += F("<div class='battery-topline'>");
+  html += F("<div class='battery-label'>Current charge</div>");
+  html += F("<div class='battery-percentage' id='batteryPercentage'>--%</div>");
+  html += F("</div>");
+  html += F("<div class='battery-meter'>");
   html += F("<div class='battery-fill' id='batteryFill' style='width: 0%'></div>");
   html += F("</div>");
   html += F("<div class='battery-info'>");
-  html += F("<div class='battery-percentage' id='batteryPercentage'>--%</div>");
   html += F("<div class='battery-voltage' id='batteryVoltage'>-- V</div>");
-  html += F("<div class='battery-status' id='batteryStatus' style='display: none;'>");
-  html += F("<span class='charging-icon'>⚡</span>");
-  html += F("<span>Charging</span>");
+  html += F("<div class='battery-status' id='batteryStatus'>");
+  html += F("<span class='charging-icon' style='display: none;'>⚡</span>");
+  html += F("<span id='batteryStatusText'>Checking power source...</span>");
   html += F("</div>");
   html += F("</div>");
   html += F("</div>");
@@ -1571,22 +1653,34 @@ String WiFiManager::generateSettingsPage() const {
   html += F("      const percentageElement = document.getElementById('batteryPercentage');");
   html += F("      const voltageElement = document.getElementById('batteryVoltage');");
   html += F("      const statusElement = document.getElementById('batteryStatus');");
+  html += F("      const statusTextElement = document.getElementById('batteryStatusText');");
+  html += F("      const chargingIconElement = statusElement ? statusElement.querySelector('.charging-icon') : null;");
   html += F("      ");
-  html += F("      if (fillElement && percentageElement && voltageElement && statusElement) {");
-  html += F("        percentageElement.textContent = data.percentage + '%';");
+  html += F("      if (fillElement && percentageElement && voltageElement && statusElement && statusTextElement) {");
+  html += F("        const percentage = Math.max(0, Math.min(100, Number(data.percentage) || 0));");
+  html += F("        percentageElement.textContent = Math.round(percentage) + '%';");
   html += F("        voltageElement.textContent = data.voltage.toFixed(2) + ' V';");
-  html += F("        fillElement.style.width = data.percentage + '%';");
+  html += F("        fillElement.style.width = percentage + '%';");
   html += F("        ");
   html += F("        fillElement.classList.remove('low', 'critical', 'charging');");
+  html += F("        statusElement.classList.remove('charging', 'low', 'critical');");
   html += F("        if (data.isCharging) {");
   html += F("          fillElement.classList.add('charging');");
-  html += F("          statusElement.style.display = 'flex';");
+  html += F("          statusElement.classList.add('charging');");
+  html += F("          statusTextElement.textContent = 'Charging via USB';");
+  html += F("          if (chargingIconElement) chargingIconElement.style.display = 'inline-block';");
   html += F("        } else {");
-  html += F("          statusElement.style.display = 'none';");
-  html += F("          if (data.percentage < 10) {");
+  html += F("          if (chargingIconElement) chargingIconElement.style.display = 'none';");
+  html += F("          if (percentage < 10) {");
   html += F("            fillElement.classList.add('critical');");
-  html += F("          } else if (data.percentage < 30) {");
+  html += F("            statusElement.classList.add('critical');");
+  html += F("            statusTextElement.textContent = 'Critical battery level';");
+  html += F("          } else if (percentage < 30) {");
   html += F("            fillElement.classList.add('low');");
+  html += F("            statusElement.classList.add('low');");
+  html += F("            statusTextElement.textContent = 'Low battery';");
+  html += F("          } else {");
+  html += F("            statusTextElement.textContent = 'Running on battery';");
   html += F("          }");
   html += F("        }");
   html += F("      }");
