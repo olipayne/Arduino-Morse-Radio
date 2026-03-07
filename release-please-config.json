@@ -4,6 +4,8 @@
   "packages": {
     ".": {
       "package-name": "arduino-morse-radio",
+      "label": "release-please-pending",
+      "release-label": "release-please-tagged",
       "changelog-path": "CHANGELOG.md",
       "include-v-in-tag": true,
       "draft": false,
