@@ -1,6 +1,39 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "automerge": true,
+  "automergeType": "pr",
+  "platformAutomerge": true,
+  "ignoreTests": false,
   "extends": [
     "config:recommended"
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Track PlatformIO UMS3 Helper via explicit GitHub repo mapping",
+      "managerFilePatterns": [
+        "/^platformio\\.ini$/"
+      ],
+      "matchStrings": [
+        "unexpectedmaker/UMS3 Helper@\\^(?<currentValue>\\d+\\.\\d+\\.\\d+)"
+      ],
+      "depNameTemplate": "UnexpectedMaker/esp32s3-arduino-helper",
+      "datasourceTemplate": "github-tags",
+      "versioningTemplate": "semver-coerced",
+      "extractVersionTemplate": "^v?(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "description": "Track PlatformIO lib_deps declared as owner/repo@^x.y.z",
+      "managerFilePatterns": [
+        "/^platformio\\.ini$/"
+      ],
+      "matchStrings": [
+        "(?<depName>[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)@\\^(?<currentValue>\\d+\\.\\d+\\.\\d+)"
+      ],
+      "datasourceTemplate": "github-tags",
+      "versioningTemplate": "semver-coerced",
+      "extractVersionTemplate": "^v?(?<version>.*)$"
+    }
   ]
 }
