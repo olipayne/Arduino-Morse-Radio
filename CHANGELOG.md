@@ -1,11 +1,4 @@
-# [1.8.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.7.10...v1.8.0) (2025-03-16)
-
-
-### Features
-
-* add automated firmware versioning from Git tags ([27f070c](https://github.com/olipayne/Arduino-Morse-Radio/commit/27f070c24e61eead429dafc8214a9beb63ba59eb))
-
-
+# Changelog
 
 ## [3.0.1](https://github.com/olipayne/Arduino-Morse-Radio/compare/v3.0.0...v3.0.1) (2026-03-07)
 
@@ -344,6 +337,15 @@
 ### Code Refactoring
 
 * wow c++ in the 21st century ([9c1d183](https://github.com/olipayne/Arduino-Morse-Radio/commit/9c1d183b945035d8bd9cf255ba66e2cfb656c7f1))
+
+## [1.8.0](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.7.10...v1.8.0) (2025-03-16)
+
+
+### Features
+
+* add automated firmware versioning from Git tags ([27f070c](https://github.com/olipayne/Arduino-Morse-Radio/commit/27f070c24e61eead429dafc8214a9beb63ba59eb))
+
+
 
 ## [1.7.10](https://github.com/olipayne/Arduino-Morse-Radio/compare/v1.7.9...v1.7.10) (2025-03-16)
 
