@@ -61,6 +61,17 @@ jobs:
           pip install --upgrade platformio
           pip install esptool
 
+      - name: Sync VERSION from release tag
+        run: |
+          TAG=${{ needs.release-please.outputs.tag_name }}
+          VERSION=$(printf "%s" "$TAG" | sed -E 's/.*v?([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+          if [ -z "$VERSION" ]; then
+            echo "Unable to parse semantic version from tag: $TAG"
+            exit 1
+          fi
+          printf "%s\n" "$VERSION" > VERSION
+          echo "Using VERSION=$VERSION from tag=$TAG"
+
       - name: Build Release Binary
         run: pio run -e release
 

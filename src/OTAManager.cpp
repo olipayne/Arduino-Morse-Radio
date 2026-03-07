@@ -136,16 +136,40 @@ String OTAManager::getLatestVersion() {
 
   String tagName = doc["tag_name"].as<String>();
 
-  // Remove 'v' prefix if present
-  if (tagName.startsWith("v")) {
-    tagName = tagName.substring(1);
+  String parsedVersion = "";
+  bool started = false;
+  for (size_t i = 0; i < tagName.length(); i++) {
+    char c = tagName.charAt(i);
+    bool isDigit = (c >= '0' && c <= '9');
+    bool isDot = (c == '.');
+
+    if (!started) {
+      if (isDigit) {
+        started = true;
+        parsedVersion += c;
+      }
+      continue;
+    }
+
+    if (isDigit || isDot) {
+      parsedVersion += c;
+    } else {
+      break;
+    }
+  }
+
+  if (parsedVersion.isEmpty()) {
+#ifdef DEBUG_SERIAL_OUTPUT
+    Serial.printf("Failed to parse semantic version from tag '%s'\n", tagName.c_str());
+#endif
+    return "";
   }
 
 #ifdef DEBUG_SERIAL_OUTPUT
-  Serial.printf("Latest version: %s\n", tagName.c_str());
+  Serial.printf("Latest version: %s (from tag: %s)\n", parsedVersion.c_str(), tagName.c_str());
 #endif
 
-  return tagName;
+  return parsedVersion;
 }
 
 bool OTAManager::downloadAndInstall(const String& version) {
@@ -308,8 +332,8 @@ bool OTAManager::isNewerVersion(const String& remoteVersion, const String& curre
   // Simple version comparison - assumes semantic versioning (X.Y.Z)
   // This is a basic implementation - you might want to use a more robust version comparison
 
-  int remoteMajor, remoteMinor, remotePatch;
-  int currentMajor, currentMinor, currentPatch;
+  int remoteMajor = 0, remoteMinor = 0, remotePatch = 0;
+  int currentMajor = 0, currentMinor = 0, currentPatch = 0;
 
   // Clean up version strings - remove 'v' prefix if present
   String cleanRemote = remoteVersion;
@@ -328,10 +352,19 @@ bool OTAManager::isNewerVersion(const String& remoteVersion, const String& curre
 #endif
 
   // Parse remote version
-  sscanf(cleanRemote.c_str(), "%d.%d.%d", &remoteMajor, &remoteMinor, &remotePatch);
+  int remoteParsed = sscanf(cleanRemote.c_str(), "%d.%d.%d", &remoteMajor, &remoteMinor, &remotePatch);
 
   // Parse current version
-  sscanf(cleanCurrent.c_str(), "%d.%d.%d", &currentMajor, &currentMinor, &currentPatch);
+  int currentParsed =
+      sscanf(cleanCurrent.c_str(), "%d.%d.%d", &currentMajor, &currentMinor, &currentPatch);
+
+  if (remoteParsed != 3 || currentParsed != 3) {
+#ifdef DEBUG_SERIAL_OUTPUT
+    Serial.printf("Version parse failed: current='%s' remote='%s'\n", cleanCurrent.c_str(),
+                  cleanRemote.c_str());
+#endif
+    return false;
+  }
 
 #ifdef DEBUG_SERIAL_OUTPUT
   Serial.printf("Parsed: current=%d.%d.%d vs remote=%d.%d.%d\n", currentMajor, currentMinor,

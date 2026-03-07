@@ -4,6 +4,7 @@
   "packages": {
     ".": {
       "package-name": "arduino-morse-radio",
+      "include-component-in-tag": false,
       "version-file": "VERSION",
       "label": "release-please-pending",
       "release-label": "release-please-tagged",
