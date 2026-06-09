@@ -26,6 +26,11 @@ class AudioManager {
   void configurePWM();
   int calculateVolumeLevel(int adcValue);
 
+  // Idempotent speaker pin attach/detach to avoid redundant LEDC driver
+  // calls from the playback loop
+  void attachSpeaker();
+  void detachSpeaker();
+
   // Static noise generation helper methods
   void updateStaticPattern();
   int calculateStaticVolume();
@@ -52,6 +57,7 @@ class AudioManager {
   bool isPlayingMorse = false;
   bool isCrackling = false;
   bool isStaticPlaying = false;     // Track if static noise is currently playing
+  bool speakerAttached = false;     // Track if speaker pin is attached to LEDC
   int currentSignalStrength = 255;  // Start with full signal (no static)
   int staticBaseFrequency = MIN_STATIC_FREQ;
 
