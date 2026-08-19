@@ -50,6 +50,10 @@ const char DOT = '.';
 const char DASH = '-';
 const char SPACE = ' ';
 
+// Static pattern strings returned by getSymbol for special cases
+static const char SPACE_SYMBOL[] = " ";
+static const char EMPTY_SYMBOL[] = "";
+
 void MorseCode::begin() {
   // Initialize MORSE_LEDS as digital output
   pinMode(Pins::MORSE_LEDS, OUTPUT);
@@ -64,7 +68,7 @@ void MorseCode::startMessage(const String& message) {
 void MorseCode::startMessage(const char* message) {
   stop();
 
-  currentMessage = String(message);  // Still need String for compatibility, but minimize usage
+  currentMessage = message;
   messageIndex = 0;
   symbolIndex = 0;
   inTuneInDelay = true;
@@ -98,15 +102,15 @@ void MorseCode::update() {
   const auto& timings = config.getCurrentMorseTimings();
 
   // If we need to start a new character
-  if (symbolIndex == 0 || currentMorseChar.isEmpty()) {
+  if (symbolIndex == 0 || currentMorseLen == 0) {
     if (messageIndex >= currentMessage.length()) {
       stop();
       return;
     }
 
     // Get next character's morse code
-    currentMorseChar = getSymbol(currentMessage[messageIndex]);
-    if (currentMorseChar.isEmpty()) {
+    setCurrentMorseChar(getSymbol(currentMessage[messageIndex]));
+    if (currentMorseLen == 0) {
       messageIndex++;
       return;
     }
@@ -134,8 +138,8 @@ void MorseCode::handleTuneInDelay(unsigned long currentTime, ConfigManager& conf
     lastStateChange = currentTime;
     // Start with first symbol ON
     if (messageIndex < currentMessage.length() && currentMessage[messageIndex] != SPACE) {
-      currentMorseChar = getSymbol(currentMessage[messageIndex]);
-      if (!currentMorseChar.isEmpty()) {
+      setCurrentMorseChar(getSymbol(currentMessage[messageIndex]));
+      if (currentMorseLen != 0) {
         config.setMorseToneOn(true);
         audio.playMorseTone();
         updateMorseLEDs(true);
@@ -156,8 +160,8 @@ void MorseCode::handleWordSpace(unsigned long currentTime, const Audio::MorseTim
     lastStateChange = currentTime;
     // Start next character with symbol ON
     if (messageIndex < currentMessage.length()) {
-      currentMorseChar = getSymbol(currentMessage[messageIndex]);
-      if (!currentMorseChar.isEmpty()) {
+      setCurrentMorseChar(getSymbol(currentMessage[messageIndex]));
+      if (currentMorseLen != 0) {
         config.setMorseToneOn(true);
         audio.playMorseTone();
         updateMorseLEDs(true);
@@ -176,7 +180,7 @@ void MorseCode::processSymbol(unsigned long currentTime, const Audio::MorseTimin
 
   // Determine the appropriate gap duration
   unsigned long gapDuration;
-  if (symbolIndex == currentMorseChar.length() - 1) {
+  if (symbolIndex == currentMorseLen - 1) {
     // Last symbol in character - use letter gap
     gapDuration = timings.letterGap;
   } else {
@@ -195,14 +199,14 @@ void MorseCode::processSymbol(unsigned long currentTime, const Audio::MorseTimin
   } else {
     if (currentTime - lastStateChange >= gapDuration) {
       symbolIndex++;
-      if (symbolIndex >= currentMorseChar.length()) {
+      if (symbolIndex >= currentMorseLen) {
         // Move to next character
         messageIndex++;
         symbolIndex = 0;
         // Start next character with symbol ON if available
         if (messageIndex < currentMessage.length() && currentMessage[messageIndex] != SPACE) {
-          currentMorseChar = getSymbol(currentMessage[messageIndex]);
-          if (!currentMorseChar.isEmpty()) {
+          setCurrentMorseChar(getSymbol(currentMessage[messageIndex]));
+          if (currentMorseLen != 0) {
             config.setMorseToneOn(true);
             audio.playMorseTone();
             updateMorseLEDs(true);
@@ -230,25 +234,28 @@ void MorseCode::stop() {
 
   messageIndex = 0;
   symbolIndex = 0;
-  currentMorseChar.clear();
+  setCurrentMorseChar(EMPTY_SYMBOL);
   inTuneInDelay = false;
 }
 
 void MorseCode::updateMorseLEDs(bool on) { digitalWrite(Pins::MORSE_LEDS, on ? HIGH : LOW); }
 
-String MorseCode::getSymbol(char c) const {
-  if (c == SPACE) return String(SPACE);
+const char* MorseCode::getSymbol(char c) const {
+  if (c == SPACE) return SPACE_SYMBOL;
 
   c = toupper(c);
   if (c >= 'A' && c <= 'Z') {
     // Read pattern from PROGMEM
-    const char* pattern = (const char*)pgm_read_ptr(&MORSE_PATTERNS[c - 'A']);
-    return String(pattern);
+    return (const char*)pgm_read_ptr(&MORSE_PATTERNS[c - 'A']);
   }
   if (c >= '0' && c <= '9') {
     // Read pattern from PROGMEM
-    const char* pattern = (const char*)pgm_read_ptr(&MORSE_PATTERNS[26 + (c - '0')]);
-    return String(pattern);
+    return (const char*)pgm_read_ptr(&MORSE_PATTERNS[26 + (c - '0')]);
   }
-  return "";  // Return empty string for unsupported characters
+  return EMPTY_SYMBOL;  // Unsupported characters
+}
+
+void MorseCode::setCurrentMorseChar(const char* pattern) {
+  currentMorseChar = pattern;
+  currentMorseLen = strlen(pattern);
 }

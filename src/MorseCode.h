@@ -27,7 +27,8 @@ class MorseCode {
   MorseCode(const MorseCode&) = delete;
   MorseCode& operator=(const MorseCode&) = delete;
 
-  String getSymbol(char c) const;
+  const char* getSymbol(char c) const;
+  void setCurrentMorseChar(const char* pattern);
   void updateMorseLEDs(bool on);
 
   // Helper methods to break down the update function
@@ -41,7 +42,10 @@ class MorseCode {
   String currentMessage;
   size_t messageIndex = 0;  // Current character in message
   size_t symbolIndex = 0;   // Current symbol in character
-  String currentMorseChar;  // Current character's morse code
+  // Current character's morse code: pointer into the static pattern table
+  // (no heap allocation in the playback hot path)
+  const char* currentMorseChar = "";
+  size_t currentMorseLen = 0;
 
   // Timing state
   unsigned long lastStateChange = 0;

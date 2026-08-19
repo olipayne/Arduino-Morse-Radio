@@ -13,7 +13,7 @@ class Station {
   const char* getName() const { return name; }
   int getFrequency() const { return frequency; }
   WaveBand getBand() const { return band; }
-  String getMessage() const { return message; }
+  const String& getMessage() const { return message; }
   bool isEnabled() const { return enabled; }
 
   // Setters
