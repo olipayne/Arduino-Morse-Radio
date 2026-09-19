@@ -45,7 +45,7 @@ class PotentiometerReader {
 
     // Increase threshold for larger changes to prevent oscillation
     if (abs(difference) > hysteresis_ * 2) {
-      adaptiveThreshold = hysteresis_ * 1.5;
+      adaptiveThreshold = (hysteresis_ * 3) / 2;
     }
 
     // Only update if change exceeds threshold

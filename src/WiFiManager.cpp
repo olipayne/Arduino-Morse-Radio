@@ -1153,7 +1153,8 @@ void WiFiManager::handleSettings() {
 
 void WiFiManager::handleGetTuningValue() {
   int tuningValue = PowerManager::getInstance().readADCRaw(Pins::TUNING_POT);
-  String response = "{\"value\":" + String(tuningValue) + "}";
+  char response[32];
+  snprintf(response, sizeof(response), "{\"value\":%d}", tuningValue);
   server.send(200, "application/json", response);
   startTime = millis();  // Reset the timeout counter
   PowerManager::getInstance().resetActivityTimer("Web Interface - Tuning Value Request");
@@ -1452,7 +1453,7 @@ String WiFiManager::generateStationList() const {
     stationHtml += F("<input type='text' name='msg_");
     stationHtml += String(i);
     stationHtml += F("' value='");
-    stationHtml += String(station->getMessage());
+    stationHtml += station->getMessage();
     stationHtml += F("' placeholder='Enter your morse code message'>");
     stationHtml += F("</div>");
     stationHtml += F("<!-- Hidden frequency input to maintain save functionality -->");

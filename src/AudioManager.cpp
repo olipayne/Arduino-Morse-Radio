@@ -19,6 +19,21 @@ void AudioManager::configurePWM() {
   // Configure PWM with Morse frequency as base (higher than static noise)
   ledcSetup(Audio::SPEAKER_CHANNEL, MORSE_FREQUENCY, 8);
   ledcAttachPin(Pins::SPEAKER, Audio::SPEAKER_CHANNEL);
+  speakerAttached = true;
+}
+
+void AudioManager::attachSpeaker() {
+  if (!speakerAttached) {
+    ledcAttachPin(Pins::SPEAKER, Audio::SPEAKER_CHANNEL);
+    speakerAttached = true;
+  }
+}
+
+void AudioManager::detachSpeaker() {
+  if (speakerAttached) {
+    ledcDetachPin(Pins::SPEAKER);
+    speakerAttached = false;
+  }
 }
 
 void AudioManager::setVolume(int adcValue) {
@@ -34,12 +49,12 @@ void AudioManager::setVolume(int adcValue) {
     if (currentVolume == 0) {
       // Completely silence the audio and detach the pin
       ledcWrite(Audio::SPEAKER_CHANNEL, 0);
-      ledcDetachPin(Pins::SPEAKER);
+      detachSpeaker();
     }
     // Only make sound if the volume is greater than zero
     else if (isPlayingMorse || isStaticPlaying) {
       // Reattach pin if needed
-      ledcAttachPin(Pins::SPEAKER, Audio::SPEAKER_CHANNEL);
+      attachSpeaker();
 
       // Update volume for morse tone
       if (isPlayingMorse) {
@@ -87,7 +102,7 @@ int AudioManager::calculateStaticVolume() {
     volumeVariation = random(-5, 6);
   } else {
     // During crackle, apply the crackle volume variation
-    int crackleIntensity = random(staticVolume / 2, int(staticVolume * 1.5));
+    int crackleIntensity = random(staticVolume / 2, (staticVolume * 3) / 2);
     return constrain(crackleIntensity, 0, 255);
   }
 
@@ -120,16 +135,21 @@ void AudioManager::handlePlayback() {
 void AudioManager::playMorseTone() {
   isPlayingMorse = true;
   // Ensure PWM is attached
-  ledcAttachPin(Pins::SPEAKER, Audio::SPEAKER_CHANNEL);
+  attachSpeaker();
   // Set exact 600Hz frequency for Morse code
   ledcWriteTone(Audio::SPEAKER_CHANNEL, MORSE_FREQUENCY);
   ledcWrite(Audio::SPEAKER_CHANNEL, currentVolume);
 }
 
 void AudioManager::stopMorseTone() {
+  // Already stopped and detached - nothing to do (this is called every
+  // update tick during morse gaps, so skip redundant LEDC driver calls)
+  if (!isPlayingMorse && !speakerAttached) {
+    return;
+  }
   isPlayingMorse = false;
   ledcWrite(Audio::SPEAKER_CHANNEL, 0);
-  ledcDetachPin(Pins::SPEAKER);
+  detachSpeaker();
 }
 
 void AudioManager::playStaticNoise(int signalStrength) {
@@ -138,7 +158,7 @@ void AudioManager::playStaticNoise(int signalStrength) {
   currentSignalStrength = signalStrength;
 
   // Ensure PWM is attached
-  ledcAttachPin(Pins::SPEAKER, Audio::SPEAKER_CHANNEL);
+  attachSpeaker();
 
   // Update the static noise pattern
   updateStaticPattern();
@@ -229,5 +249,5 @@ void AudioManager::stop() {
   isPlayingMorse = false;
   isStaticPlaying = false;
   ledcWrite(Audio::SPEAKER_CHANNEL, 0);
-  ledcDetachPin(Pins::SPEAKER);
+  detachSpeaker();
 }
